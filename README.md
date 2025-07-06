@@ -968,10 +968,10 @@ Contributions are welcome! Please:
 ## Acknowledgments
 
 - Klipper firmware team for the excellent foundation
+- Dakash and Lineux Toolchanger Discord forums
 - BTT for CAN bus toolboard development  
 - Arducam for programmable focus camera modules
 - MQTT and Flask communities for communication tools
-- Contributors to the toolchanger and liquid handling communities
 
 ## Support
 
