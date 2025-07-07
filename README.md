@@ -74,8 +74,8 @@ Each tool type uses optimized communication protocols and provides comprehensive
 - Built-in filament runout sensors
 
 **MQTT (Camera Tool)**
-- Camera Pi IP: 192.168.1.215
-- Klipper Pi IP: 192.168.1.89 (MQTT broker)
+- Camera Pi IP: <CAMERA_PI_IP>
+- Klipper Pi IP: <KLIPPER_PI_IP> (MQTT broker)
 - Topics: `dakash/camera/*` and `dakash/gpio/*`
 
 **Serial (Microfluidics)**
@@ -271,10 +271,10 @@ camera_rod_install_msg_gcode:
 5. **Configure IP addresses in scripts:**
    ```python
    # In camera_flask_mqtt.py and mqtt_unified_subscriber_fixed.py
-   MQTT_BROKER = "192.168.1.89"  # Your Klipper Pi IP
+   MQTT_BROKER = "<KLIPPER_PI_IP>"  # Your Klipper Pi IP
    
    # In camera_control.cfg
-   camera0ip = "192.168.1.215"   # Your Camera Pi IP
+   camera0ip = "<CAMERA_PI_IP>"   # Your Camera Pi IP
    ```
 
 6. **Set up auto-start service:**
@@ -488,7 +488,7 @@ CAMERA_HELP                      # Show all available commands
 ```
 
 **Web interface access:**
-- Navigate to `http://192.168.1.215:8080` (camera Pi IP)
+- Navigate to `http://<CAMERA_PI_IP>:8080` (camera Pi IP)
 - Real-time camera control with focus slider
 - Live video streaming
 - Image capture and viewing
@@ -496,10 +496,10 @@ CAMERA_HELP                      # Show all available commands
 **MQTT control (advanced):**
 ```bash
 # Direct MQTT commands to camera
-mosquitto_pub -h 192.168.1.89 -t "dakash/camera/command" \
+mosquitto_pub -h <KLIPPER_PI_IP> -t "dakash/camera/command" \
   -m '{"command":"capture"}'
 
-mosquitto_pub -h 192.168.1.89 -t "dakash/camera/command" \
+mosquitto_pub -h <KLIPPER_PI_IP> -t "dakash/camera/command" \
   -m '{"command":"focus","mode":"manual","position":20}'
 ```
 
@@ -604,8 +604,8 @@ l0_dock_y = 450.98
 ### Network Configuration
 
 **IP Address Settings:**
-- Klipper Pi (MQTT Broker): `192.168.1.89`
-- Camera Pi: `192.168.1.215`
+- Klipper Pi (MQTT Broker): `<KLIPPER_PI_IP>`
+- Camera Pi: `<CAMERA_PI_IP>`
 - Camera Web Interface: Port `8080`
 
 Update these in:
@@ -724,7 +724,7 @@ mosquitto_pub -h localhost -t "test" -m "hello"
 mosquitto_sub -h localhost -t "test"
 
 # Test from camera Pi  
-mosquitto_pub -h 192.168.1.89 -t "dakash/camera/command" -m '{"command":"status"}'
+mosquitto_pub -h <KLIPPER_PI_IP> -t "dakash/camera/command" -m '{"command":"status"}'
 ```
 
 **Sensor Problems:**
@@ -759,7 +759,7 @@ CHECK_CAMERA                # Camera-specific checks
 **Communication Tests:**
 ```bash
 # MQTT testing (run on Klipper Pi)
-mosquitto_sub -h 192.168.1.89 -t "dakash/+/+"
+mosquitto_sub -h <KLIPPER_PI_IP> -t "dakash/+/+"
 
 # Camera shell script (run on Klipper Pi)
 ~/check_camera.sh verify_docked
