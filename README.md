@@ -1,4 +1,4 @@
-<img src="images/rister_multi-model_toolchanger.png" alt="Rister Logo" width="400">
+<img src="images/rister_multi-modal_toolchanger.png" alt="Rister Multi-Modal Toolchanger Logo" width="400">
 
 
 # Rister Multi-Modal Toolchanger
