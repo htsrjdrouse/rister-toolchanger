@@ -41,7 +41,7 @@ Each tool type uses optimized communication protocols and provides comprehensive
 **Built specifically for Klipper firmware**, the Rister Multi-Modal Toolchanger extends Klipper's capabilities through custom Python modules and comprehensive G-code macro integration.
 
 **Main Controller**
-- BigTreeTech GTR (STM32F446) running Klipper firmware
+- BigTreeTech Octopus (STM32F446) running Klipper firmware or equivalent
 - **Enhanced Gantry**: 4 Z-motors (vs. standard 3) for improved stability
 - **Custom Motor Mounts**: Enhanced CoreXY mounts for multi-modal loads
 - CoreXY kinematics with 480×380×250mm build volume
