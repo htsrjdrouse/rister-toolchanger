@@ -1,4 +1,6 @@
-![Rister Logo](images/rister_multi-model_toolchanger.png)
+<img src="images/rister_multi-model_toolchanger.png" alt="Rister Logo" width="400">
+
+
 # Rister Multi-Modal Toolchanger
 
 A sophisticated **Klipper-based** toolchanger system that integrates multiple fabrication and analysis techniques through **FDM 3D printing**, **liquid dispensing**, and **camera imaging** tools.
