@@ -135,7 +135,7 @@ Each tool type uses optimized communication protocols and provides comprehensive
 ### Prerequisites
 
 **Hardware Requirements**
-- BTT GTR mainboard with STM32F446 MCU
+- BTT octopus mainboard with STM32F446 MCU or equivalent
 - 2× BTT EBB CAN boards for extruder tools
 - Raspberry Pi for camera tool (tested on Pi 5)
 - Arducam IMX519 camera module
