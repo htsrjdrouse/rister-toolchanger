@@ -1,6 +1,7 @@
+![Rister Logo](images/rister_multi-model_toolchanger.png)
 # Rister Multi-Modal Toolchanger
 
-A **Klipper-based** toolchanger system that integrates multiple fabrication and analysis techniques through **FDM 3D printing**, **liquid dispensing**, and **camera imaging** tools.
+A sophisticated **Klipper-based** toolchanger system that integrates multiple fabrication and analysis techniques through **FDM 3D printing**, **liquid dispensing**, and **camera imaging** tools.
 
 ## Overview
 
@@ -35,15 +36,26 @@ Each tool type uses optimized communication protocols and provides comprehensive
 
 ### Hardware Components
 
+**Built specifically for Klipper firmware**, the Rister Multi-Modal Toolchanger extends Klipper's capabilities through custom Python modules and comprehensive G-code macro integration.
+
 **Main Controller**
 - BigTreeTech GTR (STM32F446) running Klipper firmware
+- **Enhanced Gantry**: 4 Z-motors (vs. standard 3) for improved stability
+- **Custom Motor Mounts**: Enhanced CoreXY mounts for multi-modal loads
 - CoreXY kinematics with 480×380×250mm build volume
-- Z-tilt bed leveling with multiple stepper motors
+- Z-tilt bed leveling with four stepper motors
 
 **Tool Controllers**
 - **E0/E1 Extruders**: BTT EBB CAN boards (CAN bus communication)
+  - Modified Lineux One design with Bambu Lab hotends
+  - Integrated Klicky probe, filament sensors, and LED indicators
+  - Custom air ducting and magnetic detachable cooling ducts
 - **L0 Liquid Dispenser**: Direct GPIO control with servo linear actuator
+  - Precision pipette handling with automated tip loading/unloading
+  - 3-way valve system (input/output/bypass)
+  - Pressure compensation vessel with level sensing
 - **C0 Camera Tool**: Separate Raspberry Pi with MQTT communication
+  - Arducam programmable focus camera with web interface
 
 **Specialized Hardware**
 - **Camera**: Arducam IMX519 with programmable focus (0-30 range)
@@ -926,28 +938,7 @@ The system tracks detailed usage statistics for each tool:
 
 ## License
 
-MIT License
-
-Copyright (c) 2025 HTS Resources
-
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
-
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
-
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-
+*Specify your license here (MIT, GPL, Apache, etc.)*
 
 ## Contributing
 
@@ -968,10 +959,10 @@ Contributions are welcome! Please:
 ## Acknowledgments
 
 - Klipper firmware team for the excellent foundation
-- Dakash and Lineux Toolchanger Discord forums
 - BTT for CAN bus toolboard development  
 - Arducam for programmable focus camera modules
 - MQTT and Flask communities for communication tools
+- Contributors to the toolchanger and liquid handling communities
 
 ## Support
 
@@ -984,4 +975,4 @@ Contributions are welcome! Please:
 
 **Rister Multi-Modal Toolchanger** - Advancing multi-protocol manufacturing through integrated FDM, liquid handling, and imaging capabilities with native **Klipper firmware** integration.
 
-*Last updated: June 2025*
+*Last updated: July 2025*
