@@ -42,8 +42,8 @@ Each tool type uses optimized communication protocols and provides comprehensive
 
 **Main Controller**
 - BigTreeTech Octopus (STM32F446) running Klipper firmware or equivalent
-- **Enhanced Gantry**: 4 Z-motors (vs. standard 3) for improved stability
-- **Custom Motor Mounts**: Enhanced CoreXY mounts for multi-modal loads
+- Enhanced Gantry: 4 Z-motors (vs. standard 3) for improved stability
+- Custom Motor Mounts: Enhanced CoreXY mounts for multi-modal loads
 - CoreXY kinematics with 480×380×250mm build volume
 - Z-tilt bed leveling with four stepper motors
 
