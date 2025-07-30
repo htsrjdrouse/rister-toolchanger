@@ -24,40 +24,33 @@ Each tutorial includes:
 
 ### 🎯 **Basic Operations**
 
-#### 1. Tool Calibration and Homing
+#### 1. [Tool Calibration and Homing](01-calibration-and-homing.md)
 **Video:** `01-calibration-and-homing.md`
 - Initial system setup and safety checks
 - Homing sequence and endstop verification
 - Tool offset calibration procedures
 - Z-probe offset configuration
+- Tool docking and undocking procedures  
 - Verification and testing methods
-
-#### 2. Tool Docking and Undocking
-**Video:** `02-docking-undocking.md`
-- Understanding the docking mechanism
-- Proper docking alignment techniques
-- Safe undocking procedures
-- Tool detection and verification
-- Handling docking failures and recovery
 
 ### 🔧 **Tool-Specific Operations**
 
-#### 3. Klicky Probe Bed Leveling
-**Video:** `03-klicky-bed-leveling.md`
+#### 2. Klicky Probe Bed Leveling
+**Video:** `02-klicky-bed-leveling.md`
 - Klicky probe setup and calibration
 - Automated bed mesh generation
 - Manual probing techniques
 - Interpreting mesh data and corrections
 
-#### 4. Camera Tool Focus and Positioning
-**Video:** `04-camera-focus-positioning.md`
+#### 3. Camera Tool Focus and Positioning
+**Video:** `03-camera-focus-positioning.md`
 - Camera tool mounting and alignment
 - Manual focus adjustment techniques
 - Automated focus routines
 - Object detection and positioning
 
-#### 5. Linear Actuator Pipette Operations
-**Video:** `05-pipette-operations.md`
+#### 4. Linear Actuator Pipette Operations
+**Video:** `04-pipette-operations.md`
 - Pipette tool setup and calibration
 - Liquid loading and dispensing procedures
 - Volume accuracy and repeatability
@@ -65,22 +58,22 @@ Each tutorial includes:
 
 ### 🚀 **Advanced Techniques**
 
-#### 6. Camera-Based Extruder Offset Calibration
-**Video:** `06-camera-offset-calibration.md`
+#### 5. Camera-Based Extruder Offset Calibration
+**Video:** `05-camera-offset-calibration.md`
 - 3D printing calibration targets
 - Computer vision setup and operation
 - Automated offset measurement
 - Integration with Klipper configuration
 
-#### 7. Multi-Tool Workflow Automation
-**Video:** `07-multi-tool-workflows.md`
+#### 6. Multi-Tool Workflow Automation
+**Video:** `06-multi-tool-workflows.md`
 - Chaining multiple tool operations
 - Creating custom G-code macros
 - Error handling and recovery procedures
 - Optimizing tool change sequences
 
-#### 8. Custom Tool Integration
-**Video:** `08-custom-tool-integration.md`
+#### 7. Custom Tool Integration
+**Video:** `07-custom-tool-integration.md`
 - Designing tool interfaces
 - Electrical integration guidelines
 - Software configuration for new tools
@@ -88,15 +81,15 @@ Each tutorial includes:
 
 ### 🛠️ **Maintenance and Troubleshooting**
 
-#### 9. System Maintenance
-**Video:** `09-system-maintenance.md`
+#### 8. System Maintenance
+**Video:** `08-system-maintenance.md`
 - Regular cleaning procedures
 - Lubrication schedules and techniques
 - Wear indicator monitoring
 - Replacement part installation
 
-#### 10. Common Issues and Solutions
-**Video:** `10-troubleshooting.md`
+#### 9. Common Issues and Solutions
+**Video:** `09-troubleshooting.md`
 - Tool detection failures
 - Calibration drift problems
 - Mechanical alignment issues
