@@ -35,7 +35,7 @@ Each tutorial includes:
 
 ### 🔧 **Tool-Specific Operations**
 
-#### 2. Klicky Probe Bed Leveling
+#### 2. [Klicky Probe Bed Leveling](02-klicky-bed-leveling.md)
 **Video:** `02-klicky-bed-leveling.md`
 - Klicky probe setup and calibration
 - Automated bed mesh generation
