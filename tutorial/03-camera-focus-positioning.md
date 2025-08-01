@@ -1,6 +1,9 @@
 # Camera Tool Focus and Positioning
 
 **Video Tutorial:**
+[![Rister Toolchanger - Camera Tool Focus and Positioning](https://img.youtube.com/vi/ow481Jfh-m4/0.jpg)](https://www.youtube.com/watch?v=ow481Jfh-m4)
+
+*Click the thumbnail above to watch the video tutorial*
 
 This tutorial covers how to use the camera tool (C0) with your Rister Toolchanger for focus control, positioning, and image capture. The camera system operates independently via MQTT communication and provides a web interface for real-time visualization.
 
@@ -68,9 +71,6 @@ CHECK_CAMERA
 
 # Verify camera is responding
 CAMERA_STATUS
-
-# Call after successful pickup (important!)
-CAMERA_TOOL_PICKED
 ```
 
 ## Step 2: Camera Focus Control
@@ -258,9 +258,6 @@ CAMERA_STREAM_STOP
 # Stop monitoring if active
 STOP_CAMERA_MONITORING
 
-# Call before docking (important!)
-CAMERA_TOOL_DOCKED
-
 # Return camera tool to dock
 A_1
 
@@ -279,6 +276,129 @@ VERIFY_TOOL_DOCKED_C0
 - **Symptom:** Images consistently blurry
 - **Solution:** Recalibrate focus range, check for mechanical obstruction
 - **Prevention:** Regular focus calibration, protect camera from impacts
+
+### Flask Server Issues
+- **Symptom:** Cannot access camera web interface on any port (connection refused/timeout)
+
+**Port Already in Use Error:**
+If you see "Address already in use" or "Port 8080 is in use by another program":
+```bash
+# Find what's using the port
+sudo netstat -tlnp | grep :8080
+# Example output: tcp 0 0 0.0.0.0:8080 0.0.0.0:* LISTEN 861/python3
+
+# Check what the python3 process is doing
+ps aux | grep 861
+sudo lsof -p 861
+
+# If it's an old camera script, kill it safely
+sudo kill 861
+
+# Or kill more forcefully if needed
+sudo kill -9 861
+
+# Then start your camera script
+python3 camera_flask_mqtt.py
+
+# Alternative: Start on different port to avoid conflict
+python3 camera_flask_mqtt.py --port 8000
+```
+
+**Browser Compatibility Issues:**
+If the web interface works in Safari but not Chrome/Brave/Edge:
+```
+⚠️ NOTE: This is a recent issue - Chrome/Brave introduced stricter 
+private network security policies starting in late 2021 (Chrome 94+)
+that affect local network access to 3D printers and embedded systems.
+
+Common causes and solutions:
+
+1. **Private Network Access Policy (NEW in Chrome 94+):**
+   - Chrome now blocks HTTP connections to local IPs by default
+   - Try: chrome://flags/#block-insecure-private-network-requests
+   - Set to "Disabled" and restart browser
+   - This affects ALL local printer interfaces (Mainsail, Fluidd, etc.)
+
+2. **Mixed Content Blocking:**
+   - If main Klipper interface is HTTPS, browsers block HTTP camera feed
+   - Access camera interface directly: http://192.168.1.215:8080
+   - Or set up HTTPS for camera interface
+
+3. **CORS (Cross-Origin) Issues:**
+   - Modern browsers increasingly strict about local network requests
+   - Add camera IP to browser exceptions if needed
+
+4. **Cache/Cookies:**
+   - Clear browser cache and cookies for the camera IP
+   - Try incognito/private browsing mode
+```
+
+**Recommended browsers for local network interfaces:**
+- **Safari** - Still allows local network access (for now)
+- **Firefox** - More permissive than Chrome with embedded systems
+- **Chrome/Brave** - Requires configuration changes since late 2021 updates
+
+- **Diagnose Flask server status:**
+  ```bash
+  # SSH into camera Raspberry Pi
+  ssh pi@192.168.1.215
+  
+  # Check if camera Flask script is running
+  ps aux | grep camera_flask_mqtt
+  
+  # Check what ports are actually listening
+  sudo netstat -tlnp | grep :80
+  
+  # Check system logs for Flask errors
+  sudo journalctl | grep -i flask
+  tail -f /var/log/syslog | grep camera
+  ```
+
+- **Start Flask service manually:**
+  ```bash
+  # Navigate to camera application directory
+  cd /home/pi/  # or wherever camera_flask_mqtt.py is located
+  
+  # Start the camera Flask MQTT script
+  python3 camera_flask_mqtt.py
+  
+  # If port conflict, try different port
+  python3 camera_flask_mqtt.py --port 8000
+  ```
+
+- **Make Flask script run as service:**
+  ```bash
+  # Create systemd service file
+  sudo nano /etc/systemd/system/camera-flask.service
+  
+  # Add service configuration:
+  # [Unit]
+  # Description=Camera Flask MQTT Service
+  # After=network.target
+  # 
+  # [Service]
+  # Type=simple
+  # User=pi
+  # WorkingDirectory=/home/pi
+  # ExecStart=/usr/bin/python3 /home/pi/camera_flask_mqtt.py
+  # Restart=always
+  # 
+  # [Install]
+  # WantedBy=multi-user.target
+  
+  # Enable and start service
+  sudo systemctl daemon-reload
+  sudo systemctl enable camera-flask.service
+  sudo systemctl start camera-flask.service
+  sudo systemctl status camera-flask.service
+  ```
+
+**Common Flask startup issues:**
+- **Port conflict:** Another service using port 8080 (most common)
+- **MQTT broker unreachable:** Check MQTT broker at 192.168.1.89:1883
+- **Camera hardware not detected:** Verify camera module connection
+- **Missing Python dependencies:** Install required packages
+- **Permission issues:** Run as correct user (pi)
 
 ### Web Interface Access
 - **Symptom:** Cannot access camera stream
@@ -300,7 +420,6 @@ gcode:
     # Pick up camera
     C0
     VERIFY_TOOL_PICKUP_C0
-    CAMERA_TOOL_PICKED
     
     # Set up for inspection
     CAMERA_PRESET_HIGH_RES
@@ -312,7 +431,6 @@ gcode:
     CAMERA_CAPTURE
     
     # Return tool
-    CAMERA_TOOL_DOCKED
     A_1
     VERIFY_TOOL_DOCKED_C0
 ```
@@ -323,7 +441,7 @@ gcode:
 [gcode_macro MEASURE_MULTIPLE_POINTS]
 gcode:
     C0
-    CAMERA_TOOL_PICKED
+    VERIFY_TOOL_PICKUP_C0
     CAMERA_PRESET_MEDIUM_RES
     
     {% for point in range(5) %}
@@ -333,8 +451,8 @@ gcode:
         CAMERA_CAPTURE
     {% endfor %}
     
-    CAMERA_TOOL_DOCKED
     A_1
+    VERIFY_TOOL_DOCKED_C0
 ```
 
 ## Essential Commands Reference
@@ -343,8 +461,6 @@ gcode:
 # Tool Operations
 C0                        # Pick up camera tool
 A_1                       # Return tool to dock
-CAMERA_TOOL_PICKED        # Call after pickup
-CAMERA_TOOL_DOCKED        # Call before docking
 VERIFY_TOOL_PICKUP_C0     # Verify pickup success
 VERIFY_TOOL_DOCKED_C0     # Verify docking success
 
@@ -381,7 +497,7 @@ CAMERA_HELP               # Show command help
 
 **Network Setup:**
 - Camera system requires stable network connection
-- Flask web interface runs on port 8080
+- Flask web interface runs on port 8080 (default)
 - MQTT broker must be accessible to both Klipper and camera system
 - Camera IP address configured in `CAMERA_CONFIG` macro in `printer.cfg`
 
