@@ -757,7 +757,7 @@ def index():
     </head>
     <body>
         <div class="container">
-            <h1>Dakash Camera Controller</h1>
+            <h1>Rister Camera Controller</h1>
             
             <div class="controls">
                 <button onclick="startStream()">Start Stream</button>
