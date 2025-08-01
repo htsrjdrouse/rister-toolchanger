@@ -410,7 +410,7 @@ def index():
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Dakash Camera Controller</title>
+        <title>Rister Camera Controller</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
             body { 
