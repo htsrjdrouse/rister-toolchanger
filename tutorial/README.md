@@ -46,14 +46,15 @@ Each tutorial includes:
 **Video:** `03-camera-focus-positioning.md`
 - Camera tool mounting and alignment
 - Manual focus adjustment techniques
+<!--
 - Automated focus routines
 - Object detection and positioning
-
+-->
 #### 4. Linear Actuator Pipette Operations
 **Video:** `04-pipette-operations.md`
 - Pipette tool setup and calibration
 - Liquid loading and dispensing procedures
-- Volume accuracy and repeatability
+<!-- Volume accuracy and repeatability-->
 - Cleaning and maintenance protocols
 
 ### 🚀 **Advanced Techniques**
