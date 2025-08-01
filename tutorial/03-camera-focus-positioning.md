@@ -321,7 +321,7 @@ Common causes and solutions:
 
 2. **Mixed Content Blocking:**
    - If main Klipper interface is HTTPS, browsers block HTTP camera feed
-   - Access camera interface directly: http://192.168.1.215:8080
+   - Access camera interface directly: http://[cameraip]:8080
    - Or set up HTTPS for camera interface
 
 3. **CORS (Cross-Origin) Issues:**
@@ -341,7 +341,7 @@ Common causes and solutions:
 - **Diagnose Flask server status:**
   ```bash
   # SSH into camera Raspberry Pi
-  ssh pi@192.168.1.215
+  ssh [username]@[cameraip]
   
   # Check if camera Flask script is running
   ps aux | grep camera_flask_mqtt
