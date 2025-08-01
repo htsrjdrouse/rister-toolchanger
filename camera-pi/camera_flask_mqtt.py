@@ -2,6 +2,7 @@
 """
 Camera Controller with Flask and MQTT - Stream, Capture, and Focus Slider
 With improved stream handling, MQTT command interface, and direct IMX519 focusing
+SAFARI COMPATIBLE VERSION with enhanced MJPEG streaming
 """
 import os
 import time
@@ -56,6 +57,7 @@ keep_streaming = False
 current_frame = None
 frame_lock = threading.Lock()
 mqtt_client = None
+frame_count = 0  # For Safari compatibility
 
 def get_focus_info():
     """Get current focus mode and position"""
@@ -95,8 +97,8 @@ def control_autofocus(mode="auto", position=None):
         return False
 
 def capture_frame():
-    """Capture a single frame for the stream"""
-    global current_frame, frame_lock, FOCUS_MODE, FOCUS_POSITION
+    """Capture a single frame for the stream with Safari-compatible JPEG encoding"""
+    global current_frame, frame_lock, FOCUS_MODE, FOCUS_POSITION, frame_count
     
     try:
         # Use a temporary file
@@ -110,7 +112,9 @@ def capture_frame():
             "--width", str(STREAM_WIDTH),
             "--height", str(STREAM_HEIGHT),
             "--immediate",
-            "--nopreview"
+            "--nopreview",
+            "--quality", "85",  # Specific quality for Safari compatibility
+            "--encoding", "jpg"
         ]
         
         # Add focus parameters
@@ -123,8 +127,10 @@ def capture_frame():
         
         if result.returncode == 0 and os.path.exists(temp_file):
             with open(temp_file, 'rb') as f:
+                frame_data = f.read()
                 with frame_lock:
-                    current_frame = f.read()
+                    current_frame = frame_data
+                    frame_count += 1
             return True
         else:
             logger.error(f"Failed to capture frame: {result.stderr.decode()}")
@@ -134,33 +140,42 @@ def capture_frame():
         return False
 
 def streaming_worker():
-    """Background thread for continuous frame capture"""
+    """Background thread for continuous frame capture - Safari optimized"""
     global keep_streaming, STREAM_ACTIVE
     
     logger.info("Streaming worker started")
+    consecutive_failures = 0
+    max_failures = 5
     
     while keep_streaming:
         if capture_frame():
-            # Success, wait a bit before next frame (about 15 fps)
-            time.sleep(0.07)
+            consecutive_failures = 0
+            # Safari-friendly frame rate (12 fps for stability)
+            time.sleep(1/12)
         else:
-            # Failed to capture, wait longer before retrying
-            time.sleep(0.5)
+            consecutive_failures += 1
+            if consecutive_failures >= max_failures:
+                logger.error("Too many consecutive capture failures, pausing")
+                time.sleep(2)
+                consecutive_failures = 0
+            else:
+                time.sleep(0.5)
     
     logger.info("Streaming worker stopped")
     STREAM_ACTIVE = False
 
 def start_stream():
     """Start the streaming thread"""
-    global streaming_thread, keep_streaming, STREAM_ACTIVE, current_frame
+    global streaming_thread, keep_streaming, STREAM_ACTIVE, current_frame, frame_count
     
     if STREAM_ACTIVE:
         logger.info("Stream already active")
         return True
     
-    # Reset frame buffer
+    # Reset frame buffer and counter
     with frame_lock:
         current_frame = None
+        frame_count = 0
     
     # Start streaming thread
     keep_streaming = True
@@ -390,15 +405,16 @@ def setup_mqtt_client():
 # Flask routes
 @app.route('/')
 def index():
-    """Improved camera control interface with focus slider"""
+    """Safari-enhanced camera control interface with focus slider"""
     html = """
     <!DOCTYPE html>
     <html>
     <head>
         <title>Dakash Camera Controller</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
             body { 
-                font-family: Arial, sans-serif; 
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Arial, sans-serif; 
                 margin: 20px; 
                 text-align: center;
                 background-color: #f5f5f5;
@@ -431,6 +447,8 @@ def index():
                 font-weight: bold;
                 cursor: pointer;
                 transition: background-color 0.3s;
+                -webkit-appearance: none;
+                appearance: none;
             }
             button:hover {
                 background-color: #3e8e41;
@@ -470,6 +488,8 @@ def index():
                 transition: opacity .2s;
                 border-radius: 5px;
                 margin-top: 5px;
+                -webkit-appearance: none;
+                appearance: none;
             }
             .slider:hover {
                 opacity: 1;
@@ -489,6 +509,7 @@ def index():
                 border-radius: 50%;
                 background: #9C27B0;
                 cursor: pointer;
+                border: none;
             }
             #streamContainer, #photoContainer {
                 display: none;
@@ -499,6 +520,15 @@ def index():
                 padding: 10px;
                 border-radius: 5px;
                 margin-bottom: 20px;
+                background: #000;
+                position: relative;
+            }
+            #streamImg {
+                max-width: 100%;
+                max-height: 480px;
+                border-radius: 5px;
+                display: block;
+                margin: 0 auto;
             }
             img {
                 max-width: 100%;
@@ -515,10 +545,34 @@ def index():
                 font-size: 12px;
                 color: #666;
             }
+            .loading {
+                position: absolute;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                color: white;
+                font-size: 16px;
+                display: none;
+            }
+            .spinner {
+                display: inline-block;
+                width: 20px;
+                height: 20px;
+                border: 3px solid #f3f3f3;
+                border-top: 3px solid #007AFF;
+                border-radius: 50%;
+                animation: spin 1s linear infinite;
+                margin-right: 10px;
+            }
+            @keyframes spin {
+                0% { transform: rotate(0deg); }
+                100% { transform: rotate(360deg); }
+            }
         </style>
         <script>
             // Track whether user has adjusted focus
             window.userAdjustedFocus = false;
+            window.streamRefreshInterval = null;
             
             // Check streaming status when page loads
             window.onload = function() {
@@ -536,31 +590,68 @@ def index():
                         if (data.streaming) {
                             document.getElementById('streamContainer').style.display = 'block';
                             document.getElementById('focusControls').style.display = 'flex';
-                            // Reload the stream image to ensure it's current
-                            const img = document.getElementById('streamImg');
-                            img.src = '/stream?t=' + new Date().getTime();
+                            
+                            // Safari-specific: refresh stream periodically to prevent freezing
+                            if (navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome')) {
+                                if (!window.streamRefreshInterval) {
+                                    refreshStreamImage();
+                                    window.streamRefreshInterval = setInterval(refreshStreamImage, 30000);
+                                }
+                            } else {
+                                refreshStreamImage();
+                            }
                             
                             // Only update the focus slider if we're in auto mode or it's the first load
                             if (data.focus_mode === "auto") {
-                                // In auto mode, reset the slider to default position
                                 document.getElementById('focusSlider').value = 10;
                                 document.getElementById('focusValue').textContent = 10;
                             } else if (data.focus_mode === "manual" && !window.userAdjustedFocus) {
-                                // In manual mode, only update if user hasn't adjusted it yet
                                 document.getElementById('focusSlider').value = data.focus_position;
                                 document.getElementById('focusValue').textContent = data.focus_position;
                             }
                         } else {
                             document.getElementById('streamContainer').style.display = 'none';
                             document.getElementById('focusControls').style.display = 'none';
-                            // Clear the stream image to prevent showing old frames
+                            
+                            // Clear stream refresh interval
+                            if (window.streamRefreshInterval) {
+                                clearInterval(window.streamRefreshInterval);
+                                window.streamRefreshInterval = null;
+                            }
+                            
+                            // Clear the stream image
                             const img = document.getElementById('streamImg');
                             img.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
+                            
                             // Reset focus adjustment tracking
                             window.userAdjustedFocus = false;
                         }
                     })
                     .catch(error => console.error('Error checking status:', error));
+            }
+            
+            function refreshStreamImage() {
+                const img = document.getElementById('streamImg');
+                const loading = document.getElementById('loading');
+                
+                // Show loading indicator
+                loading.style.display = 'block';
+                
+                // Create new image with cache-busting timestamp
+                const newSrc = '/stream?t=' + new Date().getTime();
+                
+                // Handle image load success
+                img.onload = function() {
+                    loading.style.display = 'none';
+                };
+                
+                // Handle image load error
+                img.onerror = function() {
+                    loading.style.display = 'none';
+                    console.warn('Stream image failed to load');
+                };
+                
+                img.src = newSrc;
             }
             
             function startStream() {
@@ -571,9 +662,9 @@ def index():
                         if (data.streaming) {
                             document.getElementById('streamContainer').style.display = 'block';
                             document.getElementById('focusControls').style.display = 'flex';
-                            // Force reload the stream with cache busting
-                            const img = document.getElementById('streamImg');
-                            img.src = '/stream?t=' + new Date().getTime();
+                            
+                            // Wait a moment for stream to initialize, then refresh
+                            setTimeout(refreshStreamImage, 1000);
                         }
                     })
                     .catch(error => console.error('Error starting stream:', error));
@@ -586,6 +677,13 @@ def index():
                         console.log('Stop stream response:', data);
                         document.getElementById('streamContainer').style.display = 'none';
                         document.getElementById('focusControls').style.display = 'none';
+                        
+                        // Clear refresh interval
+                        if (window.streamRefreshInterval) {
+                            clearInterval(window.streamRefreshInterval);
+                            window.streamRefreshInterval = null;
+                        }
+                        
                         // Clear the stream image
                         const img = document.getElementById('streamImg');
                         img.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
@@ -648,6 +746,13 @@ def index():
                     })
                     .catch(error => console.error('Error setting focus:', error));
             }
+            
+            // Clean up on page unload
+            window.addEventListener('beforeunload', function() {
+                if (window.streamRefreshInterval) {
+                    clearInterval(window.streamRefreshInterval);
+                }
+            });
         </script>
     </head>
     <body>
@@ -674,6 +779,10 @@ def index():
             
             <div id="streamContainer" class="media-container" style="display: none;">
                 <h3>Live Stream</h3>
+                <div id="loading" class="loading">
+                    <div class="spinner"></div>
+                    Loading stream...
+                </div>
                 <img id="streamImg" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="Live Stream">
             </div>
             
@@ -689,8 +798,8 @@ def index():
 
 @app.route('/stream')
 def stream():
-    """MJPEG stream endpoint that won't auto-start streaming"""
-    global STREAM_ACTIVE, current_frame
+    """Safari-compatible MJPEG stream endpoint"""
+    global STREAM_ACTIVE, current_frame, frame_count
     
     # If not streaming, return a blank image
     if not STREAM_ACTIVE:
@@ -699,7 +808,8 @@ def stream():
         return Response(blank_gif, mimetype='image/gif')
     
     def generate_frames():
-        global STREAM_ACTIVE, current_frame
+        global STREAM_ACTIVE, current_frame, frame_count
+        last_frame_count = 0
         
         # Exit if streaming stops while generating
         if not STREAM_ACTIVE:
@@ -707,28 +817,47 @@ def stream():
         
         # Initial wait for first frame
         attempts = 0
-        while current_frame is None and STREAM_ACTIVE and attempts < 10:
+        while current_frame is None and STREAM_ACTIVE and attempts < 20:
             time.sleep(0.1)
             attempts += 1
         
-        # Main streaming loop
+        # Main streaming loop - Safari optimized
         while STREAM_ACTIVE:
             with frame_lock:
                 frame = current_frame
+                current_count = frame_count
             
-            if frame:
+            # Only yield new frames to prevent duplicates in Safari
+            if frame and current_count > last_frame_count:
                 yield (b'--frame\r\n'
-                       b'Content-Type: image/jpeg\r\n\r\n' + frame + b'\r\n')
-            else:
-                # If no frame available, yield a small delay frame
-                time.sleep(0.1)
-                continue
+                       b'Content-Type: image/jpeg\r\n'
+                       b'Content-Length: ' + str(len(frame)).encode() + b'\r\n'
+                       b'Cache-Control: no-cache, no-store, must-revalidate\r\n'
+                       b'Pragma: no-cache\r\n'
+                       b'Expires: 0\r\n'
+                       b'\r\n' + frame + b'\r\n')
                 
-            # Slight delay to control frame rate
-            time.sleep(0.05)
+                last_frame_count = current_count
+                
+                # Safari-friendly delay between frames
+                time.sleep(1/12)  # 12 fps for stability
+            else:
+                # No new frame, wait a bit
+                time.sleep(0.05)
     
-    return Response(generate_frames(),
-                    mimetype='multipart/x-mixed-replace; boundary=frame')
+    # Safari-specific headers for better compatibility
+    response = Response(
+        generate_frames(),
+        mimetype='multipart/x-mixed-replace; boundary=frame',
+        headers={
+            'Cache-Control': 'no-cache, no-store, must-revalidate',
+            'Pragma': 'no-cache',
+            'Expires': '0',
+            'Connection': 'close',
+            'X-Accel-Buffering': 'no'  # Disable nginx buffering if present
+        }
+    )
+    return response
 
 @app.route('/latest_photo')
 def latest_photo():
@@ -809,7 +938,8 @@ def api_status():
         "stream_height": STREAM_HEIGHT,
         "capture_width": CAPTURE_WIDTH,
         "capture_height": CAPTURE_HEIGHT,
-        "stream_quality": STREAM_QUALITY
+        "stream_quality": STREAM_QUALITY,
+        "frame_count": frame_count  # Added for debugging
     })
 
 if __name__ == '__main__':
@@ -822,9 +952,15 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port=HTTP_PORT, threaded=True)
     except KeyboardInterrupt:
         logger.info("Application stopping due to keyboard interrupt")
+        # Clean shutdown
+        stop_stream()
         if mqtt_client:
             mqtt_client.loop_stop()
+            mqtt_client.disconnect()
     except Exception as e:
         logger.error(f"Application error: {e}")
+        # Clean shutdown
+        stop_stream()
         if mqtt_client:
             mqtt_client.loop_stop()
+            mqtt_client.disconnect()
