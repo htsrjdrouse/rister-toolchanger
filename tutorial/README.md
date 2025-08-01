@@ -42,7 +42,7 @@ Each tutorial includes:
 - Manual probing techniques
 - Interpreting mesh data and corrections
 
-#### 3. Camera Tool Focus and Positioning
+#### 3. [Camera Tool Focus and Positioning](03-camera-focus-positioning.md)
 **Video:** `03-camera-focus-positioning.md`
 - Camera tool mounting and alignment
 - Manual focus adjustment techniques
