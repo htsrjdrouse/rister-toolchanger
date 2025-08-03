@@ -50,7 +50,7 @@ Each tutorial includes:
 - Automated focus routines
 - Object detection and positioning
 -->
-#### 4. Linear Actuator Pipette Operations
+#### 4. [Linear Actuator Pipette Operations](04-pipette-operations.md)
 **Video:** `04-pipette-operations.md`
 - Pipette tool setup and calibration
 - Liquid loading and dispensing procedures
