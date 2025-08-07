@@ -1,8 +1,10 @@
-**Tip Management System:**
+# Tip Management System:
+
 - Linear actuator for automated tip loading and removal
 - Mechanical removal tool with overhang design
 - Consistent tip sealing for accurate volume delivery
-- Contamination-free tip disposal### Cleaning System Issues
+- Contamination-free tip disposal
+- Cleaning System Issues
 
 **Symptom:** Ineffective cleaning
 - **Cause:** Insufficient cleaning fluid flow or improper waste removal
