@@ -28,7 +28,7 @@ Advanced userscripts for Mainsail that add comprehensive lab automation capabili
 
 ### Quick Install (Recommended)
 
-1. **Download the installer**: [lab_automation_installer.html](./lab_automation_installer.html)
+1. **Download the installer**: [mainsail_tampermonkey_installer.html](./mainsail_tampermonkey_installer.html)
 2. **Open the HTML file** in Chrome/Brave/Edge
 3. **Install Tampermonkey** from the Chrome Web Store
 4. **Copy and paste scripts** following the guided installation
