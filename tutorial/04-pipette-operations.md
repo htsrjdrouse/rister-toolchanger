@@ -21,7 +21,9 @@ This tutorial covers the linear actuator pipette tool (L0) with your Rister Tool
 
 ## Overview
 
-The Rister linear actuator pipette system provides precise liquid handling capabilities through an integrated fluid management system. The tool combines pressure-controlled dispensing with automated cleaning for reliable, repeatable liquid operations.
+The Rister linear actuator pipette system provides precise liquid handling capabilities through an integrated fluid management system. The tool combines pressure-controlled dispensing with automated cleaning for reliable, repeatable liquid operations and a control interface that works with Mainsail that includes expanded user inteface for controlling fluidics.
+
+[Fluidics control](images/tampermonkey_fluidics_control_expanded.png)
 
 ## System Architecture
 
@@ -30,6 +32,7 @@ The Rister linear actuator pipette system provides precise liquid handling capab
 
 ### Fluid Management System
 
+![Fluidic Path Diagram](images/fluidic_path.png)
 The pipette system maintains precise liquid control through several integrated components:
 
 **Pressure Compensation Reservoir:**
