@@ -1,0 +1,845 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Lab Automation Scripts - Easy Install</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+            color: #333;
+        }
+
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 16px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            overflow: hidden;
+        }
+
+        .header {
+            background: linear-gradient(135deg, #4CAF50 0%, #45a049 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+
+        .header h1 {
+            font-size: 2.5em;
+            margin-bottom: 10px;
+        }
+
+        .content {
+            padding: 40px;
+        }
+
+        .step {
+            background: #f8f9fa;
+            border-left: 4px solid #4CAF50;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 0 8px 8px 0;
+        }
+
+        .step h3 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+
+        .step-number {
+            background: #4CAF50;
+            color: white;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+        }
+
+        .button {
+            display: inline-block;
+            background: #4CAF50;
+            color: white;
+            padding: 12px 24px;
+            text-decoration: none;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 500;
+            transition: all 0.3s ease;
+            margin: 10px 10px 10px 0;
+        }
+
+        .button:hover {
+            background: #45a049;
+            transform: translateY(-2px);
+        }
+
+        .button.secondary {
+            background: #2196F3;
+        }
+
+        .button.secondary:hover {
+            background: #1976D2;
+        }
+
+        .script-box {
+            background: #f5f5f5;
+            border: 2px solid #4CAF50;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .script-box h4 {
+            color: #2e7d32;
+            margin-bottom: 15px;
+            font-size: 1.3em;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 20px;
+            margin: 20px 0;
+        }
+
+        .instructions h4 {
+            color: #856404;
+            margin-bottom: 10px;
+        }
+
+        .code-area {
+            background: #2d3748;
+            color: #e2e8f0;
+            padding: 15px;
+            border-radius: 8px;
+            font-family: 'Consolas', 'Monaco', monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            margin: 10px 0;
+            position: relative;
+        }
+
+        .copy-button {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 5px 10px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .copy-button:hover {
+            background: #45a049;
+        }
+
+        .status {
+            padding: 15px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: 500;
+        }
+
+        .status.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+
+        .feature-list {
+            list-style: none;
+            padding-left: 20px;
+        }
+
+        .feature-list li {
+            margin: 8px 0;
+            position: relative;
+        }
+
+        .feature-list li::before {
+            content: "✓";
+            color: #4CAF50;
+            font-weight: bold;
+            position: absolute;
+            left: -20px;
+        }
+
+        .tabs {
+            display: flex;
+            margin-bottom: 20px;
+            border-bottom: 2px solid #e0e0e0;
+        }
+
+        .tab {
+            background: #f5f5f5;
+            border: none;
+            padding: 15px 30px;
+            cursor: pointer;
+            font-size: 16px;
+            border-radius: 8px 8px 0 0;
+            margin-right: 5px;
+            transition: all 0.3s ease;
+        }
+
+        .tab.active {
+            background: #4CAF50;
+            color: white;
+        }
+
+        .tab-content {
+            display: none;
+        }
+
+        .tab-content.active {
+            display: block;
+        }
+
+        @media (max-width: 600px) {
+            .content {
+                padding: 20px;
+            }
+            
+            .tabs {
+                flex-direction: column;
+            }
+            
+            .tab {
+                margin-bottom: 5px;
+                margin-right: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🧪 Lab Automation Scripts</h1>
+            <p>Easy Copy-Paste Installation for Mainsail</p>
+        </div>
+
+        <div class="content">
+            <div class="status success">
+                ✅ <span id="browser-name">Browser</span> detected - Ready to install Tampermonkey and scripts!
+            </div>
+
+            <!-- Step 1: Install Tampermonkey -->
+            <div class="step">
+                <h3>
+                    <span class="step-number">1</span>
+                    Install Tampermonkey Extension
+                </h3>
+                <p><strong>First, install Tampermonkey from the Chrome Web Store:</strong></p>
+                <a href="https://chrome.google.com/webstore/detail/tampermonkey/dhdgffkkebhmkfjojejmpbldmpobfkfo" 
+                   class="button" target="_blank">
+                    🔧 Install Tampermonkey Extension
+                </a>
+                <div class="instructions">
+                    <h4>After installing Tampermonkey:</h4>
+                    <p>1. You'll see the Tampermonkey icon in your browser toolbar<br>
+                    2. Return to this page to install the scripts below</p>
+                </div>
+            </div>
+
+            <!-- Step 2: Install Scripts -->
+            <div class="step">
+                <h3>
+                    <span class="step-number">2</span>
+                    Install Lab Automation Scripts
+                </h3>
+                
+                <div class="tabs">
+                    <button class="tab active" onclick="showTab('fluidics')">📱 Fluidics Control</button>
+                    <button class="tab" onclick="showTab('objects')">⬜ Object Editor</button>
+                </div>
+
+                <!-- Fluidics Script Tab -->
+                <div id="fluidics" class="tab-content active">
+                    <div class="script-box">
+                        <h4>📱 Mainsail Fluidics Control Script</h4>
+                        <ul class="feature-list">
+                            <li>Real-time fluidics system control</li>
+                            <li>Timed wash sequences</li>
+                            <li>Valve and pump controls</li>
+                            <li>Draggable floating control panel</li>
+                        </ul>
+                        
+                        <div class="instructions">
+                            <h4>📋 Installation Steps:</h4>
+                            <p><strong>1.</strong> Click "Copy Script" below<br>
+                            <strong>2.</strong> Click the Tampermonkey icon in your browser<br>
+                            <strong>3.</strong> Click "Dashboard"<br>
+                            <strong>4.</strong> Click the "+" tab (Create new script)<br>
+                            <strong>5.</strong> Select all existing code (Ctrl+A) and delete it<br>
+                            <strong>6.</strong> Paste the copied script (Ctrl+V)<br>
+                            <strong>7.</strong> Save the script (Ctrl+S)</p>
+                        </div>
+                        
+                        <button class="button" onclick="copyFluidicsScript()">📋 Copy Fluidics Script</button>
+                        <div id="fluidics-status"></div>
+                        
+                        <div class="code-area" id="fluidics-code" style="display: none;">
+                            <button class="copy-button" onclick="copyFluidicsScript()">Copy</button>
+                            <pre id="fluidics-script-content"></pre>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Objects Script Tab -->
+                <div id="objects" class="tab-content">
+                    <div class="script-box">
+                        <h4>⬜ Object Editor & G-code Builder Script</h4>
+                        <ul class="feature-list">
+                            <li>Visual object positioning editor</li>
+                            <li>Multi-well plate array support</li>
+                            <li>G-code sequence builder</li>
+                            <li>Macro combination and management</li>
+                        </ul>
+                        
+                        <div class="instructions">
+                            <h4>📋 Installation Steps:</h4>
+                            <p><strong>1.</strong> Click "Copy Script" below<br>
+                            <strong>2.</strong> Click the Tampermonkey icon in your browser<br>
+                            <strong>3.</strong> Click "Dashboard"<br>
+                            <strong>4.</strong> Click the "+" tab (Create new script)<br>
+                            <strong>5.</strong> Select all existing code (Ctrl+A) and delete it<br>
+                            <strong>6.</strong> Paste the copied script (Ctrl+V)<br>
+                            <strong>7.</strong> Save the script (Ctrl+S)</p>
+                        </div>
+                        
+                        <button class="button" onclick="copyObjectsScript()">📋 Copy Object Editor Script</button>
+                        <div id="objects-status"></div>
+                        
+                        <div class="code-area" id="objects-code" style="display: none;">
+                            <button class="copy-button" onclick="copyObjectsScript()">Copy</button>
+                            <pre id="objects-script-content"></pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Step 3: Usage -->
+            <div class="step">
+                <h3>
+                    <span class="step-number">3</span>
+                    Usage & Testing
+                </h3>
+                <p><strong>After installing both scripts:</strong></p>
+                <ul class="feature-list">
+                    <li>Navigate to your Mainsail interface</li>
+                    <li>The Fluidics Control panel will appear on the left</li>
+                    <li>The Object Editor will appear on the right</li>
+                    <li>Both panels are draggable and collapsible</li>
+                </ul>
+                
+                <div class="instructions">
+                    <h4>⚠️ Important: Update URLs</h4>
+                    <p>If the scripts don't appear, you may need to edit the URL patterns in Tampermonkey Dashboard to match your Mainsail URL.</p>
+                </div>
+                
+                <a href="http://192.168.1.89:81" class="button" target="_blank">🖥️ Test on Mainsail</a>
+                <a href="http://mainsailos.local" class="button secondary" target="_blank">🖥️ Test on Local Mainsail</a>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Detect browser
+        function detectBrowser() {
+            const userAgent = navigator.userAgent;
+            let browserName = 'Modern Browser';
+            
+            if (userAgent.includes('Chrome') && !userAgent.includes('Edg')) {
+                browserName = 'Google Chrome';
+            } else if (userAgent.includes('Edg')) {
+                browserName = 'Microsoft Edge';
+            } else if (userAgent.includes('Firefox')) {
+                browserName = 'Firefox';
+            }
+            
+            document.getElementById('browser-name').textContent = browserName;
+        }
+
+        // Tab switching
+        function showTab(tabName) {
+            // Hide all tabs
+            document.querySelectorAll('.tab-content').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            document.querySelectorAll('.tab').forEach(tab => {
+                tab.classList.remove('active');
+            });
+            
+            // Show selected tab
+            document.getElementById(tabName).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // Script content
+        const FLUIDICS_SCRIPT = `// ==UserScript==
+// @name         Mainsail Fluidics Control
+// @namespace    http://tampermonkey.net/
+// @version      1.0
+// @description  Add fluidics control panel to Mainsail
+// @author       Rister
+// @match        http://192.168.1.89:81/*
+// @match        http://mainsailos.local/*
+// @match        http://your-printer-ip/*
+// @grant        none
+// ==/UserScript==
+
+(function() {
+    'use strict';
+
+    // Wait for page to load
+    function waitForElement(selector) {
+        return new Promise(resolve => {
+            if (document.querySelector(selector)) {
+                return resolve(document.querySelector(selector));
+            }
+
+            const observer = new MutationObserver(mutations => {
+                if (document.querySelector(selector)) {
+                    observer.disconnect();
+                    resolve(document.querySelector(selector));
+                }
+            });
+
+            observer.observe(document.body, {
+                childList: true,
+                subtree: true
+            });
+        });
+    }
+
+    // Send G-code command to Klipper
+    function sendGcode(command) {
+        console.log('Attempting to send command:', command);
+
+        // Method 1: Try to access Mainsail's Vue instance and socket
+        if (window.$nuxt && window.$nuxt.$socket) {
+            console.log('Using $nuxt.$socket');
+            window.$nuxt.$socket.emit('printer.gcode.script', { script: command });
+            return;
+        }
+
+        // Method 2: Try to access Vue through the app
+        if (window.__NUXT__ && window.$nuxt) {
+            console.log('Using $nuxt direct access');
+            window.$nuxt.$socket.emit('printer.gcode.script', { script: command });
+            return;
+        }
+
+        // Method 3: Try moonraker WebSocket directly
+        const wsUrl = \`ws://\${window.location.hostname}:7125/websocket\`;
+        try {
+            const ws = new WebSocket(wsUrl);
+            ws.onopen = function() {
+                console.log('WebSocket connection opened');
+                const message = {
+                    jsonrpc: "2.0",
+                    method: "printer.gcode.script",
+                    params: { script: command },
+                    id: Date.now()
+                };
+                ws.send(JSON.stringify(message));
+                setTimeout(() => ws.close(), 1000);
+            };
+            ws.onerror = function(error) {
+                console.log('WebSocket error:', error);
+                fallbackSendCommand(command);
+            };
+            return;
+        } catch (error) {
+            console.log('WebSocket creation failed:', error);
+        }
+
+        // Method 4: Try to simulate console input
+        fallbackSendCommand(command);
+    }
+
+    // Fallback method - simulate typing in console
+    function fallbackSendCommand(command) {
+        console.log('Using fallback method for command:', command);
+
+        // Try to find the console input field
+        const consoleSelectors = [
+            'input[placeholder*="ommand" i]',
+            'input[placeholder*="console" i]',
+            '.console-input input',
+            '.v-text-field input[type="text"]',
+            'input[type="text"]'
+        ];
+
+        let consoleInput = null;
+        for (const selector of consoleSelectors) {
+            consoleInput = document.querySelector(selector);
+            if (consoleInput) {
+                console.log('Found console input with selector:', selector);
+                break;
+            }
+        }
+
+        if (consoleInput) {
+            // Focus the input
+            consoleInput.focus();
+
+            // Clear any existing content
+            consoleInput.value = '';
+
+            // Set the command
+            consoleInput.value = command;
+
+            // Trigger input events
+            consoleInput.dispatchEvent(new Event('input', { bubbles: true }));
+            consoleInput.dispatchEvent(new Event('change', { bubbles: true }));
+
+            // Try multiple ways to submit
+            setTimeout(() => {
+                // Method 1: Enter key
+                consoleInput.dispatchEvent(new KeyboardEvent('keydown', {
+                    key: 'Enter',
+                    code: 'Enter',
+                    keyCode: 13,
+                    bubbles: true
+                }));
+
+                // Method 2: Look for submit button
+                const submitButton = document.querySelector('button[type="submit"], .console-send-btn, button:contains("Send")');
+                if (submitButton) {
+                    submitButton.click();
+                }
+            }, 100);
+
+            showStatus(\`Command sent via console: \${command}\`);
+        } else {
+            // Last resort - show manual instruction
+            showStatus(\`Please run manually: \${command}\`, 'error');
+
+            // Copy to clipboard if possible
+            if (navigator.clipboard) {
+                navigator.clipboard.writeText(command).then(() => {
+                    showStatus(\`Command copied to clipboard: \${command}\`, 'info');
+                });
+            } else {
+                // Alert as final fallback
+                alert(\`Please run this command manually in the console:\\n\\n\${command}\`);
+            }
+        }
+    }
+
+    // Create the control panel
+    function createFluidicsPanel() {
+        const panel = document.createElement('div');
+        panel.id = 'fluidics-control-panel';
+        panel.innerHTML = \`
+            <div id="fluidics-main-panel" style="
+                position: fixed;
+                top: 100px;
+                left: 10px;
+                background: white;
+                border: 1px solid #ccc;
+                border-radius: 8px;
+                padding: 15px;
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+                z-index: 1000;
+                min-width: 300px;
+                font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+                cursor: move;
+            ">
+                <div id="fluidics-header" style="
+                    display: flex;
+                    justify-content: space-between;
+                    align-items: center;
+                    margin-bottom: 15px;
+                    cursor: grab;
+                    user-select: none;
+                ">
+                    <h3 style="margin: 0; color: #333;">🧪 Fluidics Control</h3>
+                    <button id="toggle-fluidics" style="
+                        background: #f0f0f0;
+                        border: none;
+                        border-radius: 4px;
+                        padding: 5px 8px;
+                        cursor: pointer;
+                    ">+</button>
+                </div>
+
+                <div id="fluidics-content" style="display: none;">
+                    <!-- Timed Wash Section -->
+                    <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
+                        <label style="display: block; margin-bottom: 5px; font-weight: bold;">Wash Duration:</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="number" id="wash-duration" value="30" min="1" max="300"
+                                   style="width: 80px; padding: 5px; border: 1px solid #ccc; border-radius: 4px;">
+                            <span>seconds</span>
+                            <button onclick="runTimedWash()" style="
+                                background: #4CAF50;
+                                color: white;
+                                border: none;
+                                padding: 8px 15px;
+                                border-radius: 4px;
+                                cursor: pointer;
+                            ">Start Timed Wash</button>
+                        </div>
+                    </div>
+
+                    <!-- Control Buttons Grid -->
+                    <div id="fluidics-buttons" style="
+                        display: grid;
+                        grid-template-columns: 1fr 1fr;
+                        gap: 8px;
+                    ">
+                        <button onclick="sendFluidicsCommand('FEEDBACK_PCV')" class="fluidics-btn primary">Feedback PCV On</button>
+                        <button onclick="sendFluidicsCommand('MANUAL_PCV')" class="fluidics-btn danger">Manual PCV</button>
+                        <button onclick="sendFluidicsCommand('WASH_ON')" class="fluidics-btn primary">Wash On</button>
+                        <button onclick="sendFluidicsCommand('WASH_OFF')" class="fluidics-btn danger">Wash Off</button>
+                        <button onclick="sendFluidicsCommand('WASTE_ON')" class="fluidics-btn primary">Dry On</button>
+                        <button onclick="sendFluidicsCommand('WASTE_OFF')" class="fluidics-btn danger">Dry Off</button>
+                        <button onclick="sendFluidicsCommand('VALVE_INPUT')" class="fluidics-btn secondary">Valve Input</button>
+                        <button onclick="sendFluidicsCommand('VALVE_OUTPUT')" class="fluidics-btn secondary">Valve Output</button>
+                        <button onclick="sendFluidicsCommand('VALVE_BYPASS')" class="fluidics-btn secondary">Valve Bypass</button>
+                        <button onclick="sendFluidicsCommand('WASTE_POSITION')" class="fluidics-btn secondary">Waste Position</button>
+                        <button onclick="sendFluidicsCommand('EJECT_PIPETTE')" class="fluidics-btn danger">Eject Pipette</button>
+                    </div>
+
+                    <!-- Status Display -->
+                    <div id="fluidics-status" style="
+                        margin-top: 10px;
+                        padding: 8px;
+                        background: #e3f2fd;
+                        border-radius: 4px;
+                        font-size: 12px;
+                        display: none;
+                    "></div>
+                </div>
+
+                <style>
+                    .fluidics-btn {
+                        padding: 8px 12px;
+                        border: none;
+                        border-radius: 4px;
+                        cursor: pointer;
+                        font-size: 12px;
+                        transition: opacity 0.2s;
+                    }
+                    .fluidics-btn:hover {
+                        opacity: 0.8;
+                    }
+                    .fluidics-btn.primary {
+                        background: #4CAF50;
+                        color: white;
+                    }
+                    .fluidics-btn.danger {
+                        background: #f44336;
+                        color: white;
+                    }
+                    .fluidics-btn.secondary {
+                        background: #2196F3;
+                        color: white;
+                    }
+                </style>
+            </div>
+        \`;
+
+        document.body.appendChild(panel);
+
+        // Make panel draggable
+        makeDraggable();
+
+        // Add toggle functionality
+        document.getElementById('toggle-fluidics').onclick = function() {
+            const content = document.getElementById('fluidics-content');
+            const button = this;
+            if (content.style.display === 'none') {
+                content.style.display = 'block';
+                button.textContent = '−';
+            } else {
+                content.style.display = 'none';
+                button.textContent = '+';
+            }
+        };
+    }
+
+    // Make the panel draggable
+    function makeDraggable() {
+        const panel = document.getElementById('fluidics-main-panel');
+        const header = document.getElementById('fluidics-header');
+        let isDragging = false;
+        let currentX;
+        let currentY;
+        let initialX;
+        let initialY;
+        let xOffset = 0;
+        let yOffset = 0;
+
+        // Get initial position
+        const rect = panel.getBoundingClientRect();
+        xOffset = rect.left;
+        yOffset = rect.top;
+
+        header.addEventListener('mousedown', dragStart);
+        document.addEventListener('mousemove', drag);
+        document.addEventListener('mouseup', dragEnd);
+
+        // Touch events for mobile
+        header.addEventListener('touchstart', dragStart);
+        document.addEventListener('touchmove', drag);
+        document.addEventListener('touchend', dragEnd);
+
+        function dragStart(e) {
+            if (e.type === "touchstart") {
+                initialX = e.touches[0].clientX - xOffset;
+                initialY = e.touches[0].clientY - yOffset;
+            } else {
+                initialX = e.clientX - xOffset;
+                initialY = e.clientY - yOffset;
+            }
+
+            if (e.target === header || header.contains(e.target)) {
+                isDragging = true;
+                header.style.cursor = 'grabbing';
+            }
+        }
+
+        function drag(e) {
+            if (isDragging) {
+                e.preventDefault();
+
+                if (e.type === "touchmove") {
+                    currentX = e.touches[0].clientX - initialX;
+                    currentY = e.touches[0].clientY - initialY;
+                } else {
+                    currentX = e.clientX - initialX;
+                    currentY = e.clientY - initialY;
+                }
+
+                xOffset = currentX;
+                yOffset = currentY;
+
+                // Keep panel within viewport
+                const maxX = window.innerWidth - panel.offsetWidth;
+                const maxY = window.innerHeight - panel.offsetHeight;
+
+                xOffset = Math.max(0, Math.min(xOffset, maxX));
+                yOffset = Math.max(0, Math.min(yOffset, maxY));
+
+                panel.style.left = xOffset + "px";
+                panel.style.top = yOffset + "px";
+            }
+        }
+
+        function dragEnd() {
+            initialX = currentX;
+            initialY = currentY;
+            isDragging = false;
+            header.style.cursor = 'grab';
+
+            // Save position to localStorage so it remembers between page loads
+            localStorage.setItem('fluidics-panel-x', xOffset);
+            localStorage.setItem('fluidics-panel-y', yOffset);
+        }
+
+        // Restore saved position
+        const savedX = localStorage.getItem('fluidics-panel-x');
+        const savedY = localStorage.getItem('fluidics-panel-y');
+        if (savedX && savedY) {
+            xOffset = parseInt(savedX);
+            yOffset = parseInt(savedY);
+            panel.style.left = xOffset + "px";
+            panel.style.top = yOffset + "px";
+        }
+    }
+
+    // Global functions for button clicks
+    window.sendFluidicsCommand = function(command) {
+        showStatus(\`Sending: \${command}\`);
+        sendGcode(command);
+    };
+
+    window.runTimedWash = function() {
+        const duration = parseInt(document.getElementById('wash-duration').value);
+        if (duration < 1 || duration > 300) {
+            showStatus('Duration must be between 1-300 seconds', 'error');
+            return;
+        }
+
+        showStatus(\`Starting \${duration}s wash cycle...\`);
+        sendGcode('WASH_ON');
+
+        setTimeout(() => {
+            sendGcode('WASH_OFF');
+            showStatus(\`Wash cycle completed (\${duration}s)\`);
+        }, duration * 1000);
+    };
+
+    function showStatus(message, type = 'info') {
+        const status = document.getElementById('fluidics-status');
+        status.textContent = message;
+        status.style.display = 'block';
+        status.style.background = type === 'error' ? '#ffebee' : '#e3f2fd';
+
+        setTimeout(() => {
+            status.style.display = 'none';
+        }, 3000);
+    }
+
+    // Initialize when page is ready
+    waitForElement('body').then(() => {
+        setTimeout(createFluidicsPanel, 2000); // Wait a bit for Mainsail to fully load
+    });
+
+})();`;
+
+        // Copy functions
+        function copyFluidicsScript() {
+            navigator.clipboard.writeText(FLUIDICS_SCRIPT).then(() => {
+                document.getElementById('fluidics-status').innerHTML = '<div class="status success">✅ Fluidics script copied to clipboard! Now paste it into Tampermonkey.</div>';
+                document.getElementById('fluidics-code').style.display = 'block';
+                document.getElementById('fluidics-script-content').textContent = FLUIDICS_SCRIPT;
+            }).catch(() => {
+                // Fallback for older browsers
+                const textArea = document.createElement('textarea');
+                textArea.value = FLUIDICS_SCRIPT;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                document.getElementById('fluidics-status').innerHTML = '<div class="status success">✅ Fluidics script copied to clipboard!</div>';
+                document.getElementById('fluidics-code').style.display = 'block';
+                document.getElementById('fluidics-script-content').textContent = FLUIDICS_SCRIPT;
+            });
+        }
+
+        function copyObjectsScript() {
+            document.getElementById('objects-status').innerHTML = '<div class="status success">⚠️ Object Editor script is very large. Please copy it manually from your original file or contact support.</div>';
+        }
+
+        // Initialize
+        detectBrowser();
+    </script>
+</body>
+</html>
