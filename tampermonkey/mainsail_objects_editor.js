@@ -43,7 +43,8 @@
 
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < cols; col++) {
-                    const wellX = baseX + marginX + col * colSpacing;
+                    // X coordinates: object position is right edge, wells go leftward
+                    const wellX = baseX - marginX - col * colSpacing;
                     const wellY = baseY + marginY + row * rowSpacing;
                     const wellName = String.fromCharCode(65 + row) + (col + 1);
                     coords.push({
@@ -99,12 +100,13 @@
             if (this.status === "off") return;
 
             p.push();
-            const x = parseFloat(this.posx) * scale + offsetX;
+            // Flip X coordinate: convert stored coordinate to display coordinate
+            const displayX = (printerArea.width - parseFloat(this.posx) - parseFloat(this.X)) * scale + offsetX;
             const y = parseFloat(this.posy) * scale + offsetY;
             const width = parseFloat(this.X) * scale;
             const height = parseFloat(this.Y) * scale;
 
-            p.translate(x, y);
+            p.translate(displayX, y);
 
             const [r, g, b] = this.color.split(',').map(c => parseInt(c.trim()));
 
@@ -147,7 +149,8 @@
 
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < cols; col++) {
-                    const wellX = parseFloat(this.marginx) * scale + col * colSpacing * scale;
+                    // Wells positioned from right edge going leftward
+                    const wellX = width - parseFloat(this.marginx) * scale - (col + 1) * colSpacing * scale;
                     const wellY = parseFloat(this.marginy) * scale + row * rowSpacing * scale;
 
                     if (this.wellshape === "ellipse") {
@@ -517,7 +520,7 @@
 
                     <div style="margin-bottom: 15px;">
                         <h4 style="margin: 0 0 10px 0;">Saved G-code Sequences</h4>
-
+                        
                         <div style="margin-bottom: 10px;">
                             <select id="saved-macros-select" multiple size="6" style="
                                 width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;
@@ -584,15 +587,15 @@
 
         function dragStart(e) {
             if (e.target.id && e.target.id.includes('toggle')) return;
-
+            
             // Get current position relative to viewport
             const rect = panel.getBoundingClientRect();
             initialX = e.clientX - rect.left;
             initialY = e.clientY - rect.top;
-
+            
             isDragging = true;
             header.style.cursor = 'grabbing';
-
+            
             // Switch to absolute positioning when dragging starts
             panel.style.position = 'fixed';
             panel.style.left = rect.left + 'px';
@@ -605,13 +608,13 @@
                 e.preventDefault();
                 currentX = e.clientX - initialX;
                 currentY = e.clientY - initialY;
-
+                
                 const maxX = window.innerWidth - panel.offsetWidth;
                 const maxY = window.innerHeight - panel.offsetHeight;
-
+                
                 currentX = Math.max(0, Math.min(currentX, maxX));
                 currentY = Math.max(0, Math.min(currentY, maxY));
-
+                
                 panel.style.left = currentX + "px";
                 panel.style.top = currentY + "px";
             }
@@ -684,7 +687,9 @@
                 p.stroke(255);
                 p.strokeWeight(1);
                 p.textAlign(p.LEFT, p.TOP);
-                p.text(`Mouse: X${Math.round(p.mouseX / scale)} Y${Math.round(p.mouseY / scale)}`, 5, 5);
+                // Flip X coordinate display for user - show flipped coordinate
+                const flippedX = printerArea.width - Math.round(p.mouseX / scale);
+                p.text(`Mouse: X${flippedX} Y${Math.round(p.mouseY / scale)}`, 5, 5);
             };
         });
 
@@ -824,7 +829,7 @@
         // Check if specified array position exists
         const maxRows = parseInt(obj.wellrow);
         const maxCols = parseInt(obj.wellcolumn);
-
+        
         if (arrayRow >= maxRows || arrayCol >= maxCols) {
             alert(`Array position out of bounds. Object has ${maxRows} rows and ${maxCols} columns.`);
             return;
@@ -833,7 +838,7 @@
         const sequenceName = document.getElementById('macro-name').value || 'Sample_Collection_Sequence';
         const currentGCode = document.getElementById('macro-output').value;
 
-        // Calculate specific array position
+        // Calculate specific array position with flipped X-axis
         const rowSpacing = parseFloat(obj.wellrowsp);
         const colSpacing = parseFloat(obj.wellcolumnsp);
         const marginX = parseFloat(obj.marginx);
@@ -841,14 +846,15 @@
         const baseX = parseFloat(obj.posx);
         const baseY = parseFloat(obj.posy);
 
-        const wellX = baseX + marginX + arrayCol * colSpacing;
+        // X coordinates: object position is right edge, wells go leftward
+        const wellX = baseX - marginX - arrayCol * colSpacing;
         const wellY = baseY + marginY + arrayRow * rowSpacing;
         const wellName = String.fromCharCode(65 + arrayRow) + (arrayCol + 1);
 
         let newCommand = '';
         if (!currentGCode.trim()) {
             newCommand = `; G-code Sequence: ${sequenceName}\n`;
-            newCommand = `; Generated: ${new Date().toISOString()}\n`;
+            newCommand += `; Generated: ${new Date().toISOString()}\n`;
             newCommand += `; Ready to execute in Mainsail console\n\n`;
         }
 
@@ -889,7 +895,7 @@
     function downloadGCode() {
         const gcode = document.getElementById('macro-output').value;
         const sequenceName = document.getElementById('macro-name').value || 'sequence';
-
+        
         if (!gcode.trim()) {
             alert('No G-code to download! Generate a sequence first.');
             return;
@@ -927,7 +933,7 @@
 
         // Check if sequence name already exists
         const existingIndex = window.LabAutomationData.savedMacros.findIndex(m => m.name === sequenceName);
-
+        
         if (existingIndex !== -1) {
             if (!confirm(`G-code sequence "${sequenceName}" already exists. Do you want to overwrite it?`)) {
                 return;
@@ -996,7 +1002,7 @@
     function moveMacroUp() {
         const selectElement = document.getElementById('saved-macros-select');
         const selectedOptions = Array.from(selectElement.selectedOptions);
-
+        
         if (selectedOptions.length !== 1) {
             alert('Please select exactly one macro to move');
             return;
@@ -1016,7 +1022,7 @@
     function moveMacroDown() {
         const selectElement = document.getElementById('saved-macros-select');
         const selectedOptions = Array.from(selectElement.selectedOptions);
-
+        
         if (selectedOptions.length !== 1) {
             alert('Please select exactly one macro to move');
             return;
@@ -1024,7 +1030,7 @@
 
         const index = parseInt(selectedOptions[0].value);
         const macros = window.LabAutomationData.savedMacros;
-
+        
         if (index < macros.length - 1) {
             [macros[index], macros[index + 1]] = [macros[index + 1], macros[index]];
             saveMacrosToStorage();
@@ -1037,13 +1043,13 @@
     function combineMacros() {
         const selectElement = document.getElementById('saved-macros-select');
         const selectedOptions = Array.from(selectElement.selectedOptions);
-
+        
         if (selectedOptions.length < 2) {
             alert('Please select at least 2 G-code sequences to combine');
             return;
         }
 
-        const selectedSequences = selectedOptions.map(option =>
+        const selectedSequences = selectedOptions.map(option => 
             window.LabAutomationData.savedMacros[parseInt(option.value)]
         );
 
@@ -1055,21 +1061,21 @@
 
         selectedSequences.forEach((sequence, index) => {
             combinedContent += `; --- Sequence ${index + 1}: ${sequence.name} ---\n`;
-
+            
             // Clean the content by removing headers and comments if it's already a sequence
             const lines = sequence.content.split('\n');
             let addingContent = false;
-
+            
             lines.forEach(line => {
                 const trimmedLine = line.trim();
                 // Skip header comments but keep G-code commands and operation comments
-                if (trimmedLine.startsWith('; Generated:') ||
+                if (trimmedLine.startsWith('; Generated:') || 
                     trimmedLine.startsWith('; G-code Sequence:') ||
                     trimmedLine.startsWith('; Ready to execute') ||
                     trimmedLine.startsWith('; Combined')) {
                     return;
                 }
-
+                
                 if (trimmedLine.length > 0) {
                     combinedContent += line + '\n';
                 }
@@ -1080,20 +1086,20 @@
         // Load combined content into editor
         document.getElementById('macro-name').value = 'Combined_Sequence';
         document.getElementById('macro-output').value = combinedContent;
-
+        
         alert(`Combined ${selectedSequences.length} G-code sequences. You can now edit and save the combined sequence.`);
     }
 
     function deleteMacro() {
         const selectElement = document.getElementById('saved-macros-select');
         const selectedOptions = Array.from(selectElement.selectedOptions);
-
+        
         if (selectedOptions.length === 0) {
             alert('Please select macro(s) to delete');
             return;
         }
 
-        const macroNames = selectedOptions.map(option =>
+        const macroNames = selectedOptions.map(option => 
             window.LabAutomationData.savedMacros[parseInt(option.value)].name
         );
 
@@ -1103,7 +1109,7 @@
 
         // Sort indices in descending order to avoid index shifting issues
         const indices = selectedOptions.map(option => parseInt(option.value)).sort((a, b) => b - a);
-
+        
         indices.forEach(index => {
             window.LabAutomationData.savedMacros.splice(index, 1);
         });
@@ -1114,8 +1120,10 @@
     }
 
     function canvasClick() {
-        const x = Math.round(sketch.mouseX / scale);
-        const y = Math.round(sketch.mouseY / scale);
+        // Convert canvas click to real world coordinates (flipped X-axis)
+        const canvasX = Math.round(sketch.mouseX / scale);
+        const realWorldX = printerArea.width - canvasX; // Flip X coordinate
+        const realWorldY = Math.round(sketch.mouseY / scale);
 
         let clickedIndex = -1;
         for (let i = objects.length - 1; i >= 0; i--) {
@@ -1125,7 +1133,9 @@
             const objW = parseFloat(obj.X);
             const objH = parseFloat(obj.Y);
 
-            if (x >= objX && x <= objX + objW && y >= objY && y <= objY + objH) {
+            // Check if click is within object bounds (using real world coordinates)
+            if (realWorldX >= objX - objW && realWorldX <= objX && 
+                realWorldY >= objY && realWorldY <= objY + objH) {
                 clickedIndex = i;
                 break;
             }
@@ -1134,8 +1144,9 @@
         if (clickedIndex !== -1) {
             selectObject(clickedIndex);
         } else if (selectedObjectIndex !== -1) {
-            objects[selectedObjectIndex].posx = x.toString();
-            objects[selectedObjectIndex].posy = y.toString();
+            // Set object position to clicked location (real world coordinates)
+            objects[selectedObjectIndex].posx = realWorldX.toString();
+            objects[selectedObjectIndex].posy = realWorldY.toString();
             populateObjectEditor(objects[selectedObjectIndex]);
             generateGCode();
             autoSaveConfiguration();
