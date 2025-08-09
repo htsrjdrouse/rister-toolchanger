@@ -3,7 +3,7 @@
 // @namespace    http://tampermonkey.net/
 // @version      2.1
 // @description  Object positioning editor and macro generator for lab automation with Klipper/Mainsail
-// @author       You
+// @author       Rister
 // @match        http://192.168.1.89:81/*
 // @match        http://192.168.1.89/*
 // @match        http://localhost:*/*
@@ -224,10 +224,28 @@
                 </div>
 
                 <div id="editor-content" style="display: none;">
+                    <div style="margin-bottom: 15px; padding: 10px; background: #fff3e0; border-radius: 4px; border: 1px solid #ff9800;">
+                        <h4 style="margin: 0 0 10px 0; color: #e65100;">Printer Area Settings</h4>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                            <div>
+                                <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 12px;">Width (mm):</label>
+                                <input type="number" id="printer-area-width" step="1" min="100" value="${printerArea.width}">
+                            </div>
+                            <div>
+                                <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 12px;">Height (mm):</label>
+                                <input type="number" id="printer-area-height" step="1" min="100" value="${printerArea.height}">
+                            </div>
+                        </div>
+                        <button id="btn-update-printer-area" style="
+                            background: #ff9800; color: white; border: none; padding: 6px 12px;
+                            border-radius: 4px; cursor: pointer; width: 100%; margin-top: 10px;
+                        ">Update Printer Area</button>
+                    </div>
+
                     <div style="margin-bottom: 15px;">
-                        <h4 style="margin: 0 0 10px 0;">Printer Area (${printerArea.width}x${printerArea.height}mm)</h4>
+                        <h4 style="margin: 0 0 10px 0;">Printer Area (<span id="printer-area-display">${printerArea.width}x${printerArea.height}</span>mm)</h4>
                         <div id="p5-canvas-container" style="border: 2px solid #333; border-radius: 4px;"></div>
-                        <div style="font-size: 10px; color: #666; margin-top: 5px;">Click to position objects</div>
+                        <div style="font-size: 10px; color: #666; margin-top: 5px;">Visual representation only - use position fields below to move objects</div>
                     </div>
 
                     <div style="display: flex; gap: 5px; margin-bottom: 15px;">
@@ -520,7 +538,7 @@
 
                     <div style="margin-bottom: 15px;">
                         <h4 style="margin: 0 0 10px 0;">Saved G-code Sequences</h4>
-                        
+
                         <div style="margin-bottom: 10px;">
                             <select id="saved-macros-select" multiple size="6" style="
                                 width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 4px;
@@ -587,15 +605,15 @@
 
         function dragStart(e) {
             if (e.target.id && e.target.id.includes('toggle')) return;
-            
+
             // Get current position relative to viewport
             const rect = panel.getBoundingClientRect();
             initialX = e.clientX - rect.left;
             initialY = e.clientY - rect.top;
-            
+
             isDragging = true;
             header.style.cursor = 'grabbing';
-            
+
             // Switch to absolute positioning when dragging starts
             panel.style.position = 'fixed';
             panel.style.left = rect.left + 'px';
@@ -608,13 +626,13 @@
                 e.preventDefault();
                 currentX = e.clientX - initialX;
                 currentY = e.clientY - initialY;
-                
+
                 const maxX = window.innerWidth - panel.offsetWidth;
                 const maxY = window.innerHeight - panel.offsetHeight;
-                
+
                 currentX = Math.max(0, Math.min(currentX, maxX));
                 currentY = Math.max(0, Math.min(currentY, maxY));
-                
+
                 panel.style.left = currentX + "px";
                 panel.style.top = currentY + "px";
             }
@@ -646,6 +664,7 @@
         document.getElementById('btn-cancel-edit').addEventListener('click', cancelObjectEdit);
         document.getElementById('btn-export-config').addEventListener('click', exportConfiguration);
         document.getElementById('btn-load-config').addEventListener('click', loadConfiguration);
+        document.getElementById('btn-update-printer-area').addEventListener('click', updatePrinterArea);
 
         // Add color picker event listener
         document.getElementById('obj-color-picker').addEventListener('change', function(e) {
@@ -663,7 +682,7 @@
                 scale = 300 / printerArea.height;
                 offsetX = 0;
                 offsetY = 0;
-                canvas.mousePressed(canvasClick);
+                // Removed canvas.mousePressed(canvasClick); to disable click functionality
             };
 
             p.draw = function() {
@@ -696,6 +715,72 @@
         updateObjectList();
         generateGCode();
         setTimeout(autoLoadConfiguration, 500);
+    }
+
+    function updatePrinterArea() {
+        const newWidth = parseFloat(document.getElementById('printer-area-width').value);
+        const newHeight = parseFloat(document.getElementById('printer-area-height').value);
+
+        if (isNaN(newWidth) || isNaN(newHeight) || newWidth < 100 || newHeight < 100) {
+            alert('Please enter valid dimensions (minimum 100mm for both width and height)');
+            return;
+        }
+
+        printerArea.width = newWidth;
+        printerArea.height = newHeight;
+
+        // Update the global data
+        window.LabAutomationData.printerArea = printerArea;
+
+        // Update the display title
+        const displayElement = document.getElementById('printer-area-display');
+        if (displayElement) {
+            displayElement.textContent = `${printerArea.width}x${printerArea.height}`;
+        }
+
+        // Recreate the canvas with new dimensions
+        if (sketch) {
+            sketch.remove();
+        }
+
+        sketch = new p5(function(p) {
+            p.setup = function() {
+                const canvas = p.createCanvas(380, 300);
+                canvas.parent('p5-canvas-container');
+                scale = 300 / printerArea.height;
+                offsetX = 0;
+                offsetY = 0;
+            };
+
+            p.draw = function() {
+                p.background(245);
+                p.stroke(0);
+                p.fill(255);
+                p.rect(offsetX, offsetY, printerArea.width * scale, printerArea.height * scale);
+
+                p.stroke(220);
+                p.strokeWeight(0.5);
+                for(let i = 0; i <= printerArea.width; i += 20) {
+                    p.line(i * scale + offsetX, offsetY, i * scale + offsetX, printerArea.height * scale + offsetY);
+                }
+                for(let i = 0; i <= printerArea.height; i += 20) {
+                    p.line(offsetX, i * scale + offsetY, printerArea.width * scale + offsetX, i * scale + offsetY);
+                }
+
+                objects.forEach(obj => obj.draw(p));
+
+                p.fill(0);
+                p.stroke(255);
+                p.strokeWeight(1);
+                p.textAlign(p.LEFT, p.TOP);
+                const flippedX = printerArea.width - Math.round(p.mouseX / scale);
+                p.text(`Mouse: X${flippedX} Y${Math.round(p.mouseY / scale)}`, 5, 5);
+            };
+        });
+
+        generateGCode();
+        autoSaveConfiguration();
+        alert(`Printer area updated to ${newWidth}x${newHeight}mm`);
     }
 
     function initializeMacroEditor() {
@@ -805,72 +890,110 @@
         document.getElementById('macro-output').value = currentGCode + newCommand;
     }
 
-    function addPositionToArray() {
-        const selectedObjectName = document.getElementById('macro-object-select').value;
-        const arrayRow = parseInt(document.getElementById('array-row').value) - 1; // Convert to 0-based
-        const arrayCol = parseInt(document.getElementById('array-column').value) - 1; // Convert to 0-based
+// Fixed addPositionToArray function
+function addPositionToArray() {
+    const selectedObjectName = document.getElementById('macro-object-select').value;
+    const arrayRow = parseInt(document.getElementById('array-row').value) - 1; // Convert to 0-based
+    const arrayCol = parseInt(document.getElementById('array-column').value) - 1; // Convert to 0-based
 
-        if (!selectedObjectName) {
-            alert('Please select an object from the dropdown first');
-            return;
-        }
-
-        if (isNaN(arrayRow) || isNaN(arrayCol) || arrayRow < 0 || arrayCol < 0) {
-            alert('Please enter valid row and column numbers (starting from 1)');
-            return;
-        }
-
-        const obj = window.LabAutomationData.getObjectByName(selectedObjectName);
-        if (!obj) {
-            alert('Object not found');
-            return;
-        }
-
-        // Check if specified array position exists
-        const maxRows = parseInt(obj.wellrow);
-        const maxCols = parseInt(obj.wellcolumn);
-        
-        if (arrayRow >= maxRows || arrayCol >= maxCols) {
-            alert(`Array position out of bounds. Object has ${maxRows} rows and ${maxCols} columns.`);
-            return;
-        }
-
-        const sequenceName = document.getElementById('macro-name').value || 'Sample_Collection_Sequence';
-        const currentGCode = document.getElementById('macro-output').value;
-
-        // Calculate specific array position with flipped X-axis
-        const rowSpacing = parseFloat(obj.wellrowsp);
-        const colSpacing = parseFloat(obj.wellcolumnsp);
-        const marginX = parseFloat(obj.marginx);
-        const marginY = parseFloat(obj.marginy);
-        const baseX = parseFloat(obj.posx);
-        const baseY = parseFloat(obj.posy);
-
-        // X coordinates: object position is right edge, wells go leftward
-        const wellX = baseX - marginX - arrayCol * colSpacing;
-        const wellY = baseY + marginY + arrayRow * rowSpacing;
-        const wellName = String.fromCharCode(65 + arrayRow) + (arrayCol + 1);
-
-        let newCommand = '';
-        if (!currentGCode.trim()) {
-            newCommand = `; G-code Sequence: ${sequenceName}\n`;
-            newCommand += `; Generated: ${new Date().toISOString()}\n`;
-            newCommand += `; Ready to execute in Mainsail console\n\n`;
-        }
-
-        newCommand += `; Move to ${obj.name} well ${wellName}\n`;
-        newCommand += `G90  ; Absolute positioning\n`;
-        newCommand += `G1 X${wellX.toFixed(2)} Y${wellY.toFixed(2)} F3000  ; Move to well position\n`;
-
-        if (obj.ztrav !== "0") {
-            newCommand += `G1 Z${obj.ztrav} F1500  ; Move to Z height\n`;
-        }
-
-        newCommand += `G4 P500  ; Pause 500ms for stabilization\n`;
-        newCommand += `\n`;
-
-        document.getElementById('macro-output').value = currentGCode + newCommand;
+    if (!selectedObjectName) {
+        alert('Please select an object from the dropdown first');
+        return;
     }
+
+    if (isNaN(arrayRow) || isNaN(arrayCol) || arrayRow < 0 || arrayCol < 0) {
+        alert('Please enter valid row and column numbers (starting from 1)');
+        return;
+    }
+
+    const obj = window.LabAutomationData.getObjectByName(selectedObjectName);
+    if (!obj) {
+        alert('Object not found');
+        return;
+    }
+
+    // Check if specified array position exists
+    const maxRows = parseInt(obj.wellrow);
+    const maxCols = parseInt(obj.wellcolumn);
+
+    if (arrayRow >= maxRows || arrayCol >= maxCols) {
+        alert(`Array position out of bounds. Object has ${maxRows} rows and ${maxCols} columns.`);
+        return;
+    }
+
+    const sequenceName = document.getElementById('macro-name').value || 'Sample_Collection_Sequence';
+    const currentGCode = document.getElementById('macro-output').value;
+
+    // Calculate specific array position - FIXED CALCULATION
+    const rowSpacing = parseFloat(obj.wellrowsp);
+    const colSpacing = parseFloat(obj.wellcolumnsp);
+    const marginX = parseFloat(obj.marginx);
+    const marginY = parseFloat(obj.marginy);
+    const baseX = parseFloat(obj.posx);
+    const baseY = parseFloat(obj.posy);
+
+    // CORRECTED: X coordinates should ADD margin and column offset
+    // The object position (posx) is the reference point, wells go outward from there
+    const wellX = baseX + marginX + arrayCol * colSpacing;
+    const wellY = baseY + marginY + arrayRow * rowSpacing;
+    const wellName = String.fromCharCode(65 + arrayRow) + (arrayCol + 1);
+
+    let newCommand = '';
+    if (!currentGCode.trim()) {
+        newCommand = `; G-code Sequence: ${sequenceName}\n`;
+        newCommand += `; Generated: ${new Date().toISOString()}\n`;
+        newCommand += `; Ready to execute in Mainsail console\n\n`;
+    }
+
+    newCommand += `; Move to ${obj.name} well ${wellName}\n`;
+    newCommand += `G90  ; Absolute positioning\n`;
+    newCommand += `G1 X${wellX.toFixed(2)} Y${wellY.toFixed(2)} F3000  ; Move to well position\n`;
+
+    if (obj.ztrav !== "0") {
+        newCommand += `G1 Z${obj.ztrav} F1500  ; Move to Z height\n`;
+    }
+
+    newCommand += `G4 P500  ; Pause 500ms for stabilization\n`;
+    newCommand += `\n`;
+
+    document.getElementById('macro-output').value = currentGCode + newCommand;
+}
+
+// Also need to fix the getWellCoordinates function in the global data
+window.LabAutomationData.getWellCoordinates = function(objectName) {
+    const obj = this.getObjectByName(objectName);
+    if (!obj) return [];
+
+    const coords = [];
+    const rows = parseInt(obj.wellrow);
+    const cols = parseInt(obj.wellcolumn);
+    const rowSpacing = parseFloat(obj.wellrowsp);
+    const colSpacing = parseFloat(obj.wellcolumnsp);
+    const marginX = parseFloat(obj.marginx);
+    const marginY = parseFloat(obj.marginy);
+    const baseX = parseFloat(obj.posx);
+    const baseY = parseFloat(obj.posy);
+
+    for (let row = 0; row < rows; row++) {
+        for (let col = 0; col < cols; col++) {
+            // CORRECTED: X coordinates should ADD margin and column offset
+            const wellX = baseX + marginX + col * colSpacing;
+            const wellY = baseY + marginY + row * rowSpacing;
+            const wellName = String.fromCharCode(65 + row) + (col + 1);
+            coords.push({
+                name: wellName,
+                x: wellX,
+                y: wellY,
+                row: row,
+                col: col
+            });
+        }
+    }
+    return coords;
+};
+
+
+
 
     function copyGCode() {
         const gcode = document.getElementById('macro-output').value;
@@ -895,7 +1018,7 @@
     function downloadGCode() {
         const gcode = document.getElementById('macro-output').value;
         const sequenceName = document.getElementById('macro-name').value || 'sequence';
-        
+
         if (!gcode.trim()) {
             alert('No G-code to download! Generate a sequence first.');
             return;
@@ -933,7 +1056,7 @@
 
         // Check if sequence name already exists
         const existingIndex = window.LabAutomationData.savedMacros.findIndex(m => m.name === sequenceName);
-        
+
         if (existingIndex !== -1) {
             if (!confirm(`G-code sequence "${sequenceName}" already exists. Do you want to overwrite it?`)) {
                 return;
@@ -1002,7 +1125,7 @@
     function moveMacroUp() {
         const selectElement = document.getElementById('saved-macros-select');
         const selectedOptions = Array.from(selectElement.selectedOptions);
-        
+
         if (selectedOptions.length !== 1) {
             alert('Please select exactly one macro to move');
             return;
@@ -1022,7 +1145,7 @@
     function moveMacroDown() {
         const selectElement = document.getElementById('saved-macros-select');
         const selectedOptions = Array.from(selectElement.selectedOptions);
-        
+
         if (selectedOptions.length !== 1) {
             alert('Please select exactly one macro to move');
             return;
@@ -1030,7 +1153,7 @@
 
         const index = parseInt(selectedOptions[0].value);
         const macros = window.LabAutomationData.savedMacros;
-        
+
         if (index < macros.length - 1) {
             [macros[index], macros[index + 1]] = [macros[index + 1], macros[index]];
             saveMacrosToStorage();
@@ -1043,13 +1166,13 @@
     function combineMacros() {
         const selectElement = document.getElementById('saved-macros-select');
         const selectedOptions = Array.from(selectElement.selectedOptions);
-        
+
         if (selectedOptions.length < 2) {
             alert('Please select at least 2 G-code sequences to combine');
             return;
         }
 
-        const selectedSequences = selectedOptions.map(option => 
+        const selectedSequences = selectedOptions.map(option =>
             window.LabAutomationData.savedMacros[parseInt(option.value)]
         );
 
@@ -1061,21 +1184,21 @@
 
         selectedSequences.forEach((sequence, index) => {
             combinedContent += `; --- Sequence ${index + 1}: ${sequence.name} ---\n`;
-            
+
             // Clean the content by removing headers and comments if it's already a sequence
             const lines = sequence.content.split('\n');
             let addingContent = false;
-            
+
             lines.forEach(line => {
                 const trimmedLine = line.trim();
                 // Skip header comments but keep G-code commands and operation comments
-                if (trimmedLine.startsWith('; Generated:') || 
+                if (trimmedLine.startsWith('; Generated:') ||
                     trimmedLine.startsWith('; G-code Sequence:') ||
                     trimmedLine.startsWith('; Ready to execute') ||
                     trimmedLine.startsWith('; Combined')) {
                     return;
                 }
-                
+
                 if (trimmedLine.length > 0) {
                     combinedContent += line + '\n';
                 }
@@ -1086,20 +1209,20 @@
         // Load combined content into editor
         document.getElementById('macro-name').value = 'Combined_Sequence';
         document.getElementById('macro-output').value = combinedContent;
-        
+
         alert(`Combined ${selectedSequences.length} G-code sequences. You can now edit and save the combined sequence.`);
     }
 
     function deleteMacro() {
         const selectElement = document.getElementById('saved-macros-select');
         const selectedOptions = Array.from(selectElement.selectedOptions);
-        
+
         if (selectedOptions.length === 0) {
             alert('Please select macro(s) to delete');
             return;
         }
 
-        const macroNames = selectedOptions.map(option => 
+        const macroNames = selectedOptions.map(option =>
             window.LabAutomationData.savedMacros[parseInt(option.value)].name
         );
 
@@ -1109,7 +1232,7 @@
 
         // Sort indices in descending order to avoid index shifting issues
         const indices = selectedOptions.map(option => parseInt(option.value)).sort((a, b) => b - a);
-        
+
         indices.forEach(index => {
             window.LabAutomationData.savedMacros.splice(index, 1);
         });
@@ -1119,39 +1242,7 @@
         alert(`Deleted ${indices.length} macro(s)`);
     }
 
-    function canvasClick() {
-        // Convert canvas click to real world coordinates (flipped X-axis)
-        const canvasX = Math.round(sketch.mouseX / scale);
-        const realWorldX = printerArea.width - canvasX; // Flip X coordinate
-        const realWorldY = Math.round(sketch.mouseY / scale);
-
-        let clickedIndex = -1;
-        for (let i = objects.length - 1; i >= 0; i--) {
-            const obj = objects[i];
-            const objX = parseFloat(obj.posx);
-            const objY = parseFloat(obj.posy);
-            const objW = parseFloat(obj.X);
-            const objH = parseFloat(obj.Y);
-
-            // Check if click is within object bounds (using real world coordinates)
-            if (realWorldX >= objX - objW && realWorldX <= objX && 
-                realWorldY >= objY && realWorldY <= objY + objH) {
-                clickedIndex = i;
-                break;
-            }
-        }
-
-        if (clickedIndex !== -1) {
-            selectObject(clickedIndex);
-        } else if (selectedObjectIndex !== -1) {
-            // Set object position to clicked location (real world coordinates)
-            objects[selectedObjectIndex].posx = realWorldX.toString();
-            objects[selectedObjectIndex].posy = realWorldY.toString();
-            populateObjectEditor(objects[selectedObjectIndex]);
-            generateGCode();
-            autoSaveConfiguration();
-        }
-    }
+    // Removed canvasClick function entirely since we don't want click-to-move functionality
 
     function createNewObject() {
         const newObj = new LabObject(`object_${objects.length + 1}`);
@@ -1441,14 +1532,65 @@
 
         if (config.printerArea) {
             printerArea = config.printerArea;
+            window.LabAutomationData.printerArea = printerArea;
+
+            // Update the input fields with loaded printer area
+            const widthInput = document.getElementById('printer-area-width');
+            const heightInput = document.getElementById('printer-area-height');
+            if (widthInput) widthInput.value = printerArea.width;
+            if (heightInput) heightInput.value = printerArea.height;
+
+            // Update the display
+            const displayElement = document.getElementById('printer-area-display');
+            if (displayElement) {
+                displayElement.textContent = `${printerArea.width}x${printerArea.height}`;
+            }
         }
 
         window.LabAutomationData.objects = objects;
-        window.LabAutomationData.printerArea = printerArea;
 
         selectedObjectIndex = -1;
         updateObjectList();
         generateGCode();
+
+        // Recreate canvas with loaded printer area dimensions
+        if (sketch) {
+            sketch.remove();
+            sketch = new p5(function(p) {
+                p.setup = function() {
+                    const canvas = p.createCanvas(380, 300);
+                    canvas.parent('p5-canvas-container');
+                    scale = 300 / printerArea.height;
+                    offsetX = 0;
+                    offsetY = 0;
+                };
+
+                p.draw = function() {
+                    p.background(245);
+                    p.stroke(0);
+                    p.fill(255);
+                    p.rect(offsetX, offsetY, printerArea.width * scale, printerArea.height * scale);
+
+                    p.stroke(220);
+                    p.strokeWeight(0.5);
+                    for(let i = 0; i <= printerArea.width; i += 20) {
+                        p.line(i * scale + offsetX, offsetY, i * scale + offsetX, printerArea.height * scale + offsetY);
+                    }
+                    for(let i = 0; i <= printerArea.height; i += 20) {
+                        p.line(offsetX, i * scale + offsetY, printerArea.width * scale + offsetX, i * scale + offsetY);
+                    }
+
+                    objects.forEach(obj => obj.draw(p));
+
+                    p.fill(0);
+                    p.stroke(255);
+                    p.strokeWeight(1);
+                    p.textAlign(p.LEFT, p.TOP);
+                    const flippedX = printerArea.width - Math.round(p.mouseX / scale);
+                    p.text(`Mouse: X${flippedX} Y${Math.round(p.mouseY / scale)}`, 5, 5);
+                };
+            });
+        }
     }
 
     function exportConfiguration() {
@@ -1613,3 +1755,4 @@
     });
 
 })();
+

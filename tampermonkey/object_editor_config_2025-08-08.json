@@ -1,0 +1,63 @@
+{
+  "objects": [
+    {
+      "id": 1,
+      "name": "bed",
+      "catalog": "",
+      "status": "on",
+      "posx": "22",
+      "posy": "13",
+      "X": "350",
+      "Y": "350",
+      "Z": "29",
+      "marginx": "2",
+      "marginy": "10",
+      "shimx": "0",
+      "shimy": "0",
+      "wellrow": "0",
+      "wellcolumn": "0",
+      "wellrowsp": "9",
+      "wellcolumnsp": "9",
+      "shape": "square",
+      "shapex": "7.05",
+      "shapey": "7.05",
+      "wellshape": "ellipse",
+      "color": "200,0,0",
+      "ztrav": "0"
+    },
+    {
+      "id": 2,
+      "name": "pipette_tip_box",
+      "catalog": "",
+      "status": "on",
+      "posx": "290",
+      "posy": "63",
+      "X": "91",
+      "Y": "122",
+      "Z": "29",
+      "marginx": "9",
+      "marginy": "9",
+      "shimx": "0",
+      "shimy": "0",
+      "wellrow": "12",
+      "wellcolumn": "8",
+      "wellrowsp": "9",
+      "wellcolumnsp": "9",
+      "shape": "square",
+      "shapex": "6",
+      "shapey": "6",
+      "wellshape": "ellipse",
+      "color": "15,173,41",
+      "ztrav": "0",
+      "wellsizex": "7.05",
+      "wellsizey": "7.05",
+      "specialProps": {}
+    }
+  ],
+  "printerArea": {
+    "width": 380,
+    "height": 480
+  },
+  "timestamp": "2025-08-08T23:14:36.859Z",
+  "version": "2.1"
+}
