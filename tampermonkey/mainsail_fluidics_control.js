@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Mainsail Fluidics Control
 // @namespace    http://tampermonkey.net/
-// @version      1.0
-// @description  Add fluidics control panel to Mainsail
+// @version      1.2
+// @description  Add fluidics control panel to Mainsail with pipette tip selection
 // @author       Rister
 // @match        http://192.168.1.89:81/*
 // @match        http://mainsailos.local/*
@@ -165,7 +165,7 @@
                 padding: 15px;
                 box-shadow: 0 4px 8px rgba(0,0,0,0.1);
                 z-index: 1000;
-                min-width: 300px;
+                min-width: 320px;
                 font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
                 cursor: move;
             ">
@@ -188,6 +188,44 @@
                 </div>
 
                 <div id="fluidics-content" style="display: none;">
+                    <!-- Pipette Tip Selection Section -->
+                    <div style="margin-bottom: 15px; padding: 10px; background: #fff3e0; border-radius: 4px; border-left: 4px solid #ff9800;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">🔬 Pipette Tip Selection:</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <select id="tip-selector" style="
+                                flex: 1;
+                                padding: 8px;
+                                border: 1px solid #ccc;
+                                border-radius: 4px;
+                                background: white;
+                                font-size: 14px;
+                            ">
+                                <option value="P100">P100 Tip (Small Volume)</option>
+                                <option value="P300" selected>P300 Tip (Standard Volume)</option>
+                            </select>
+                            <button onclick="selectTip()" style="
+                                background: #ff9800;
+                                color: white;
+                                border: none;
+                                padding: 8px 15px;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-weight: bold;
+                                min-width: 80px;
+                            ">Select Tip</button>
+                        </div>
+                        <div id="current-tip-display" style="
+                            margin-top: 8px;
+                            padding: 6px;
+                            background: rgba(76, 175, 80, 0.1);
+                            border-radius: 3px;
+                            font-size: 12px;
+                            color: #2e7d32;
+                        ">
+                            Current: P300 Tip
+                        </div>
+                    </div>
+
                     <!-- Timed Wash Section -->
                     <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 4px;">
                         <label style="display: block; margin-bottom: 5px; font-weight: bold;">Wash Duration:</label>
@@ -216,13 +254,14 @@
                         <button onclick="sendFluidicsCommand('MANUAL_PCV')" class="fluidics-btn danger">Manual PCV</button>
                         <button onclick="sendFluidicsCommand('WASH_ON')" class="fluidics-btn primary">Wash On</button>
                         <button onclick="sendFluidicsCommand('WASH_OFF')" class="fluidics-btn danger">Wash Off</button>
-                        <button onclick="sendFluidicsCommand('WASTE_ON')" class="fluidics-btn primary">Dry On</button>
-                        <button onclick="sendFluidicsCommand('WASTE_OFF')" class="fluidics-btn danger">Dry Off</button>
+                        <button onclick="sendFluidicsCommand('WASTE_ON')" class="fluidics-btn primary">Waste On</button>
+                        <button onclick="sendFluidicsCommand('WASTE_OFF')" class="fluidics-btn danger">Waste Off</button>
                         <button onclick="sendFluidicsCommand('VALVE_INPUT')" class="fluidics-btn secondary">Valve Input</button>
                         <button onclick="sendFluidicsCommand('VALVE_OUTPUT')" class="fluidics-btn secondary">Valve Output</button>
                         <button onclick="sendFluidicsCommand('VALVE_BYPASS')" class="fluidics-btn secondary">Valve Bypass</button>
                         <button onclick="sendFluidicsCommand('WASTE_POSITION')" class="fluidics-btn secondary">Waste Position</button>
                         <button onclick="sendFluidicsCommand('EJECT_PIPETTE')" class="fluidics-btn danger">Eject Pipette</button>
+                        <button onclick="sendFluidicsCommand('TOUCH_DRY')" class="fluidics-btn highlight">TOUCH Dry</button>
                     </div>
 
                     <!-- Status Display -->
@@ -243,10 +282,12 @@
                         border-radius: 4px;
                         cursor: pointer;
                         font-size: 12px;
-                        transition: opacity 0.2s;
+                        transition: all 0.2s;
+                        font-weight: 500;
                     }
                     .fluidics-btn:hover {
                         opacity: 0.8;
+                        transform: translateY(-1px);
                     }
                     .fluidics-btn.primary {
                         background: #4CAF50;
@@ -259,6 +300,16 @@
                     .fluidics-btn.secondary {
                         background: #2196F3;
                         color: white;
+                    }
+                    .fluidics-btn.highlight {
+                        background: #9C27B0;
+                        color: white;
+                        font-weight: bold;
+                    }
+                    #tip-selector:focus {
+                        outline: none;
+                        border-color: #ff9800;
+                        box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
                     }
                 </style>
             </div>
@@ -281,6 +332,9 @@
                 button.textContent = '+';
             }
         };
+
+        // Load saved tip selection
+        loadSavedTipSelection();
     }
 
     // Make the panel draggable
@@ -395,11 +449,51 @@
         }, duration * 1000);
     };
 
+    // New function for tip selection
+    window.selectTip = function() {
+        const tipSelector = document.getElementById('tip-selector');
+        const selectedTip = tipSelector.value;
+        const command = selectedTip === 'P100' ? 'SETP100' : 'SETP300';
+
+        console.log('Sending tip selection command:', command); // Debug log
+        showStatus(`Switching to ${selectedTip} tip... (Command: ${command})`);
+        sendGcode(command);
+
+        // Update display
+        updateTipDisplay(selectedTip);
+
+        // Save selection
+        localStorage.setItem('selected-tip', selectedTip);
+    };
+
+    function updateTipDisplay(tipType) {
+        const display = document.getElementById('current-tip-display');
+        const descriptions = {
+            'P100': 'P100 Tip (Small Volume)',
+            'P300': 'P300 Tip (Standard Volume)'
+        };
+
+        display.textContent = `Current: ${descriptions[tipType]}`;
+        display.style.background = tipType === 'P100' ?
+            'rgba(33, 150, 243, 0.1)' : 'rgba(76, 175, 80, 0.1)';
+        display.style.color = tipType === 'P100' ? '#1565c0' : '#2e7d32';
+    }
+
+    function loadSavedTipSelection() {
+        const savedTip = localStorage.getItem('selected-tip') || 'P300';
+        const tipSelector = document.getElementById('tip-selector');
+        tipSelector.value = savedTip;
+        updateTipDisplay(savedTip);
+    }
+
     function showStatus(message, type = 'info') {
         const status = document.getElementById('fluidics-status');
         status.textContent = message;
         status.style.display = 'block';
-        status.style.background = type === 'error' ? '#ffebee' : '#e3f2fd';
+        status.style.background = type === 'error' ? '#ffebee' :
+                                 type === 'success' ? '#e8f5e8' : '#e3f2fd';
+        status.style.color = type === 'error' ? '#c62828' :
+                           type === 'success' ? '#2e7d32' : '#1565c0';
 
         setTimeout(() => {
             status.style.display = 'none';

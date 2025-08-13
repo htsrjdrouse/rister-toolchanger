@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Object Editor & Macro Editor
 // @namespace    http://tampermonkey.net/
-// @version      2.1
+// @version      2.2
 // @description  Object positioning editor and macro generator for lab automation with Klipper/Mainsail
 // @author       Rister
 // @match        http://192.168.1.89:81/*
@@ -27,15 +27,15 @@
         getAllObjects: function() {
             return this.objects;
         },
-        getWellCoordinates: function(objectName) {
+        getArrayCoordinates: function(objectName) {
             const obj = this.getObjectByName(objectName);
             if (!obj) return [];
 
             const coords = [];
-            const rows = parseInt(obj.wellrow);
-            const cols = parseInt(obj.wellcolumn);
-            const rowSpacing = parseFloat(obj.wellrowsp);
-            const colSpacing = parseFloat(obj.wellcolumnsp);
+            const rows = parseInt(obj.arrayrow);
+            const cols = parseInt(obj.arraycolumn);
+            const rowSpacing = parseFloat(obj.arrayrowsp);
+            const colSpacing = parseFloat(obj.arraycolumnsp);
             const marginX = parseFloat(obj.marginx);
             const marginY = parseFloat(obj.marginy);
             const baseX = parseFloat(obj.posx);
@@ -43,14 +43,14 @@
 
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < cols; col++) {
-                    // X coordinates: object position is right edge, wells go leftward
-                    const wellX = baseX - marginX - col * colSpacing;
-                    const wellY = baseY + marginY + row * rowSpacing;
-                    const wellName = String.fromCharCode(65 + row) + (col + 1);
+                    // Consistent calculation: arrays extend outward from object position
+                    const arrayX = baseX + marginX + col * colSpacing;
+                    const arrayY = baseY + marginY + row * rowSpacing;
+                    const arrayName = String.fromCharCode(65 + row) + (col + 1);
                     coords.push({
-                        name: wellName,
-                        x: wellX,
-                        y: wellY,
+                        name: arrayName,
+                        x: arrayX,
+                        y: arrayY,
                         row: row,
                         col: col
                     });
@@ -84,14 +84,14 @@
             this.marginy = "10";
             this.shimx = "0";
             this.shimy = "0";
-            this.wellrow = "1";
-            this.wellcolumn = "8";
-            this.wellrowsp = "9";
-            this.wellcolumnsp = "9";
+            this.arrayrow = "1";
+            this.arraycolumn = "8";
+            this.arrayrowsp = "9";
+            this.arraycolumnsp = "9";
             this.shape = "square";
-            this.shapex = "7.05";      // Well size X
-            this.shapey = "7.05";      // Well size Y
-            this.wellshape = "ellipse";
+            this.shapex = "7.05";      // Array size X
+            this.shapey = "7.05";      // Array size Y
+            this.arrayshape = "ellipse";
             this.color = "99,87,101";
             this.ztrav = "0";
         }
@@ -100,7 +100,7 @@
             if (this.status === "off") return;
 
             p.push();
-            // Flip X coordinate: convert stored coordinate to display coordinate
+            // Display coordinate conversion for visualization
             const displayX = (printerArea.width - parseFloat(this.posx) - parseFloat(this.X)) * scale + offsetX;
             const y = parseFloat(this.posy) * scale + offsetY;
             const width = parseFloat(this.X) * scale;
@@ -121,8 +121,8 @@
             p.fill(r || 99, g || 87, b || 101, 180);
             p.rect(0, 0, width, height);
 
-            if (parseInt(this.wellrow) > 1 || parseInt(this.wellcolumn) > 1) {
-                this.drawWells(p, width, height);
+            if (parseInt(this.arrayrow) >= 1 || parseInt(this.arraycolumn) >= 1) {
+                this.drawArrays(p, width, height);
             }
 
             p.fill(255);
@@ -135,13 +135,21 @@
             p.pop();
         }
 
-        drawWells(p, width, height) {
-            const rows = parseInt(this.wellrow);
-            const cols = parseInt(this.wellcolumn);
-            const rowSpacing = parseFloat(this.wellrowsp);
-            const colSpacing = parseFloat(this.wellcolumnsp);
-            const wellSizeX = parseFloat(this.shapex) * scale;
-            const wellSizeY = parseFloat(this.shapey) * scale;
+        drawArrays(p, width, height) {
+            const rows = parseInt(this.arrayrow);
+            const cols = parseInt(this.arraycolumn);
+            const rowSpacing = parseFloat(this.arrayrowsp);
+            const colSpacing = parseFloat(this.arraycolumnsp);
+            const arraySizeX = parseFloat(this.shapex) * scale;
+            const arraySizeY = parseFloat(this.shapey) * scale;
+            const marginX = parseFloat(this.marginx) * scale;
+            const marginY = parseFloat(this.marginy) * scale;
+
+            // Convert object coordinates to display coordinates for array positioning
+            const objectRealX = parseFloat(this.posx);
+            const objectDisplayX = (printerArea.width - objectRealX - parseFloat(this.X)) * scale + offsetX;
+            const objectRealY = parseFloat(this.posy);
+            const objectDisplayY = objectRealY * scale + offsetY;
 
             p.fill(255, 255, 255, 200);
             p.stroke(0);
@@ -149,14 +157,22 @@
 
             for (let row = 0; row < rows; row++) {
                 for (let col = 0; col < cols; col++) {
-                    // Wells positioned from right edge going leftward
-                    const wellX = width - parseFloat(this.marginx) * scale - (col + 1) * colSpacing * scale;
-                    const wellY = parseFloat(this.marginy) * scale + row * rowSpacing * scale;
+                    // Calculate real-world array position
+                    const arrayRealX = objectRealX + parseFloat(this.marginx) + col * colSpacing;
+                    const arrayRealY = objectRealY + parseFloat(this.marginy) + row * rowSpacing;
 
-                    if (this.wellshape === "ellipse") {
-                        p.ellipse(wellX + wellSizeX/2, wellY + wellSizeY/2, wellSizeX, wellSizeY);
+                    // Convert to display coordinates
+                    const arrayDisplayX = (printerArea.width - arrayRealX) * scale + offsetX - arraySizeX/2;
+                    const arrayDisplayY = arrayRealY * scale + offsetY - arraySizeY/2;
+
+                    // Adjust position relative to object's display position
+                    const relativeX = arrayDisplayX - objectDisplayX;
+                    const relativeY = arrayDisplayY - objectDisplayY;
+
+                    if (this.arrayshape === "ellipse") {
+                        p.ellipse(relativeX + arraySizeX/2, relativeY + arraySizeY/2, arraySizeX, arraySizeY);
                     } else {
-                        p.rect(wellX, wellY, wellSizeX, wellSizeY);
+                        p.rect(relativeX, relativeY, arraySizeX, arraySizeY);
                     }
                 }
             }
@@ -321,23 +337,23 @@
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
                             <div>
-                                <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 12px;">Well Rows:</label>
-                                <input type="number" id="obj-wellrow" min="1">
+                                <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 12px;">Array Rows:</label>
+                                <input type="number" id="obj-arrayrow" min="1">
                             </div>
                             <div>
-                                <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 12px;">Well Columns:</label>
-                                <input type="number" id="obj-wellcolumn" min="1">
+                                <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 12px;">Array Columns:</label>
+                                <input type="number" id="obj-arraycolumn" min="1">
                             </div>
                         </div>
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 15px;">
                             <div>
                                 <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 12px;">Row Spacing:</label>
-                                <input type="number" id="obj-wellrowsp" step="0.1">
+                                <input type="number" id="obj-arrayrowsp" step="0.1">
                             </div>
                             <div>
                                 <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 12px;">Col Spacing:</label>
-                                <input type="number" id="obj-wellcolumnsp" step="0.1">
+                                <input type="number" id="obj-arraycolumnsp" step="0.1">
                             </div>
                         </div>
 
@@ -361,18 +377,18 @@
                         </div>
 
                         <div style="margin-bottom: 15px;">
-                            <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 12px;">Well Shape:</label>
-                            <label><input type="radio" name="well-shape" value="ellipse" checked> Ellipse (Round)</label>
-                            <label style="margin-left: 15px;"><input type="radio" name="well-shape" value="square"> Square</label>
+                            <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 12px;">Array Shape:</label>
+                            <label><input type="radio" name="array-shape" value="ellipse" checked> Ellipse (Round)</label>
+                            <label style="margin-left: 15px;"><input type="radio" name="array-shape" value="square"> Square</label>
                         </div>
 
                         <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 15px;">
                             <div>
-                                <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 12px;">Well Size X:</label>
+                                <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 12px;">Array Size X:</label>
                                 <input type="number" id="obj-shapex" step="0.01">
                             </div>
                             <div>
-                                <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 12px;">Well Size Y:</label>
+                                <label style="display: block; margin-bottom: 3px; font-weight: bold; font-size: 12px;">Array Size Y:</label>
                                 <input type="number" id="obj-shapey" step="0.01">
                             </div>
                             <div>
@@ -682,7 +698,6 @@
                 scale = 300 / printerArea.height;
                 offsetX = 0;
                 offsetY = 0;
-                // Removed canvas.mousePressed(canvasClick); to disable click functionality
             };
 
             p.draw = function() {
@@ -842,8 +857,8 @@
             const option = document.createElement('option');
             option.value = obj.name;
             const statusIcon = obj.status === 'on' ? '✅' : '❌';
-            const wellCount = parseInt(obj.wellrow) * parseInt(obj.wellcolumn);
-            option.textContent = `${obj.name} ${statusIcon} (${wellCount} arrays)`;
+            const arrayCount = parseInt(obj.arrayrow) * parseInt(obj.arraycolumn);
+            option.textContent = `${obj.name} ${statusIcon} (${arrayCount} arrays)`;
             if (obj.status === 'off') {
                 option.style.color = '#999';
             }
@@ -890,110 +905,72 @@
         document.getElementById('macro-output').value = currentGCode + newCommand;
     }
 
-// Fixed addPositionToArray function
-function addPositionToArray() {
-    const selectedObjectName = document.getElementById('macro-object-select').value;
-    const arrayRow = parseInt(document.getElementById('array-row').value) - 1; // Convert to 0-based
-    const arrayCol = parseInt(document.getElementById('array-column').value) - 1; // Convert to 0-based
+    function addPositionToArray() {
+        const selectedObjectName = document.getElementById('macro-object-select').value;
+        const arrayRow = parseInt(document.getElementById('array-row').value) - 1; // Convert to 0-based
+        const arrayCol = parseInt(document.getElementById('array-column').value) - 1; // Convert to 0-based
 
-    if (!selectedObjectName) {
-        alert('Please select an object from the dropdown first');
-        return;
-    }
-
-    if (isNaN(arrayRow) || isNaN(arrayCol) || arrayRow < 0 || arrayCol < 0) {
-        alert('Please enter valid row and column numbers (starting from 1)');
-        return;
-    }
-
-    const obj = window.LabAutomationData.getObjectByName(selectedObjectName);
-    if (!obj) {
-        alert('Object not found');
-        return;
-    }
-
-    // Check if specified array position exists
-    const maxRows = parseInt(obj.wellrow);
-    const maxCols = parseInt(obj.wellcolumn);
-
-    if (arrayRow >= maxRows || arrayCol >= maxCols) {
-        alert(`Array position out of bounds. Object has ${maxRows} rows and ${maxCols} columns.`);
-        return;
-    }
-
-    const sequenceName = document.getElementById('macro-name').value || 'Sample_Collection_Sequence';
-    const currentGCode = document.getElementById('macro-output').value;
-
-    // Calculate specific array position - FIXED CALCULATION
-    const rowSpacing = parseFloat(obj.wellrowsp);
-    const colSpacing = parseFloat(obj.wellcolumnsp);
-    const marginX = parseFloat(obj.marginx);
-    const marginY = parseFloat(obj.marginy);
-    const baseX = parseFloat(obj.posx);
-    const baseY = parseFloat(obj.posy);
-
-    // CORRECTED: X coordinates should ADD margin and column offset
-    // The object position (posx) is the reference point, wells go outward from there
-    const wellX = baseX + marginX + arrayCol * colSpacing;
-    const wellY = baseY + marginY + arrayRow * rowSpacing;
-    const wellName = String.fromCharCode(65 + arrayRow) + (arrayCol + 1);
-
-    let newCommand = '';
-    if (!currentGCode.trim()) {
-        newCommand = `; G-code Sequence: ${sequenceName}\n`;
-        newCommand += `; Generated: ${new Date().toISOString()}\n`;
-        newCommand += `; Ready to execute in Mainsail console\n\n`;
-    }
-
-    newCommand += `; Move to ${obj.name} well ${wellName}\n`;
-    newCommand += `G90  ; Absolute positioning\n`;
-    newCommand += `G1 X${wellX.toFixed(2)} Y${wellY.toFixed(2)} F3000  ; Move to well position\n`;
-
-    if (obj.ztrav !== "0") {
-        newCommand += `G1 Z${obj.ztrav} F1500  ; Move to Z height\n`;
-    }
-
-    newCommand += `G4 P500  ; Pause 500ms for stabilization\n`;
-    newCommand += `\n`;
-
-    document.getElementById('macro-output').value = currentGCode + newCommand;
-}
-
-// Also need to fix the getWellCoordinates function in the global data
-window.LabAutomationData.getWellCoordinates = function(objectName) {
-    const obj = this.getObjectByName(objectName);
-    if (!obj) return [];
-
-    const coords = [];
-    const rows = parseInt(obj.wellrow);
-    const cols = parseInt(obj.wellcolumn);
-    const rowSpacing = parseFloat(obj.wellrowsp);
-    const colSpacing = parseFloat(obj.wellcolumnsp);
-    const marginX = parseFloat(obj.marginx);
-    const marginY = parseFloat(obj.marginy);
-    const baseX = parseFloat(obj.posx);
-    const baseY = parseFloat(obj.posy);
-
-    for (let row = 0; row < rows; row++) {
-        for (let col = 0; col < cols; col++) {
-            // CORRECTED: X coordinates should ADD margin and column offset
-            const wellX = baseX + marginX + col * colSpacing;
-            const wellY = baseY + marginY + row * rowSpacing;
-            const wellName = String.fromCharCode(65 + row) + (col + 1);
-            coords.push({
-                name: wellName,
-                x: wellX,
-                y: wellY,
-                row: row,
-                col: col
-            });
+        if (!selectedObjectName) {
+            alert('Please select an object from the dropdown first');
+            return;
         }
+
+        if (isNaN(arrayRow) || isNaN(arrayCol) || arrayRow < 0 || arrayCol < 0) {
+            alert('Please enter valid row and column numbers (starting from 1)');
+            return;
+        }
+
+        const obj = window.LabAutomationData.getObjectByName(selectedObjectName);
+        if (!obj) {
+            alert('Object not found');
+            return;
+        }
+
+        // Check if specified array position exists
+        const maxRows = parseInt(obj.arrayrow);
+        const maxCols = parseInt(obj.arraycolumn);
+
+        if (arrayRow >= maxRows || arrayCol >= maxCols) {
+            alert(`Array position out of bounds. Object has ${maxRows} rows and ${maxCols} columns.`);
+            return;
+        }
+
+        const sequenceName = document.getElementById('macro-name').value || 'Sample_Collection_Sequence';
+        const currentGCode = document.getElementById('macro-output').value;
+
+        // Calculate specific array position using consistent calculation
+        const rowSpacing = parseFloat(obj.arrayrowsp);
+        const colSpacing = parseFloat(obj.arraycolumnsp);
+        const marginX = parseFloat(obj.marginx);
+        const marginY = parseFloat(obj.marginy);
+        const baseX = parseFloat(obj.posx);
+        const baseY = parseFloat(obj.posy);
+
+        // FIXED: Use consistent calculation - arrays extend outward from object position
+        const arrayX = baseX + marginX + arrayCol * colSpacing;
+        const arrayY = baseY + marginY + arrayRow * rowSpacing;
+        const arrayName = String.fromCharCode(65 + arrayRow) + (arrayCol + 1);
+
+        let newCommand = '';
+        if (!currentGCode.trim()) {
+            newCommand = `; G-code Sequence: ${sequenceName}\n`;
+            newCommand += `; Generated: ${new Date().toISOString()}\n`;
+            newCommand += `; Ready to execute in Mainsail console\n\n`;
+        }
+
+        newCommand += `; Move to ${obj.name} array ${arrayName}\n`;
+        newCommand += `G90  ; Absolute positioning\n`;
+        newCommand += `G1 X${arrayX.toFixed(2)} Y${arrayY.toFixed(2)} F3000  ; Move to array position\n`;
+
+        if (obj.ztrav !== "0") {
+            newCommand += `G1 Z${obj.ztrav} F1500  ; Move to Z height\n`;
+        }
+
+        newCommand += `G4 P500  ; Pause 500ms for stabilization\n`;
+        newCommand += `\n`;
+
+        document.getElementById('macro-output').value = currentGCode + newCommand;
     }
-    return coords;
-};
-
-
-
 
     function copyGCode() {
         const gcode = document.getElementById('macro-output').value;
@@ -1242,8 +1219,6 @@ window.LabAutomationData.getWellCoordinates = function(objectName) {
         alert(`Deleted ${indices.length} macro(s)`);
     }
 
-    // Removed canvasClick function entirely since we don't want click-to-move functionality
-
     function createNewObject() {
         const newObj = new LabObject(`object_${objects.length + 1}`);
         objects.push(newObj);
@@ -1330,14 +1305,14 @@ window.LabAutomationData.getWellCoordinates = function(objectName) {
         if (elements.shapey) elements.shapey.value = obj.shapey;
         if (elements.ztrav) elements.ztrav.value = obj.ztrav;
 
-        const fields = ['wellrow', 'wellcolumn', 'wellrowsp', 'wellcolumnsp', 'marginx', 'marginy', 'shimx', 'shimy'];
+        const fields = ['arrayrow', 'arraycolumn', 'arrayrowsp', 'arraycolumnsp', 'marginx', 'marginy', 'shimx', 'shimy'];
         fields.forEach(field => {
             const el = document.getElementById(`obj-${field}`);
             if (el) el.value = obj[field];
         });
 
-        const wellShapeRadio = document.querySelector(`input[name="well-shape"][value="${obj.wellshape || 'ellipse'}"]`);
-        if (wellShapeRadio) wellShapeRadio.checked = true;
+        const arrayShapeRadio = document.querySelector(`input[name="array-shape"][value="${obj.arrayshape || 'ellipse'}"]`);
+        if (arrayShapeRadio) arrayShapeRadio.checked = true;
 
         const color = document.getElementById('obj-color');
         if (color) color.value = obj.color;
@@ -1370,7 +1345,7 @@ window.LabAutomationData.getWellCoordinates = function(objectName) {
             if (catalogInput) obj.catalog = catalogInput.value;
             if (statusRadio) obj.status = statusRadio.value;
 
-            ['X', 'Y', 'Z', 'posx', 'posy', 'wellrow', 'wellcolumn', 'wellrowsp', 'wellcolumnsp',
+            ['X', 'Y', 'Z', 'posx', 'posy', 'arrayrow', 'arraycolumn', 'arrayrowsp', 'arraycolumnsp',
              'marginx', 'marginy', 'shimx', 'shimy', 'shapex', 'shapey', 'ztrav'].forEach(field => {
                 const input = document.getElementById(`obj-${field}`);
                 if (input) obj[field] = input.value;
@@ -1378,8 +1353,8 @@ window.LabAutomationData.getWellCoordinates = function(objectName) {
 
             obj.shape = "square";
 
-            const wellShapeRadio = document.querySelector('input[name="well-shape"]:checked');
-            if (wellShapeRadio) obj.wellshape = wellShapeRadio.value;
+            const arrayShapeRadio = document.querySelector('input[name="array-shape"]:checked');
+            if (arrayShapeRadio) obj.arrayshape = arrayShapeRadio.value;
 
             const colorInput = document.getElementById('obj-color');
             if (colorInput) obj.color = colorInput.value;
@@ -1425,7 +1400,7 @@ window.LabAutomationData.getWellCoordinates = function(objectName) {
                         <small>Pos: (${obj.posx}, ${obj.posy}) | Size: ${obj.X}×${obj.Y}</small>
                     </div>
                     <div style="font-size: 10px; color: #666;">
-                        Wells: ${obj.wellrow}×${obj.wellcolumn}
+                        Arrays: ${obj.arrayrow}×${obj.arraycolumn}
                     </div>
                 </div>
             `;
@@ -1452,14 +1427,14 @@ window.LabAutomationData.getWellCoordinates = function(objectName) {
                 output += `; Position: X${obj.posx} Y${obj.posy} Z${obj.Z}\n`;
                 output += `; Size: ${obj.X} x ${obj.Y} x ${obj.Z}mm\n`;
 
-                if (parseInt(obj.wellrow) > 1 || parseInt(obj.wellcolumn) > 1) {
-                    output += `; Wells: ${obj.wellrow} rows x ${obj.wellcolumn} columns\n`;
-                    output += `; Well spacing: ${obj.wellrowsp} x ${obj.wellcolumnsp}mm\n`;
+                if (parseInt(obj.arrayrow) > 1 || parseInt(obj.arraycolumn) > 1) {
+                    output += `; Arrays: ${obj.arrayrow} rows x ${obj.arraycolumn} columns\n`;
+                    output += `; Array spacing: ${obj.arrayrowsp} x ${obj.arraycolumnsp}mm\n`;
 
-                    const rows = parseInt(obj.wellrow);
-                    const cols = parseInt(obj.wellcolumn);
-                    const rowSpacing = parseFloat(obj.wellrowsp);
-                    const colSpacing = parseFloat(obj.wellcolumnsp);
+                    const rows = parseInt(obj.arrayrow);
+                    const cols = parseInt(obj.arraycolumn);
+                    const rowSpacing = parseFloat(obj.arrayrowsp);
+                    const colSpacing = parseFloat(obj.arraycolumnsp);
                     const marginX = parseFloat(obj.marginx);
                     const marginY = parseFloat(obj.marginy);
                     const baseX = parseFloat(obj.posx);
@@ -1467,10 +1442,11 @@ window.LabAutomationData.getWellCoordinates = function(objectName) {
 
                     for (let row = 0; row < rows; row++) {
                         for (let col = 0; col < cols; col++) {
-                            const wellX = baseX + marginX + col * colSpacing;
-                            const wellY = baseY + marginY + row * rowSpacing;
-                            const wellName = String.fromCharCode(65 + row) + (col + 1);
-                            output += `;   Well ${wellName}: X${wellX.toFixed(2)} Y${wellY.toFixed(2)}\n`;
+                            // Use consistent calculation throughout
+                            const arrayX = baseX + marginX + col * colSpacing;
+                            const arrayY = baseY + marginY + row * rowSpacing;
+                            const arrayName = String.fromCharCode(65 + row) + (col + 1);
+                            output += `;   Array ${arrayName}: X${arrayX.toFixed(2)} Y${arrayY.toFixed(2)}\n`;
                         }
                     }
                 } else {
@@ -1497,7 +1473,7 @@ window.LabAutomationData.getWellCoordinates = function(objectName) {
             objects: objects,
             printerArea: printerArea,
             timestamp: new Date().toISOString(),
-            version: '2.1'
+            version: '2.2'
         };
 
         const dataStr = JSON.stringify(config, null, 2);
@@ -1526,6 +1502,12 @@ window.LabAutomationData.getWellCoordinates = function(objectName) {
             config.objects.forEach(objData => {
                 const obj = new LabObject(objData.name);
                 Object.assign(obj, objData);
+                // Migrate old property names to new ones
+                if (objData.wellrow && !objData.arrayrow) obj.arrayrow = objData.wellrow;
+                if (objData.wellcolumn && !objData.arraycolumn) obj.arraycolumn = objData.wellcolumn;
+                if (objData.wellrowsp && !objData.arrayrowsp) obj.arrayrowsp = objData.wellrowsp;
+                if (objData.wellcolumnsp && !objData.arraycolumnsp) obj.arraycolumnsp = objData.wellcolumnsp;
+                if (objData.wellshape && !objData.arrayshape) obj.arrayshape = objData.wellshape;
                 objects.push(obj);
             });
         }
@@ -1598,7 +1580,7 @@ window.LabAutomationData.getWellCoordinates = function(objectName) {
             objects: objects,
             printerArea: printerArea,
             timestamp: new Date().toISOString(),
-            version: '2.1'
+            version: '2.2'
         };
 
         const dataStr = JSON.stringify(config, null, 2);
@@ -1755,4 +1737,3 @@ window.LabAutomationData.getWellCoordinates = function(objectName) {
     });
 
 })();
-
