@@ -1,8 +1,8 @@
 // ==UserScript==
 // @name         Mainsail Fluidics Control
 // @namespace    http://tampermonkey.net/
-// @version      1.2
-// @description  Add fluidics control panel to Mainsail with pipette tip selection
+// @version      1.3
+// @description  Add fluidics control panel to Mainsail with pipette tip selection and servo control
 // @author       Rister
 // @match        http://192.168.1.89:81/*
 // @match        http://mainsailos.local/*
@@ -188,6 +188,65 @@
                 </div>
 
                 <div id="fluidics-content" style="display: none;">
+                    <!-- Pipette Height Control Section -->
+                    <div style="margin-bottom: 15px; padding: 10px; background: #e8f5e8; border-radius: 4px; border-left: 4px solid #4CAF50;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">⬆️⬇️ Pipette Height Control:</label>
+                        <div style="display: flex; gap: 10px; align-items: center;">
+                            <input type="number" id="servo-angle" value="0" min="0" max="180"
+                                   style="width: 80px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+                            <span style="font-size: 12px; color: #666;">angle (0-180°)</span>
+                            <button onclick="setPipetteHeight()" style="
+                                background: #4CAF50;
+                                color: white;
+                                border: none;
+                                padding: 8px 15px;
+                                border-radius: 4px;
+                                cursor: pointer;
+                                font-weight: bold;
+                                min-width: 100px;
+                            ">Set Position</button>
+                        </div>
+                        <div style="display: flex; gap: 5px; margin-top: 8px;">
+                            <button onclick="setPresetAngle(0)" style="
+                                background: #81C784;
+                                color: white;
+                                border: none;
+                                padding: 4px 8px;
+                                border-radius: 3px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">Up (0°)</button>
+                            <button onclick="setPresetAngle(90)" style="
+                                background: #64B5F6;
+                                color: white;
+                                border: none;
+                                padding: 4px 8px;
+                                border-radius: 3px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">Mid (90°)</button>
+                            <button onclick="setPresetAngle(180)" style="
+                                background: #FFB74D;
+                                color: white;
+                                border: none;
+                                padding: 4px 8px;
+                                border-radius: 3px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">Down (180°)</button>
+                        </div>
+                        <div id="current-servo-display" style="
+                            margin-top: 8px;
+                            padding: 6px;
+                            background: rgba(76, 175, 80, 0.1);
+                            border-radius: 3px;
+                            font-size: 12px;
+                            color: #2e7d32;
+                        ">
+                            Current Position: 0°
+                        </div>
+                    </div>
+
                     <!-- Pipette Tip Selection Section -->
                     <div style="margin-bottom: 15px; padding: 10px; background: #fff3e0; border-radius: 4px; border-left: 4px solid #ff9800;">
                         <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">🔬 Pipette Tip Selection:</label>
@@ -259,6 +318,7 @@
                         <button onclick="sendFluidicsCommand('VALVE_INPUT')" class="fluidics-btn secondary">Valve Input</button>
                         <button onclick="sendFluidicsCommand('VALVE_OUTPUT')" class="fluidics-btn secondary">Valve Output</button>
                         <button onclick="sendFluidicsCommand('VALVE_BYPASS')" class="fluidics-btn secondary">Valve Bypass</button>
+                        <button onclick="sendFluidicsCommand('WASH_POSITION')" class="fluidics-btn secondary">Wash Position</button>
                         <button onclick="sendFluidicsCommand('WASTE_POSITION')" class="fluidics-btn secondary">Waste Position</button>
                         <button onclick="sendFluidicsCommand('EJECT_PIPETTE')" class="fluidics-btn danger">Eject Pipette</button>
                         <button onclick="sendFluidicsCommand('TOUCH_DRY')" class="fluidics-btn highlight">TOUCH Dry</button>
@@ -306,7 +366,7 @@
                         color: white;
                         font-weight: bold;
                     }
-                    #tip-selector:focus {
+                    #tip-selector:focus, #servo-angle:focus {
                         outline: none;
                         border-color: #ff9800;
                         box-shadow: 0 0 0 2px rgba(255, 152, 0, 0.2);
@@ -333,8 +393,9 @@
             }
         };
 
-        // Load saved tip selection
+        // Load saved tip selection and servo position
         loadSavedTipSelection();
+        loadSavedServoPosition();
     }
 
     // Make the panel draggable
@@ -449,7 +510,34 @@
         }, duration * 1000);
     };
 
-    // New function for tip selection
+    // New function for pipette height control
+    window.setPipetteHeight = function() {
+        const angleInput = document.getElementById('servo-angle');
+        const angle = parseInt(angleInput.value);
+
+        if (angle < 0 || angle > 180) {
+            showStatus('Angle must be between 0-180 degrees', 'error');
+            return;
+        }
+
+        const command = `SET_SERVO SERVO=linearactuator_servo_l0 ANGLE=${angle}`;
+        showStatus(`Setting pipette height to ${angle}° (Command: ${command})`);
+        sendGcode(command);
+
+        // Update display
+        updateServoDisplay(angle);
+
+        // Save position
+        localStorage.setItem('servo-angle', angle);
+    };
+
+    // Function for preset angle buttons
+    window.setPresetAngle = function(angle) {
+        document.getElementById('servo-angle').value = angle;
+        setPipetteHeight();
+    };
+
+    // Function for tip selection
     window.selectTip = function() {
         const tipSelector = document.getElementById('tip-selector');
         const selectedTip = tipSelector.value;
@@ -465,6 +553,23 @@
         // Save selection
         localStorage.setItem('selected-tip', selectedTip);
     };
+
+    function updateServoDisplay(angle) {
+        const display = document.getElementById('current-servo-display');
+        display.textContent = `Current Position: ${angle}°`;
+
+        // Color code based on position
+        if (angle <= 60) {
+            display.style.background = 'rgba(129, 199, 132, 0.1)';
+            display.style.color = '#2e7d32';
+        } else if (angle <= 120) {
+            display.style.background = 'rgba(100, 181, 246, 0.1)';
+            display.style.color = '#1565c0';
+        } else {
+            display.style.background = 'rgba(255, 183, 77, 0.1)';
+            display.style.color = '#ef6c00';
+        }
+    }
 
     function updateTipDisplay(tipType) {
         const display = document.getElementById('current-tip-display');
@@ -484,6 +589,13 @@
         const tipSelector = document.getElementById('tip-selector');
         tipSelector.value = savedTip;
         updateTipDisplay(savedTip);
+    }
+
+    function loadSavedServoPosition() {
+        const savedAngle = localStorage.getItem('servo-angle') || '0';
+        const servoInput = document.getElementById('servo-angle');
+        servoInput.value = savedAngle;
+        updateServoDisplay(parseInt(savedAngle));
     }
 
     function showStatus(message, type = 'info') {
