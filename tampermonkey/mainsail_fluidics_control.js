@@ -191,6 +191,25 @@
                     <!-- Pipette Height Control Section -->
                     <div style="margin-bottom: 15px; padding: 10px; background: #e8f5e8; border-radius: 4px; border-left: 4px solid #4CAF50;">
                         <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #333;">⬆️⬇️ Pipette Height Control:</label>
+
+                        <!-- Servo Timeout Setting -->
+                        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 8px; padding: 6px; background: #fff3e0; border-radius: 3px;">
+                            <label style="font-size: 12px; color: #666;">Auto-disable after:</label>
+                            <input type="number" id="servo-timeout" value="30" min="5" max="300"
+                                   style="width: 60px; padding: 4px; border: 1px solid #ccc; border-radius: 3px; font-size: 12px;">
+                            <span style="font-size: 12px; color: #666;">seconds</span>
+                            <button onclick="updateServoTimeout()" style="
+                                background: #FF9800;
+                                color: white;
+                                border: none;
+                                padding: 4px 8px;
+                                border-radius: 3px;
+                                cursor: pointer;
+                                font-size: 11px;
+                            ">Set</button>
+                        </div>
+
+                        <!-- Servo Position Control -->
                         <div style="display: flex; gap: 10px; align-items: center;">
                             <input type="number" id="servo-angle" value="0" min="0" max="180"
                                    style="width: 80px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
@@ -206,6 +225,8 @@
                                 min-width: 100px;
                             ">Set Position</button>
                         </div>
+
+                        <!-- Preset and Disable Buttons -->
                         <div style="display: flex; gap: 5px; margin-top: 8px;">
                             <button onclick="setPresetAngle(0)" style="
                                 background: #81C784;
@@ -234,7 +255,19 @@
                                 cursor: pointer;
                                 font-size: 11px;
                             ">Down (180°)</button>
+                            <button onclick="disableServo()" style="
+                                background: #f44336;
+                                color: white;
+                                border: none;
+                                padding: 4px 8px;
+                                border-radius: 3px;
+                                cursor: pointer;
+                                font-size: 11px;
+                                font-weight: bold;
+                            ">🔌 OFF</button>
                         </div>
+
+                        <!-- Status Displays -->
                         <div id="current-servo-display" style="
                             margin-top: 8px;
                             padding: 6px;
@@ -244,6 +277,17 @@
                             color: #2e7d32;
                         ">
                             Current Position: 0°
+                        </div>
+                        <div id="servo-status-display" style="
+                            margin-top: 4px;
+                            padding: 6px;
+                            background: rgba(244, 67, 54, 0.1);
+                            border-radius: 3px;
+                            font-size: 11px;
+                            color: #c62828;
+                            display: none;
+                        ">
+                            Servo: OFF (Power Saving)
                         </div>
                     </div>
 
@@ -520,7 +564,7 @@
             return;
         }
 
-        const command = `SET_SERVO SERVO=linearactuator_servo_l0 ANGLE=${angle}`;
+        const command = `SET_SERVO_ANGLE_L0 ANGLE=${angle}`;
         showStatus(`Setting pipette height to ${angle}° (Command: ${command})`);
         sendGcode(command);
 
@@ -529,6 +573,40 @@
 
         // Save position
         localStorage.setItem('servo-angle', angle);
+
+        // Auto-disable servo after timeout to prevent overheating
+        const timeout = parseInt(localStorage.getItem('servo-timeout') || '30') * 1000;
+        clearTimeout(window.servoTimeoutId);
+        window.servoTimeoutId = setTimeout(() => {
+            disableServo();
+            showStatus(`Servo auto-disabled after ${timeout/1000}s to prevent overheating (Command: DISABLE_LINEARACTUATOR_SERVO_L0)`, 'info');
+        }, timeout);
+
+        // Update servo status
+        updateServoStatus(true, timeout/1000);
+    };
+
+    // Function to disable servo
+    window.disableServo = function() {
+        const command = 'DISABLE_LINEARACTUATOR_SERVO_L0';
+        showStatus(`Servo disabled (power off) - Command: ${command}`);
+        sendGcode(command);
+        clearTimeout(window.servoTimeoutId);
+        updateServoStatus(false);
+    };
+
+    // Function to update servo timeout setting
+    window.updateServoTimeout = function() {
+        const timeoutInput = document.getElementById('servo-timeout');
+        const timeout = parseInt(timeoutInput.value);
+
+        if (timeout < 5 || timeout > 300) {
+            showStatus('Timeout must be between 5-300 seconds', 'error');
+            return;
+        }
+
+        localStorage.setItem('servo-timeout', timeout);
+        showStatus(`Auto-disable timeout set to ${timeout}s`);
     };
 
     // Function for preset angle buttons
@@ -571,6 +649,21 @@
         }
     }
 
+    function updateServoStatus(isOn, timeoutSeconds = null) {
+        const statusDisplay = document.getElementById('servo-status-display');
+        if (isOn) {
+            statusDisplay.style.display = 'block';
+            statusDisplay.style.background = 'rgba(76, 175, 80, 0.1)';
+            statusDisplay.style.color = '#2e7d32';
+            statusDisplay.textContent = `Servo: ON ${timeoutSeconds ? `(Auto-off in ${timeoutSeconds}s)` : ''}`;
+        } else {
+            statusDisplay.style.display = 'block';
+            statusDisplay.style.background = 'rgba(244, 67, 54, 0.1)';
+            statusDisplay.style.color = '#c62828';
+            statusDisplay.textContent = 'Servo: OFF (Power Saving)';
+        }
+    }
+
     function updateTipDisplay(tipType) {
         const display = document.getElementById('current-tip-display');
         const descriptions = {
@@ -593,9 +686,14 @@
 
     function loadSavedServoPosition() {
         const savedAngle = localStorage.getItem('servo-angle') || '0';
+        const savedTimeout = localStorage.getItem('servo-timeout') || '30';
         const servoInput = document.getElementById('servo-angle');
+        const timeoutInput = document.getElementById('servo-timeout');
+
         servoInput.value = savedAngle;
+        timeoutInput.value = savedTimeout;
         updateServoDisplay(parseInt(savedAngle));
+        updateServoStatus(false); // Start with servo off
     }
 
     function showStatus(message, type = 'info') {
