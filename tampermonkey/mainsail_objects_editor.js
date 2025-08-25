@@ -1,7 +1,7 @@
 // ==UserScript==
 // @name         Object Editor & Macro Editor
 // @namespace    http://tampermonkey.net/
-// @version      2.2
+// @version      2.3
 // @description  Object positioning editor and macro generator for lab automation with Klipper/Mainsail
 // @author       Rister
 // @match        http://192.168.1.89:81/*
@@ -228,7 +228,7 @@
                     margin: -15px -15px 15px -15px;
                     border-radius: 6px 6px 0 0;
                 ">
-                    <h3 style="margin: 0; color: #333;">⬜ Object Editor</h3>
+                    <h3 style="margin: 0; color: #333;">Object Editor</h3>
                     <button id="toggle-editor" style="
                         background: #666;
                         color: white;
@@ -464,7 +464,7 @@
                     cursor: move; user-select: none; background: #f0f0f0; padding: 8px;
                     margin: -15px -15px 15px -15px; border-radius: 6px 6px 0 0;
                 ">
-                    <h3 style="margin: 0; color: #333;">🔧 G-code Builder</h3>
+                    <h3 style="margin: 0; color: #333;">G-code Builder</h3>
                     <button id="toggle-macro-editor" style="
                         background: #666; color: white; border: none; border-radius: 4px;
                         padding: 5px 8px; cursor: pointer;
@@ -536,7 +536,7 @@
                             Ready-to-run G-code sequence. Copy and paste directly into Mainsail console or save as .gcode file.
                         </div>
 
-                        <div style="display: flex; gap: 5px; margin-bottom: 15px;">
+                        <div style="display: flex; gap: 5px; margin-bottom: 10px;">
                             <button id="btn-save-macro" style="
                                 background: #4CAF50; color: white; border: none; padding: 6px 12px;
                                 border-radius: 4px; cursor: pointer; flex: 1;
@@ -545,10 +545,17 @@
                                 background: #2196F3; color: white; border: none; padding: 6px 12px;
                                 border-radius: 4px; cursor: pointer; flex: 1;
                             ">Copy G-code</button>
+                        </div>
+
+                        <div style="display: flex; gap: 5px; margin-bottom: 15px;">
                             <button id="btn-download-gcode" style="
                                 background: #FF9800; color: white; border: none; padding: 6px 12px;
                                 border-radius: 4px; cursor: pointer; flex: 1;
                             ">Download .gcode</button>
+                            <button id="btn-run-gcode" style="
+                                background: #E91E63; color: white; border: none; padding: 6px 12px;
+                                border-radius: 4px; cursor: pointer; flex: 1; font-weight: bold;
+                            ">Run on Printer</button>
                         </div>
                     </div>
 
@@ -819,6 +826,7 @@
         document.getElementById('btn-save-macro').addEventListener('click', saveMacro);
         document.getElementById('btn-copy-gcode').addEventListener('click', copyGCode);
         document.getElementById('btn-download-gcode').addEventListener('click', downloadGCode);
+        document.getElementById('btn-run-gcode').addEventListener('click', runGCodeFile); // NEW RUN BUTTON
         document.getElementById('btn-move-up').addEventListener('click', moveMacroUp);
         document.getElementById('btn-move-down').addEventListener('click', moveMacroDown);
         document.getElementById('btn-combine-macros').addEventListener('click', combineMacros);
@@ -970,6 +978,95 @@
         newCommand += `\n`;
 
         document.getElementById('macro-output').value = currentGCode + newCommand;
+    }
+
+    // NEW FUNCTION: Run G-code file on printer
+    function runGCodeFile() {
+        const sequenceName = document.getElementById('macro-name').value.trim();
+
+        if (!sequenceName) {
+            alert('Please enter a sequence name first');
+            return;
+        }
+
+        // Generate filename (you can customize this to match your manual naming)
+        const fileName = `${sequenceName}.gcode`;
+        const klipperCommand = `SDCARD_PRINT_FILE FILENAME="${fileName}"`;
+
+        // Try to send the command via Mainsail/Fluidd API
+        sendGCodeCommand(klipperCommand, fileName);
+    }
+
+    // NEW FUNCTION: Send G-code command to printer
+    function sendGCodeCommand(command, fileName) {
+        // Try Mainsail API first
+        fetch('/printer/gcode/script', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                script: command
+            })
+        })
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Mainsail API failed');
+            }
+            return response.json();
+        })
+        .then(data => {
+            if (data.result === 'ok') {
+                alert(`Running G-code file: ${fileName}\n\nMake sure the file exists in ~/printer_data/gcodes/`);
+            } else {
+                throw new Error('Command rejected by printer');
+            }
+        })
+        .catch(error => {
+            console.log('Mainsail API failed, trying Fluidd API...', error);
+
+            // Try Fluidd API as backup
+            fetch('/api/printer/gcode/script', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    script: command
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Fluidd API also failed');
+                }
+                return response.json();
+            })
+            .then(data => {
+                if (data.result === 'ok') {
+                    alert(`Running G-code file: ${fileName}\n\nMake sure the file exists in ~/printer_data/gcodes/`);
+                } else {
+                    throw new Error('Command rejected by printer');
+                }
+            })
+            .catch(apiError => {
+                console.error('Both APIs failed:', apiError);
+
+                // Fallback: copy command to clipboard
+                navigator.clipboard.writeText(command).then(() => {
+                    alert(`Could not send command automatically.
+
+Command copied to clipboard:
+${command}
+
+Please:
+1. Make sure ${fileName} exists in ~/printer_data/gcodes/
+2. Paste the command in your Mainsail/Fluidd console`);
+                }).catch(() => {
+                    // Ultimate fallback
+                    prompt('Copy this command to your printer console:', command);
+                });
+            });
+        });
     }
 
     function copyGCode() {
@@ -1473,7 +1570,7 @@
             objects: objects,
             printerArea: printerArea,
             timestamp: new Date().toISOString(),
-            version: '2.2'
+            version: '2.3'
         };
 
         const dataStr = JSON.stringify(config, null, 2);
@@ -1580,7 +1677,7 @@
             objects: objects,
             printerArea: printerArea,
             timestamp: new Date().toISOString(),
-            version: '2.2'
+            version: '2.3'
         };
 
         const dataStr = JSON.stringify(config, null, 2);
