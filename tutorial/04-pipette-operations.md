@@ -83,7 +83,7 @@ Once installed, you should see three new panels appear in your Mainsail interfac
 
 ### Object Editor Interface
 
-![Object Editor Interface](images/object_editor.PNG)
+![Object Editor Interface](images/object_editor.png)
 
 The Object Editor provides comprehensive workspace management for defining laboratory objects and their positions on the printer bed. This interface is essential for creating repeatable, automated workflows.
 
@@ -112,7 +112,7 @@ The Object Editor provides comprehensive workspace management for defining labor
 
 ### G-code Builder Interface  
 
-![G-code Builder Interface](images/g-code_builder.PNG)
+![G-code Builder Interface](images/g-code_builder.png)
 
 The G-code Builder transforms defined objects into executable printer commands, enabling automated movement sequences and complex operational workflows.
 
@@ -134,7 +134,7 @@ The G-code Builder transforms defined objects into executable printer commands, 
 
 ### Fluidics Control Interface
 
-![Fluidics Control Interface](images/fluidics_control.PNG)
+![Fluidics Control Interface](images/fluidics_control.png)
 
 The Fluidics Control panel provides direct control over all liquid handling components, enabling manual operation and system management.
 
