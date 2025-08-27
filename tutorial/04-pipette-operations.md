@@ -71,6 +71,109 @@ When the pipette is positioned over the wash basin, the system can perform autom
 
 This design creates a closed-loop fluid handling system with automated filling, precise dispensing control, and integrated cleaning capabilities.
 
+## Mainsail Control Interface
+
+The Rister pipette system includes three custom Tampermonkey scripts that provide enhanced control interfaces within Mainsail. These tools are essential for efficient pipette operations, allowing you to define workspace objects, generate G-code sequences, and control fluidic components directly from the web interface.
+
+### Script Installation
+
+The Rister pipette system requires two custom Tampermonkey scripts to enable the enhanced control interfaces. For complete installation instructions, see the [Tampermonkey Setup Guide](https://github.com/htsrjdrouse/rister-toolchanger/blob/main/tampermonkey/README.md).
+
+Once installed, you should see three new panels appear in your Mainsail interface: Object Editor, G-code Builder, and Fluidics Control.
+
+### Object Editor Interface
+
+![Object Editor Interface](images/object_editor.PNG)
+
+The Object Editor provides comprehensive workspace management for defining laboratory objects and their positions on the printer bed. This interface is essential for creating repeatable, automated workflows.
+
+**Key Components:**
+
+**Define Printer Area:** Configure your printer's working dimensions to match your physical setup. The system uses these boundaries to validate object positions and provide accurate coordinate mapping.
+
+**Defined Objects:** Visual representation of all objects on the printer bed. Objects are displayed with their actual sizes and array configurations, allowing you to verify positioning before running operations.
+
+**Objects List:** Interactive list showing all created objects with their key properties including position coordinates, dimensions, and array configurations. Click any object to edit its properties.
+
+**Object Properties:** Detailed configuration panel for each object including:
+- Position coordinates (X, Y, Z)
+- Object dimensions and shapes  
+- Array configurations (rows, columns, spacing)
+- Margin and offset settings
+- Visual appearance properties
+
+**Functional Capabilities:**
+- Create new objects with customizable properties
+- Clone existing objects for similar setups
+- Visual positioning with grid overlay
+- Array definition for multi-well plates or tip racks
+- Export/import configurations for setup sharing
+- Real-time coordinate generation
+
+### G-code Builder Interface  
+
+![G-code Builder Interface](images/g-code_builder.PNG)
+
+The G-code Builder transforms defined objects into executable printer commands, enabling automated movement sequences and complex operational workflows.
+
+**Key Components:**
+
+**Select Object to Get Positioning Coordinates:** Choose from your defined objects and specify array positions to generate precise movement commands. The interface calculates exact coordinates based on object definitions and array configurations.
+
+**G-code Content:** Real-time generation of executable G-code sequences with proper formatting for Mainsail console execution. Commands include movement instructions, positioning data, and operational parameters.
+
+**Select G-code Sequences:** Saved sequence management allowing you to store, organize, and combine multiple operation sequences. This enables building complex protocols from simpler components.
+
+**Operational Features:**
+- Automatic coordinate calculation from object definitions
+- Array-specific positioning (e.g., well A1, B3, etc.)
+- Sequence combination and reordering
+- Direct execution via "Run on Printer" functionality
+- Export capabilities for external use
+- Template generation for common operations
+
+### Fluidics Control Interface
+
+![Fluidics Control Interface](images/fluidics_control.PNG)
+
+The Fluidics Control panel provides direct control over all liquid handling components, enabling manual operation and system management.
+
+**Key Components:**
+
+**Adjust Pipette Linear Actuator:** Precise control of the pipette positioning mechanism with preset angles (Up 0°, Mid 90°, Down 180°) and custom positioning. Includes auto-disable timeout to prevent servo overheating and power management features.
+
+**Select Pipette Type:** Choose between P100 (small volume) and P300 (standard volume) tip configurations. This selection affects positioning calculations and ensures proper tip sealing and operation.
+
+**Liquid Handling Functions:** Comprehensive control of all fluidic system components including:
+- Pressure Control Valve (PCV) operation in feedback or manual mode
+- Wash system control (on/off operation) 
+- Waste management system control
+- 3-way valve positioning (Input, Output, Bypass)
+- Positioning commands for wash and waste stations
+- Pipette ejection functionality
+- Touch-dry operations
+
+**System Management Features:**
+- Real-time status monitoring
+- Timed wash cycles with customizable duration
+- Safety interlocks and error reporting
+- Position memory and restoration
+- Direct G-code command transmission
+
+### Integration Benefits
+
+**Coordinated Operation:** All three interfaces work together to provide seamless laboratory automation:
+
+1. **Object Editor** defines the physical workspace and object locations
+2. **G-code Builder** converts object definitions into movement sequences  
+3. **Fluidics Control** manages liquid handling operations at those positions
+
+**Workflow Efficiency:** The integrated system eliminates manual coordinate calculation, reduces setup time, and ensures consistent operations across different users and sessions.
+
+**Error Prevention:** Visual feedback and validation prevent positioning errors, collision risks, and operational mistakes that could damage equipment or compromise experiments.
+
+**Protocol Development:** The combination enables rapid development and testing of automated protocols, with the ability to save, share, and modify operational sequences.
+
 ## Prerequisites
 
 - ✅ Rister Toolchanger calibrated and homed (see [Tool Calibration and Homing](01-calibration-and-homing.md))
@@ -78,6 +181,8 @@ This design creates a closed-loop fluid handling system with automated filling, 
 - ✅ Fluid management system filled and pressurized
 - ✅ Cleaning system operational with wash basin positioned
 - ✅ Waste collection system connected and functional
+- ✅ **Tampermonkey scripts installed and operational in browser**
+- ✅ **Mainsail control interfaces configured and tested**
 
 ## Safety First
 
