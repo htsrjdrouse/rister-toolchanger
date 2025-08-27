@@ -6,6 +6,7 @@
 - Contamination-free tip disposal
 - Cleaning System Issues
 
+<!--
 **Symptom:** Ineffective cleaning
 - **Cause:** Insufficient cleaning fluid flow or improper waste removal
 - **Check:** Peristaltic pump operation and fluid levels
@@ -18,6 +19,8 @@
 *Click the thumbnail above to watch the video tutorial*
 
 This tutorial covers the linear actuator pipette tool (L0) with your Rister Toolchanger, including the fluid management system design, operational principles, and cleaning procedures.
+-->
+
 
 ## Overview
 
