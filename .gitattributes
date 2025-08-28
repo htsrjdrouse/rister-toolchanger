@@ -1,2 +1,4 @@
 *.step filter=lfs diff=lfs merge=lfs -text
 *.FCStd filter=lfs diff=lfs merge=lfs -text
+*.FCStd1 filter=lfs diff=lfs merge=lfs -text
+cad/rister_multi-modal_toolchanger.FCStd1 filter=lfs diff=lfs merge=lfs -text
