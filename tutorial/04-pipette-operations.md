@@ -11,13 +11,18 @@
 - **Cause:** Insufficient cleaning fluid flow or improper waste removal
 - **Check:** Peristaltic pump operation and fluid levels
 - **Solution:** Verify all pumps are operational, check cleaning fluid supply# Linear Actuator Pipette Operations
+-->
 
 **Video Tutorial:**
-
-[![Rister Toolchanger - Linear Actuator Pipette Operations](https://img.youtube.com/vi/VIDEO_ID_HERE/0.jpg)](https://www.youtube.com/watch?v=VIDEO_ID_HERE)
+https://www.youtube.com/watch?v=jGlJavWvzJA
+[![Rister Toolchanger - Linear Actuator Pipette Operations](https://img.youtube.com/vi/jGlJavWvzJA/0.jpg)](https://www.youtube.com/watch?v=jGlJavWvzJA)
 
 *Click the thumbnail above to watch the video tutorial*
 
+The corresponding gcode file is: [loading_aspiration_ejection.gcode](gcodes/loading_aspiration_ejection.gcode)
+
+
+<!--
 This tutorial covers the linear actuator pipette tool (L0) with your Rister Toolchanger, including the fluid management system design, operational principles, and cleaning procedures.
 -->
 
