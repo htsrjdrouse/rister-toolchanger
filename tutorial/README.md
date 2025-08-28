@@ -57,6 +57,8 @@ Each tutorial includes:
 <!-- Volume accuracy and repeatability-->
 - Cleaning and maintenance protocols
 
+
+<!--
 ### 🚀 **Advanced Techniques**
 
 #### 5. Camera-Based Extruder Offset Calibration
@@ -133,7 +135,7 @@ For additional help:
 - Check the [main repository documentation](../README.md)
 - Review [configuration examples](../config/)
 - Join community discussions in the repository issues
-
+-->
 ---
 
 **Note:** These tutorials assume you have a properly assembled Rister Toolchanger system. If you need assembly instructions, please refer to the main repository documentation.
