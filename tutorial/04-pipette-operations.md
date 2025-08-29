@@ -13,11 +13,17 @@
 - **Solution:** Verify all pumps are operational, check cleaning fluid supply# Linear Actuator Pipette Operations
 -->
 
-**Video Tutorial:**
+**Video**
 https://www.youtube.com/watch?v=jGlJavWvzJA
+
+
+
 [![Rister Toolchanger - Linear Actuator Pipette Operations](https://img.youtube.com/vi/jGlJavWvzJA/0.jpg)](https://www.youtube.com/watch?v=jGlJavWvzJA)
 
-*Click the thumbnail above to watch the video tutorial*
+
+*Click the thumbnail above to watch the video*
+
+
 
 The corresponding gcode file is: [loading_aspiration_ejection.gcode](gcodes/loading_aspiration_ejection.gcode)
 
@@ -29,7 +35,7 @@ This tutorial covers the linear actuator pipette tool (L0) with your Rister Tool
 
 ## Overview
 
-The Rister linear actuator pipette system provides precise liquid handling capabilities through an integrated fluid management system. The tool combines pressure-controlled dispensing with automated cleaning for reliable, repeatable liquid operations and a control interface that works with Mainsail that includes expanded user inteface for controlling fluidics.
+The linear actuator driven pipetting system provides precise liquid handling capabilities through an integrated fluid management system. The tool combines pressure-controlled dispensing with automated cleaning for reliable, repeatable liquid operations and a control interface that works with Mainsail that includes expanded user inteface for controlling fluidics.
 
 [Fluidics control](images/tampermonkey_fluidics_control_expanded.png)
 
