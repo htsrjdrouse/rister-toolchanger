@@ -13,19 +13,6 @@
 - **Solution:** Verify all pumps are operational, check cleaning fluid supply# Linear Actuator Pipette Operations
 -->
 
-**Video**
-https://www.youtube.com/watch?v=jGlJavWvzJA
-
-
-
-[![Rister Toolchanger - Linear Actuator Pipette Operations](https://img.youtube.com/vi/jGlJavWvzJA/0.jpg)](https://www.youtube.com/watch?v=jGlJavWvzJA)
-
-
-*Click the thumbnail above to watch the video*
-
-
-
-The corresponding gcode file is: [loading_aspiration_ejection.gcode](gcodes/loading_aspiration_ejection.gcode)
 
 
 <!--
@@ -184,6 +171,52 @@ The Fluidics Control panel provides direct control over all liquid handling comp
 **Error Prevention:** Visual feedback and validation prevent positioning errors, collision risks, and operational mistakes that could damage equipment or compromise experiments.
 
 **Protocol Development:** The combination enables rapid development and testing of automated protocols, with the ability to save, share, and modify operational sequences.
+
+
+
+## Examples ##
+
+** Pipette loading, aspiration and dispense**
+https://www.youtube.com/watch?v=jGlJavWvzJA
+
+
+
+[![Rister Toolchanger - Linear Actuator Pipette Operations](https://img.youtube.com/vi/jGlJavWvzJA/0.jpg)](https://www.youtube.com/watch?v=jGlJavWvzJA)
+
+
+*Click the thumbnail above to watch the video*
+
+
+The corresponding gcode file is: [loading_aspiration_ejection.gcode](gcodes/loading_aspiration_ejection.gcode)
+
+
+
+** Sample loading and washing**
+https://www.youtube.com/watch?v=ymJJTOd5sF0
+
+
+
+[![Rister Toolchanger - Linear Actuator Pipette Operations](https://img.youtube.com/vi/ymJJTOd5sF0/0.jpg)](https://www.youtube.com/watch?v=ymJJTOd5sF0)
+
+
+*Click the thumbnail above to watch the video*
+
+
+The corresponding gcode file is: [loading_aspiration_ejection.gcode](gcodes/POSITION_WATERWELL_ASPIRATE_WASHINOUT.gcode)
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 ## Prerequisites
 
