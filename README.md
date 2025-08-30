@@ -493,6 +493,9 @@ mosquitto_pub -h <KLIPPER_PI_IP> -t "dakash/camera/command" \
   -m '{"command":"focus","mode":"manual","position":20}'
 ```
 
+More details including how to use the Camera including GUI interface [Camera Tutorial](https://github.com/htsrjdrouse/rister-toolchanger/blob/main/tutorial/03-camera-focus-positioning.md)
+
+
 ### Tool Calibration
 
 **Dock Position Calibration:**
