@@ -95,6 +95,12 @@ Each tool type uses optimized communication protocols and provides comprehensive
 **Klipper Extras Module (CRITICAL):**
 ```
 ~/klipper/klippy/extras/camera_dock_calibrate.py  # Camera dock calibration module
+~/klipper/klippy/extras/arduino_serial.py  # Arduino serial connection
+~/klipper/klippy/extras/atc_switch.py  # Module for executing shell commands from g-code
+~/klipper/klippy/extras/generic_dock_calibrate.py  # Generic dock calibration
+~/klipper/klippy/extras/led_effect.py  # Full color programmable led controller
+~/klipper/klippy/extras/tool_probe.py  # Per-tool Z-Probe support
+~/klipper/klippy/extras/tool_probe_endstop.py  # Per-tool Z-Probe support
 ```
 
 **Klipper Configuration Files:**
