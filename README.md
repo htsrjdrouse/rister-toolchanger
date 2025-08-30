@@ -29,7 +29,7 @@ Each tool type uses optimized communication protocols and provides comprehensive
 - **Web-Based Camera Control**: Flask interface with programmable focus
 - **Precision Liquid Handling**: Syringe pump with valve control and wash station
 - **Configuration Files**: 20+ Klipper .cfg files for comprehensive system integration
-- **Python Modules**: Custom Klipper extras (camera_dock_calibrate.py) for specialized functionality
+- **Python Modules**: Custom Klipper extras (camera_dock_calibrate.py,arduino_serial.py,atc_switch.py,gcode_shell_command.py,generic_dock_calibrate.py,led_effect.py,tool_probe.py,tool_probe_endstop.py) for specialized functionality
 - **G-code Macros**: Unified command interface with 50+ custom macros
 
 ## System Architecture
@@ -414,26 +414,12 @@ M104 S200
 
 ### Liquid Dispensing (L0)
 
-**Basic liquid operations:**
-```gcode
-# Load liquid dispenser
-L0
-
-# Dispense liquid (amount in mm)
-DISPENSE_LIQUID AMOUNT=0.5 SPEED=2
-
-# Refill syringe from reservoir
-REFILL_SYRINGE AMOUNT=5 SPEED=1
-
-# Wash pipette tip
-WASH_PIPETTE TIME=10
-```
-
 **Advanced liquid handling:**
 ```gcode
 # Manual valve control
-SYRINGE_PUMP0_VALVE_INPUT   # Set to input (refill)
-SYRINGE_PUMP0_VALVE_OUTPUT  # Set to output (dispense)
+VALVE_INPUT   # Set to input (refill)
+VALVE_OUTPUT  # Set to output (dispense)
+VALVE_BYPASS  # Set to output (dispense)
 
 # Linear actuator control
 SET_SERVO SERVO=linearactuator_servo_l0 ANGLE=180  # Lower pipette
@@ -458,6 +444,10 @@ MANUAL_PCV                   # Switch to manual PCV control
 FEEDBACK_PCV                 # Enable automatic level-based PCV control
 READ_LEVEL_SENSOR            # Read liquid level sensor state
 ```
+
+More details including how to use GUI interface [Liquid Handling Tutorial](https://github.com/htsrjdrouse/rister-toolchanger/blob/main/tutorial/04-pipette-operations.md)
+
+
 
 ### Camera Operations (C0)
 
@@ -507,23 +497,16 @@ mosquitto_pub -h <KLIPPER_PI_IP> -t "dakash/camera/command" \
 
 **Dock Position Calibration:**
 ```gcode
-# Camera dock calibration (uses the custom Klipper extras module)
-CALC_CAMERADOCK_LOCATION CAMERATOOL=0  # Calibrate camera tool dock
 
 # Other tool dock calibration  
 CALC_DOCK_LOCATION TOOL_ID="e0"       # Calibrate extruder 0
 CALC_DOCK_LOCATION TOOL_ID="e1"       # Calibrate extruder 1
 CALC_DOCK_LOCATION TOOL_ID="l0"       # Calibrate liquid dispenser
+CALC_DOCK_LOCATION TOOL_ID="C0"       # Calibrate camera tool
 
-# Test camera dock positioning
-CAMERA_DOCK_TEST                      # Test camera dock position
-
-# Legacy compatibility commands also available:
-CALIBRATE_EXTRUDER_DOCK TOOL_ID=0
-CALIBRATE_CAMERA_DOCK CAMERATOOL=0    # Alternative to CALC_CAMERADOCK_LOCATION
 ```
 
-**Tool Probe Calibration (E1 has Klicky probe):**
+**Tool Probe Calibration (E0 has Klicky probe):**
 ```gcode
 # Z-offset calibration for tool with probe
 PROBE_CALIBRATE
