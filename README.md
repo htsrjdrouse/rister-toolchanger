@@ -692,7 +692,12 @@ If upgrading from a previous version:
 
 4. **Test new functionality:**
    ```gcode
-   CAMERA_SERVICE_STATUS        # Verify integrated service
+   # Test position publishing
+   G0 X200 Y150 Z100    # Move to known position  
+   REPORT_PRINTER_POSITION  # Should save to variables.cfg and publish via MQTT
+   
+   # Optional: Test sensor monitoring
+   CAMERA_SERVICE_STATUS        # If using integrated service
    CAMERA_CALIBRATION_WIZARD    # Test calibration system
    ```
 
