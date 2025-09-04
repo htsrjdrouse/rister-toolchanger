@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 """
 Camera Controller with Flask and MQTT - Enhanced with Calibration Tool
-Adds pixel-to-printer coordinate mapping functionality for extruder offset calibration
+FIXED: Uses the working publish_position.sh method for position reporting
 """
+import requests
 import os
 import time
 import threading
@@ -13,9 +14,9 @@ from datetime import datetime
 from flask import Flask, Response, send_file, jsonify, request
 import paho.mqtt.client as mqtt
 
-# Configure logging
+# Configure logging with more detailed output
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler()
@@ -44,15 +45,15 @@ MQTT_PORT = 1883
 MQTT_COMMAND_TOPIC = "dakash/camera/command"
 MQTT_CONFIG_TOPIC = "dakash/camera/config"
 MQTT_STATUS_TOPIC = "dakash/camera/status"
-MQTT_KLIPPER_POSITION_REQUEST = "dakash/klipper/position/request"
+MQTT_KLIPPER_GCODE_TOPIC = "dakash/klipper/gcode"
 MQTT_KLIPPER_POSITION_RESPONSE = "dakash/klipper/position/response"
 MQTT_CALIBRATION_TOPIC = "dakash/camera/calibration"
 
 # Calibration settings
 calibration_data = {
-    "microns_per_pixel_x": 10.0,  # Default value, user configurable
-    "microns_per_pixel_y": 10.0,  # Default value, user configurable
-    "reference_points": [],       # List of {pixel_x, pixel_y, printer_x, printer_y, printer_z}
+    "microns_per_pixel_x": 10.0,
+    "microns_per_pixel_y": 10.0,
+    "reference_points": [],
     "enabled": False
 }
 
@@ -70,8 +71,12 @@ current_frame = None
 frame_lock = threading.Lock()
 mqtt_client = None
 frame_count = 0
-current_printer_position = {"x": 0, "y": 0, "z": 0}
+
+# FIXED: Better position tracking with thread safety
+current_printer_position = {"x": 0.0, "y": 0.0, "z": 0.0}
+position_lock = threading.Lock()
 position_request_pending = False
+position_request_timestamp = 0
 
 def load_calibration_data():
     """Load calibration data from file"""
@@ -98,15 +103,43 @@ def save_calibration_data():
         return False
 
 def request_printer_position():
-    """Request current printer position via MQTT"""
-    global mqtt_client, position_request_pending
+    """Get printer position directly from Klipper API - much faster than MQTT"""
+    global current_printer_position, position_request_pending
     
-    if mqtt_client and mqtt_client.is_connected():
-        position_request_pending = True
-        mqtt_client.publish(MQTT_KLIPPER_POSITION_REQUEST, json.dumps({"request": "current_position"}))
-        logger.info("Requested printer position")
-        return True
-    return False
+    logger.debug("request_printer_position() called - using direct API")
+    
+    try:
+        # Get position directly from Klipper API
+        klipper_ip = "192.168.1.89"
+        url = f"http://{klipper_ip}/printer/objects/query?gcode_move"
+        
+        response = requests.get(url, timeout=3)
+        
+        if response.status_code == 200:
+            data = response.json()
+            gcode_pos = data['result']['status']['gcode_move']['gcode_position']
+            
+            with position_lock:
+                current_printer_position = {
+                    "x": round(float(gcode_pos[0]), 3),
+                    "y": round(float(gcode_pos[1]), 3),
+                    "z": round(float(gcode_pos[2]), 3)
+                }
+                position_request_pending = False
+            
+            logger.info(f"Got position from Klipper API: {current_printer_position}")
+            return True
+        else:
+            logger.error(f"Klipper API request failed: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error getting position from Klipper API: {e}")
+        with position_lock:
+            position_request_pending = False
+        return False
+
+
 
 def pixel_to_printer_coordinates(pixel_x, pixel_y, reference_printer_x, reference_printer_y):
     """Convert pixel coordinates to printer coordinates using calibration"""
@@ -121,8 +154,8 @@ def pixel_to_printer_coordinates(pixel_x, pixel_y, reference_printer_x, referenc
     pixel_offset_y = pixel_y - ref_point["pixel_y"]
     
     # Convert to printer coordinates using microns per pixel
-    printer_offset_x = pixel_offset_x * calibration_data["microns_per_pixel_x"] / 1000.0  # Convert to mm
-    printer_offset_y = pixel_offset_y * calibration_data["microns_per_pixel_y"] / 1000.0  # Convert to mm
+    printer_offset_x = pixel_offset_x * calibration_data["microns_per_pixel_x"] / 1000.0
+    printer_offset_y = pixel_offset_y * calibration_data["microns_per_pixel_y"] / 1000.0
     
     # Calculate absolute printer coordinates
     printer_x = ref_point["printer_x"] + printer_offset_x
@@ -135,9 +168,6 @@ def pixel_to_printer_coordinates(pixel_x, pixel_y, reference_printer_x, referenc
         "pixel_offset": {"x": pixel_offset_x, "y": pixel_offset_y},
         "printer_offset": {"x": printer_offset_x, "y": printer_offset_y}
     }
-
-# ... [Keep all existing camera functions: get_focus_info, control_autofocus, capture_frame, 
-#      streaming_worker, start_stream, stop_stream, capture_image, update_camera_config] ...
 
 def get_focus_info():
     """Get current focus mode and position"""
@@ -347,6 +377,9 @@ def publish_status():
     if mqtt_client and mqtt_client.is_connected():
         focus_info = get_focus_info()
         
+        with position_lock:
+            current_pos = current_printer_position.copy()
+        
         status = {
             "timestamp": datetime.now().isoformat(),
             "streaming": STREAM_ACTIVE,
@@ -357,7 +390,8 @@ def publish_status():
             "capture_width": CAPTURE_WIDTH,
             "capture_height": CAPTURE_HEIGHT,
             "stream_quality": STREAM_QUALITY,
-            "calibration": calibration_data
+            "calibration": calibration_data,
+            "current_position": current_pos
         }
         
         mqtt_client.publish(MQTT_STATUS_TOPIC, json.dumps(status))
@@ -372,36 +406,49 @@ def on_connect(client, userdata, flags, rc):
         client.subscribe(MQTT_COMMAND_TOPIC)
         client.subscribe(MQTT_CONFIG_TOPIC)
         client.subscribe(MQTT_KLIPPER_POSITION_RESPONSE)
+        logger.info(f"Subscribed to topics: {MQTT_COMMAND_TOPIC}, {MQTT_CONFIG_TOPIC}, {MQTT_KLIPPER_POSITION_RESPONSE}")
         publish_status()
     else:
         logger.error(f"Failed to connect to MQTT broker, return code {rc}")
 
 def on_message(client, userdata, msg):
-    """Handle received MQTT messages"""
+    """FIXED: Handle received MQTT messages with better debugging"""
     global current_printer_position, position_request_pending
     
     try:
         topic = msg.topic
-        payload = json.loads(msg.payload.decode())
-        logger.info(f"MQTT message received: {topic} = {payload}")
+        payload_str = msg.payload.decode()
+        logger.debug(f"Raw MQTT message: {topic} = {payload_str}")
+        
+        payload = json.loads(payload_str)
+        logger.info(f"Parsed MQTT message: {topic} = {payload}")
         
         if topic == MQTT_COMMAND_TOPIC:
             handle_command_message(payload)
         elif topic == MQTT_CONFIG_TOPIC:
             update_camera_config(payload)
         elif topic == MQTT_KLIPPER_POSITION_RESPONSE:
-            # Handle printer position response
-            if "x" in payload and "y" in payload and "z" in payload:
-                current_printer_position = {
-                    "x": float(payload["x"]),
-                    "y": float(payload["y"]),
-                    "z": float(payload["z"])
-                }
-                position_request_pending = False
-                logger.info(f"Printer position updated: {current_printer_position}")
+            logger.info(f"Position response received: {payload}")
+            # Handle printer position response from publish_position.sh
+            if isinstance(payload, dict) and "x" in payload and "y" in payload and "z" in payload:
+                if payload.get("status") == "success":
+                    with position_lock:
+                        current_printer_position = {
+                            "x": float(payload["x"]),
+                            "y": float(payload["y"]),
+                            "z": float(payload["z"])
+                        }
+                        position_request_pending = False
+                    logger.info(f"Printer position updated to: {current_printer_position}")
+                else:
+                    logger.error(f"Position request failed: {payload}")
+                    with position_lock:
+                        position_request_pending = False
+            else:
+                logger.error(f"Invalid position response format: {payload}")
             
-    except json.JSONDecodeError:
-        logger.error(f"Invalid JSON in MQTT message: {msg.payload}")
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error in MQTT message: {e}, payload: {msg.payload}")
     except Exception as e:
         logger.error(f"Error processing MQTT message: {e}")
 
@@ -415,6 +462,7 @@ def handle_command_message(payload):
             return False
             
         command = payload["command"]
+        logger.info(f"Processing command: {command}")
         
         if command == "stream_start":
             start_stream()
@@ -448,10 +496,11 @@ def setup_mqtt_client():
         mqtt_client.on_connect = on_connect
         mqtt_client.on_message = on_message
         
+        logger.info(f"Connecting MQTT client to {MQTT_BROKER}:{MQTT_PORT}")
         mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
         mqtt_client.loop_start()
         
-        logger.info(f"MQTT client initialized, connecting to {MQTT_BROKER}:{MQTT_PORT}")
+        logger.info(f"MQTT client initialized and connecting")
         return True
     except Exception as e:
         logger.error(f"Failed to setup MQTT client: {e}")
@@ -512,6 +561,17 @@ def index():
             button.focus:hover { background-color: #7B1FA2; }
             button.calibration { background-color: #FF9800; }
             button.calibration:hover { background-color: #F57C00; }
+            
+            .debug-panel {
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
+                border-radius: 5px;
+                padding: 15px;
+                margin: 20px 0;
+                text-align: left;
+                font-family: monospace;
+                font-size: 12px;
+            }
             
             .calibration-panel {
                 background-color: #fff3cd;
@@ -599,7 +659,8 @@ def index():
         </style>
         <script>
             let calibrationMode = false;
-            let currentImageType = 'stream'; // 'stream' or 'snapshot'
+            let currentImageType = 'stream';
+            let debugInfo = {};
             
             window.onload = function() {
                 checkStatus();
@@ -611,6 +672,9 @@ def index():
                 fetch('/api/status')
                     .then(response => response.json())
                     .then(data => {
+                        debugInfo = data;
+                        updateDebugPanel();
+                        
                         if (data.streaming) {
                             document.getElementById('streamContainer').style.display = 'block';
                             document.getElementById('focusControls').style.display = 'flex';
@@ -627,7 +691,26 @@ def index():
                             updateCalibrationStatus(data.calibration.enabled);
                         }
                     })
-                    .catch(error => console.error('Error checking status:', error));
+                    .catch(error => {
+                        console.error('Error checking status:', error);
+                        updateDebugPanel('Error: ' + error);
+                    });
+            }
+            
+            function updateDebugPanel(error = null) {
+                const panel = document.getElementById('debugPanel');
+                if (error) {
+                    panel.innerHTML = '<strong>Error:</strong> ' + error;
+                } else {
+                    panel.innerHTML = `
+                        <strong>Debug Info:</strong><br>
+                        Current Position: X${debugInfo.printer_position?.x || 0} Y${debugInfo.printer_position?.y || 0} Z${debugInfo.printer_position?.z || 0}<br>
+                        Streaming: ${debugInfo.streaming || false}<br>
+                        Calibration Enabled: ${debugInfo.calibration?.enabled || false}<br>
+                        Reference Points: ${debugInfo.calibration?.reference_points?.length || 0}<br>
+                        Last Update: ${new Date().toLocaleTimeString()}
+                    `;
+                }
             }
             
             function refreshStreamImage() {
@@ -683,27 +766,38 @@ def index():
             function handleImageClick(event, imageType) {
                 if (!calibrationMode) return;
                 
+                console.log('Image clicked in calibration mode');
+                
                 const rect = event.target.getBoundingClientRect();
                 const x = Math.round(event.clientX - rect.left);
                 const y = Math.round(event.clientY - rect.top);
                 
-                // Request current printer position
+                console.log(`Pixel coordinates: (${x}, ${y})`);
+                
+                // Show click coordinates immediately
+                showCoordinates(event.target, x, y);
+                
+                // Request current printer position with detailed logging
+                console.log('Requesting printer position...');
                 fetch('/api/printer/position')
-                    .then(response => response.json())
+                    .then(response => {
+                        console.log('Position request response received:', response);
+                        return response.json();
+                    })
                     .then(data => {
-                        if (data.status === 'success') {
+                        console.log('Position data:', data);
+                        if (data.status === 'success' || data.status === 'timeout') {
+                            console.log(`Printer position: X${data.position.x} Y${data.position.y} Z${data.position.z}`);
                             addReferencePoint(x, y, data.position.x, data.position.y, data.position.z);
                         } else {
-                            alert('Failed to get printer position. Make sure the printer is connected.');
+                            console.error('Failed to get printer position:', data);
+                            alert('Failed to get printer position: ' + (data.message || 'Unknown error'));
                         }
                     })
                     .catch(error => {
                         console.error('Error getting printer position:', error);
-                        alert('Error getting printer position');
+                        alert('Error getting printer position: ' + error);
                     });
-                
-                // Show click coordinates temporarily
-                showCoordinates(event.target, x, y);
             }
             
             function showCoordinates(imgElement, x, y) {
@@ -726,6 +820,8 @@ def index():
             }
             
             function addReferencePoint(pixelX, pixelY, printerX, printerY, printerZ) {
+                console.log(`Adding reference point: Pixel(${pixelX}, ${pixelY}) -> Printer(${printerX}, ${printerY}, ${printerZ})`);
+                
                 const data = {
                     pixel_x: pixelX,
                     pixel_y: pixelY,
@@ -741,9 +837,17 @@ def index():
                 })
                 .then(response => response.json())
                 .then(result => {
+                    console.log('Add point result:', result);
                     if (result.status === 'success') {
                         loadCalibrationData();
+                        alert(`Reference point added successfully!\\nPixel: (${pixelX}, ${pixelY})\\nPrinter: X${printerX} Y${printerY} Z${printerZ}`);
+                    } else {
+                        alert('Failed to add reference point: ' + (result.message || 'Unknown error'));
                     }
+                })
+                .catch(error => {
+                    console.error('Error adding reference point:', error);
+                    alert('Error adding reference point: ' + error);
                 });
             }
             
@@ -828,7 +932,7 @@ def index():
                 statusElement.style.color = enabled ? 'green' : 'red';
             }
             
-            // Focus control functions (keeping existing functionality)
+            // Focus control functions
             function updateFocusValue(value) {
                 document.getElementById('focusValue').textContent = value;
             }
@@ -864,6 +968,11 @@ def index():
     <body>
         <div class="container">
             <h1>Rister Camera Controller with Calibration</h1>
+            
+            <!-- Debug Panel -->
+            <div id="debugPanel" class="debug-panel">
+                Loading debug info...
+            </div>
             
             <div class="controls">
                 <button onclick="startStream()">Start Stream</button>
@@ -935,28 +1044,61 @@ def index():
     """
     return html
 
-# New calibration API endpoints
+# Enhanced printer position API endpoint with better error handling
 @app.route('/api/printer/position')
 def api_printer_position():
-    """Get current printer position via MQTT"""
-    global current_printer_position
+    """FIXED: Get current printer position via MQTT with better debugging"""
+    global current_printer_position, position_request_pending
     
-    # Request fresh position data
+    logger.info("API: Printer position requested")
+    
+    # First check if we already have a recent position
+    with position_lock:
+        current_pos = current_printer_position.copy()
+        is_pending = position_request_pending
+    
+    logger.info(f"Current cached position: {current_pos}")
+    
+    # Try to get fresh position
     if request_printer_position():
-        # Wait briefly for response
-        timeout = 5
+        logger.info("Position request sent, waiting for response...")
+        
+        # Wait for response with timeout
+        timeout = 10  # Increased timeout for debugging
         start_time = time.time()
-        while position_request_pending and (time.time() - start_time) < timeout:
+        
+        while True:
+            with position_lock:
+                is_pending = position_request_pending
+                current_pos = current_printer_position.copy()
+            
+            if not is_pending:
+                logger.info(f"Position response received: {current_pos}")
+                return jsonify({
+                    "status": "success",
+                    "position": current_pos,
+                    "wait_time": round(time.time() - start_time, 2)
+                })
+            
+            if (time.time() - start_time) > timeout:
+                logger.warning(f"Position request timeout after {timeout}s, using cached position")
+                break
+                
             time.sleep(0.1)
         
+        # Timeout - return cached position with warning
         return jsonify({
-            "status": "success",
-            "position": current_printer_position
+            "status": "timeout",
+            "position": current_pos,
+            "message": f"Position request timed out after {timeout}s, using cached position",
+            "wait_time": timeout
         })
     else:
+        logger.error("Failed to send position request")
         return jsonify({
             "status": "error",
-            "message": "Failed to request printer position"
+            "position": current_pos,
+            "message": "Failed to request printer position - MQTT not connected"
         })
 
 @app.route('/api/calibration/add_point', methods=['POST'])
@@ -964,6 +1106,7 @@ def api_calibration_add_point():
     """Add a reference point for calibration"""
     try:
         data = request.json
+        logger.info(f"Adding calibration point: {data}")
         
         point = {
             "pixel_x": int(data["pixel_x"]),
@@ -1032,10 +1175,13 @@ def api_calibration_convert():
         pixel_x = int(data["pixel_x"])
         pixel_y = int(data["pixel_y"])
         
+        with position_lock:
+            current_pos = current_printer_position.copy()
+        
         result = pixel_to_printer_coordinates(
             pixel_x, pixel_y,
-            current_printer_position["x"],
-            current_printer_position["y"]
+            current_pos["x"],
+            current_pos["y"]
         )
         
         if result:
@@ -1152,12 +1298,15 @@ def api_status():
     """API endpoint to get camera status with calibration info"""
     global STREAM_ACTIVE, streaming_thread
     
-    thread_alive = streaming_thread is not None and streaming_thread.is_alive()
+    thread_alive = streaming_thread is not None and threading.active_count()
     
     if STREAM_ACTIVE and not thread_alive:
         STREAM_ACTIVE = False
     
     focus_info = get_focus_info()
+    
+    with position_lock:
+        current_pos = current_printer_position.copy()
     
     return jsonify({
         "streaming": STREAM_ACTIVE,
@@ -1172,7 +1321,7 @@ def api_status():
         "stream_quality": STREAM_QUALITY,
         "frame_count": frame_count,
         "calibration": calibration_data,
-        "printer_position": current_printer_position
+        "printer_position": current_pos
     })
 
 if __name__ == '__main__':
