@@ -3,6 +3,7 @@
 Camera Controller with Flask and MQTT - Enhanced with Calibration Tool
 FIXED: Uses the working publish_position.sh method for position reporting
 """
+
 import requests
 import os
 import time
@@ -13,6 +14,11 @@ import json
 from datetime import datetime
 from flask import Flask, Response, send_file, jsonify, request
 import paho.mqtt.client as mqtt
+
+
+# Tool management configuration
+TOOLS_CONFIG_FILE = "/home/pi/tools_config.json"
+tools_config = {"tools": [], "camera_reference": None}
 
 # Configure logging with more detailed output
 logging.basicConfig(
@@ -54,7 +60,8 @@ calibration_data = {
     "microns_per_pixel_x": 10.0,
     "microns_per_pixel_y": 10.0,
     "reference_points": [],
-    "enabled": False
+    "enabled": False,
+    "scaler_measurements": []
 }
 
 # Ensure directories exist
@@ -506,6 +513,116 @@ def setup_mqtt_client():
         logger.error(f"Failed to setup MQTT client: {e}")
         return False
 
+
+
+
+
+#Tool management functions
+#tools configuration
+def load_tools_config():
+    """Load tools configuration from file"""
+    global tools_config
+    try:
+        if os.path.exists(TOOLS_CONFIG_FILE):
+            with open(TOOLS_CONFIG_FILE, 'r') as f:
+                tools_config = json.load(f)
+        else:
+            # Default configuration
+            tools_config = {
+                "tools": [
+                    {"id": 0, "name": "Camera Tool (C0)", "type": "camera", "offsetX": 0, "offsetY": 0, "offsetZ": 0, "preciseX": 0, "preciseY": 0, "preciseZ": 0},
+                    {"id": 1, "name": "Extruder 1 (E0)", "type": "extruder", "offsetX": 0, "offsetY": 0, "offsetZ": 0, "preciseX": 0, "preciseY": 0, "preciseZ": 0},
+                    {"id": 2, "name": "Extruder 2 (E1)", "type": "extruder", "offsetX": 0, "offsetY": 0, "offsetZ": 0, "preciseX": 0, "preciseY": 0, "preciseZ": 0},
+                    {"id": 3, "name": "Liquid Dispenser (L0)", "type": "dispenser", "offsetX": 0, "offsetY": 0, "offsetZ": 0, "preciseX": 0, "preciseY": 0, "preciseZ": 0}
+                ],
+                "camera_reference": None
+            }
+            save_tools_config()
+    except Exception as e:
+        logger.error(f"Error loading tools config: {e}")
+
+def save_tools_config():
+    """Save tools configuration to file"""
+    try:
+        with open(TOOLS_CONFIG_FILE, 'w') as f:
+            json.dump(tools_config, f, indent=2)
+        logger.info("Tools configuration saved successfully")
+    except Exception as e:
+        logger.error(f"Error saving tools config: {e}")
+
+
+
+#Tool management functions @app.routes
+#tools configuration
+@app.route('/api/tools/save', methods=['POST'])
+def api_save_tools():
+    """Save tools configuration"""
+    try:
+        data = request.json
+        tools_config["tools"] = data.get("tools", [])
+        save_tools_config()
+        return jsonify({"status": "success", "message": "Tools configuration saved"})
+    except Exception as e:
+        logger.error(f"Error saving tools: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/tools/load', methods=['GET'])
+def api_load_tools():
+    """Load tools configuration"""
+    try:
+        load_tools_config()
+        return jsonify({
+            "status": "success", 
+            "tools": tools_config["tools"],
+            "camera_reference": tools_config["camera_reference"]
+        })
+    except Exception as e:
+        logger.error(f"Error loading tools: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/printer/get_position', methods=['GET'])
+def api_get_printer_position():
+    """Get current printer position"""
+    try:
+        # Send M114 command to get position
+        position_response = send_gcode("M114")
+        if not position_response:
+            return jsonify({"status": "error", "message": "Failed to get position from printer"})
+        
+        # Parse position (format: "X:123.45 Y:67.89 Z:10.20 E:0.00")
+        try:
+            pos_parts = position_response.strip().split()
+            x, y, z = None, None, None
+            
+            for part in pos_parts:
+                if part.startswith("X:"):
+                    x = float(part[2:])
+                elif part.startswith("Y:"):
+                    y = float(part[2:])
+                elif part.startswith("Z:"):
+                    z = float(part[2:])
+            
+            if x is None or y is None or z is None:
+                return jsonify({"status": "error", "message": "Could not parse position data"})
+                
+            return jsonify({
+                "status": "success",
+                "x": round(x, 3),
+                "y": round(y, 3),
+                "z": round(z, 3),
+                "raw_response": position_response
+            })
+            
+        except (ValueError, IndexError) as e:
+            return jsonify({"status": "error", "message": f"Error parsing position: {e}"})
+            
+    except Exception as e:
+        logger.error(f"Error getting printer position: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+
+
+
 # Enhanced Flask routes with calibration functionality
 @app.route('/')
 def index():
@@ -541,6 +658,44 @@ def index():
                 justify-content: center;
                 flex-wrap: wrap;
             }
+
+
+.camera-center {
+    background-color: #3498db !important;  /* Blue color */
+    border: 2px solid #3498db !important;
+}
+
+.camera-center:hover {
+    background-color: #2980b9 !important;  /* Darker blue on hover */
+    border: 2px solid #2980b9 !important;
+}
+
+
+.pixel-calibrate {
+    background-color: #ff6b35 !important;  /* Orange color */
+    border: 2px solid #ff6b35 !important;
+}
+
+.pixel-calibrate:hover {
+    background-color: #e55a2b !important;  /* Darker orange on hover */
+    border: 2px solid #e55a2b !important;
+}
+
+.clickable-image {
+    max-width: 100%;
+    max-height: 600px;
+    border-radius: 5px;
+    display: block;
+    margin: 0 auto;
+    cursor: crosshair;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+}
+
+
             button {
                 margin: 5px;
                 padding: 10px 20px;
@@ -658,6 +813,167 @@ def index():
             }
         </style>
         <script>
+
+
+// Camera centering functionality
+let centeringMode = false;
+
+function startCameraCentering() {
+    centeringMode = true;
+    measuringLine = false; // Disable line measurement
+    console.log('Camera centering mode enabled');
+    alert('Click on a marking and the camera will move to center it in the view.');
+}
+
+function centerCameraClick(event) {
+    if (!centeringMode) return;
+    
+    const rect = event.target.getBoundingClientRect();
+    const clickX = event.clientX - rect.left;
+    const clickY = event.clientY - rect.top;
+    
+    // Get image dimensions
+    const imageWidth = event.target.naturalWidth || event.target.width;
+    const imageHeight = event.target.naturalHeight || event.target.height;
+    
+    // Calculate offset from center (in pixels)
+    const centerX = imageWidth / 2;
+    const centerY = imageHeight / 2;
+    const offsetX = clickX - centerX;
+    const offsetY = clickY - centerY;
+    
+    console.log(`Clicked at (${clickX}, ${clickY}), center is (${centerX}, ${centerY}), offset: (${offsetX}, ${offsetY})`);
+    
+    // Convert pixel offset to real-world coordinates using calibration
+    moveCameraToCenter(offsetX, offsetY);
+}
+
+function moveCameraToCenter(pixelOffsetX, pixelOffsetY) {
+    // Get current calibration data
+    fetch('/api/calibration/info')
+        .then(response => response.json())
+        .then(calibration => {
+            if (!calibration.microns_per_pixel_x || !calibration.microns_per_pixel_y) {
+                alert('Camera calibration required! Please calibrate pixel size first.');
+                centeringMode = false;
+                return;
+            }
+            
+            // Convert pixel offset to mm
+            const offsetMmX = (pixelOffsetX * calibration.microns_per_pixel_x) / 1000;
+            const offsetMmY = -(pixelOffsetY * calibration.microns_per_pixel_y) / 1000; // Y axis inverted
+            
+            console.log(`Moving camera by offset: X=${offsetMmX.toFixed(3)}mm, Y=${offsetMmY.toFixed(3)}mm`);
+            
+            // Send move command to move camera tool
+            fetch('/api/printer/move_camera', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/json'},
+                body: JSON.stringify({
+                    offset_x: offsetMmX,
+                    offset_y: offsetMmY
+                })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.status === 'success') {
+                    alert(`Camera moved to center the marking!\nOffset: X=${offsetMmX.toFixed(3)}mm, Y=${offsetMmY.toFixed(3)}mm`);
+                } else {
+                    alert('Failed to move camera: ' + (data.message || 'Unknown error'));
+                }
+                centeringMode = false;
+            })
+            .catch(error => {
+                console.error('Error moving camera:', error);
+                alert('Error moving camera: ' + error);
+                centeringMode = false;
+            });
+        })
+        .catch(error => {
+            console.error('Error getting calibration:', error);
+            alert('Error getting calibration data');
+            centeringMode = false;
+        });
+}
+
+// Add fiducial crosshair overlay
+function addFiducialCrosshair(imageElement) {
+    // Remove existing crosshair
+    const existing = imageElement.parentElement.querySelector('.fiducial-crosshair');
+    if (existing) existing.remove();
+    
+    // Create crosshair container
+    const crosshair = document.createElement('div');
+    crosshair.className = 'fiducial-crosshair';
+    crosshair.style.position = 'absolute';
+    crosshair.style.top = '50%';
+    crosshair.style.left = '50%';
+    crosshair.style.transform = 'translate(-50%, -50%)';
+    crosshair.style.pointerEvents = 'none';
+    crosshair.style.zIndex = '500';
+    
+    // Create circle
+    const circle = document.createElement('div');
+    circle.style.width = '40px';
+    circle.style.height = '40px';
+    circle.style.border = '2px solid #00ff00';
+    circle.style.borderRadius = '50%';
+    circle.style.position = 'relative';
+    
+    // Create horizontal line
+    const hLine = document.createElement('div');
+    hLine.style.position = 'absolute';
+    hLine.style.top = '50%';
+    hLine.style.left = '10%';
+    hLine.style.right = '10%';
+    hLine.style.height = '2px';
+    hLine.style.backgroundColor = '#00ff00';
+    hLine.style.transform = 'translateY(-50%)';
+    
+    // Create vertical line
+    const vLine = document.createElement('div');
+    vLine.style.position = 'absolute';
+    vLine.style.left = '50%';
+    vLine.style.top = '10%';
+    vLine.style.bottom = '10%';
+    vLine.style.width = '2px';
+    vLine.style.backgroundColor = '#00ff00';
+    vLine.style.transform = 'translateX(-50%)';
+    
+    circle.appendChild(hLine);
+    circle.appendChild(vLine);
+    crosshair.appendChild(circle);
+    
+    // Ensure parent container is positioned
+    imageElement.parentElement.style.position = 'relative';
+    imageElement.parentElement.appendChild(crosshair);
+}
+
+// Initialize fiducial on page load
+document.addEventListener('DOMContentLoaded', function() {
+    // Add crosshairs to both stream and photo images
+    const streamImg = document.getElementById('streamImg');
+    const photoImg = document.getElementById('photoImg');
+    
+    if (streamImg) {
+        streamImg.addEventListener('load', () => addFiducialCrosshair(streamImg));
+        addFiducialCrosshair(streamImg); // Add immediately if already loaded
+    }
+    
+    if (photoImg) {
+        photoImg.addEventListener('load', () => addFiducialCrosshair(photoImg));
+        addFiducialCrosshair(photoImg); // Add immediately if already loaded
+    }
+});
+
+
+
+
+
+
+
+
+
             let calibrationMode = false;
             let currentImageType = 'stream';
             let debugInfo = {};
@@ -963,6 +1279,403 @@ def index():
                         }
                     });
             }
+
+
+let measuringLine = false;
+let lineStart = null;
+let currentLine = null;
+let isDrawingLine = false;
+
+
+
+function startLineMeasurement() {
+    measuringLine = true;
+    lineStart = null;
+    isDrawingLine = false;
+    currentLine = null;
+    console.log('Line measurement mode enabled');
+    alert('Click and drag to draw a measurement line on the image.');
+}
+
+
+function measureClick(event) {
+    if (!measuringLine) return;
+    
+    if (event.type === 'mousedown') {
+        startDrawingLine(event);
+    } else if (event.type === 'mousemove' && isDrawingLine) {
+        updateLine(event);
+    } else if (event.type === 'mouseup' && isDrawingLine) {
+        finishLine(event);
+    }
+}
+
+function startDrawingLine(event) {
+    event.preventDefault();
+    const rect = event.target.getBoundingClientRect();
+    lineStart = {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+    };
+    
+    isDrawingLine = true;
+    
+    // Create line element positioned absolutely on the page
+    currentLine = document.createElement('div');
+    currentLine.style.position = 'fixed'; // Use fixed positioning
+    currentLine.style.backgroundColor = '#ff4444';
+    currentLine.style.height = '2px';
+    currentLine.style.transformOrigin = '0 0';
+    currentLine.style.pointerEvents = 'none';
+    currentLine.style.zIndex = '1000';
+    currentLine.style.left = (rect.left + lineStart.x) + 'px';
+    currentLine.style.top = (rect.top + lineStart.y) + 'px';
+    
+    // Add to body for fixed positioning
+    document.body.appendChild(currentLine);
+}
+
+function updateLine(event) {
+    if (!isDrawingLine || !currentLine || !lineStart) return;
+    
+    const rect = event.target.getBoundingClientRect();
+    const currentX = event.clientX - rect.left;
+    const currentY = event.clientY - rect.top;
+    
+    const deltaX = currentX - lineStart.x;
+    const deltaY = currentY - lineStart.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+    
+    // Update line width and rotation only - position is set in startDrawingLine
+    currentLine.style.width = distance + 'px';
+    currentLine.style.transform = 'rotate(' + angle + 'deg)';
+}
+
+
+function finishLine(event) {
+    if (!isDrawingLine || !currentLine || !lineStart) return;
+    
+    const rect = event.target.getBoundingClientRect();
+    const endX = event.clientX - rect.left;
+    const endY = event.clientY - rect.top;
+    
+    const deltaX = endX - lineStart.x;
+    const deltaY = endY - lineStart.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    
+    if (distance < 10) {
+        // Line too short, remove it
+        currentLine.remove();
+        isDrawingLine = false;
+        return;
+    }
+    
+    const actualMM = prompt('Line is ' + Math.round(distance) + ' pixels long.\\nWhat is the actual length in mm?');
+    
+    if (actualMM && !isNaN(actualMM)) {
+        const micronsPerPixel = (parseFloat(actualMM) * 1000) / distance;
+        
+        fetch('/api/scaler/calculate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                width_mm: actualMM,
+                height_mm: actualMM,
+                pixel_width: distance,
+                pixel_height: distance
+            })
+        }).then(() => {
+            alert('Calculated: ' + micronsPerPixel.toFixed(2) + ' μm/pixel\\nCalibration updated!');
+            location.reload();
+        });
+    }
+    
+    // Clean up
+    currentLine.remove();
+    measuringLine = false;
+    lineStart = null;
+    isDrawingLine = false;
+}
+
+
+//Tool management javascript
+// Tool management state
+let tools = [
+    {id: 0, name: "Camera Tool (C0)", type: "camera", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+    {id: 1, name: "Extruder 1 (E0)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+    {id: 2, name: "Extruder 2 (E1)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+    {id: 3, name: "Liquid Dispenser (L0)", type: "dispenser", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0}
+];
+
+let cameraReference = null;
+let currentEditingTool = null;
+
+function toggleToolManagement() {
+    const content = document.getElementById('tool-management-content');
+    const arrow = document.getElementById('tool-arrow');
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        arrow.classList.add('tool-arrow-up');
+    } else {
+        content.style.display = 'none';
+        arrow.classList.remove('tool-arrow-up');
+    }
+}
+
+function renderToolList() {
+    const toolList = document.getElementById('toolList');
+    toolList.innerHTML = '';
+    
+    tools.forEach(tool => {
+        const toolItem = document.createElement('div');
+        toolItem.className = 'tool-item';
+        
+        let offsetDisplay = '';
+        if (tool.type === 'camera') {
+            offsetDisplay = 'Reference Tool (No Offsets)';
+        } else {
+            offsetDisplay = `Offset: X${tool.offsetX} Y${tool.offsetY} Z${tool.offsetZ} | Precise: X${tool.preciseX} Y${tool.preciseY} Z${tool.preciseZ}`;
+        }
+        
+        toolItem.innerHTML = `
+            <div class="tool-info">
+                <div class="tool-name">${tool.name}</div>
+                <div class="tool-details">Type: ${tool.type} | ${offsetDisplay}</div>
+            </div>
+            <div class="tool-actions">
+                <button class="edit-btn" onclick="editTool(${tool.id})">Edit</button>
+                ${tool.type === 'camera' ? '' : '<button class="delete-btn" onclick="deleteTool(' + tool.id + ')">Delete</button>'}
+            </div>
+        `;
+        toolList.appendChild(toolItem);
+    });
+    
+    renderCalibrationButtons();
+}
+
+function renderCalibrationButtons() {
+    const approxDiv = document.getElementById('approximateCalibration');
+    approxDiv.innerHTML = '';
+    
+    tools.filter(t => t.type !== 'camera').forEach(tool => {
+        const btn = document.createElement('button');
+        btn.className = 'workflow-btn';
+        btn.textContent = `Record ${tool.name} Position`;
+        btn.onclick = () => recordApproximatePosition(tool.id);
+        approxDiv.appendChild(btn);
+    });
+    
+    const precisionDiv = document.getElementById('precisionCalibration');
+    precisionDiv.innerHTML = '';
+    
+    tools.filter(t => t.type !== 'camera').forEach(tool => {
+        const btn = document.createElement('button');
+        btn.className = 'workflow-btn';
+        btn.textContent = `Calibrate ${tool.name} Precisely`;
+        btn.onclick = () => startPrecisionCalibration(tool.id);
+        precisionDiv.appendChild(btn);
+    });
+}
+
+function selectTool() {
+    const toolId = document.getElementById('currentTool').value;
+    let toolCommand;
+    
+    switch(toolId) {
+        case '0': toolCommand = 'C0'; break;
+        case '1': toolCommand = 'E0'; break;
+        case '2': toolCommand = 'E1'; break;
+        case '3': toolCommand = 'L0'; break;
+        default: toolCommand = 'C0';
+    }
+    
+    fetch('/api/printer/select_tool', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tool_command: toolCommand})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(`Tool ${toolCommand} selected`);
+        } else {
+            alert('Failed to select tool: ' + data.message);
+        }
+    });
+}
+
+function getCurrentPosition() {
+    fetch('/api/printer/get_position')
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(`Current Position: X${data.x} Y${data.y} Z${data.z}`);
+        } else {
+            alert('Failed to get position: ' + data.message);
+        }
+    });
+}
+
+function setCameraReference() {
+    const toolId = document.getElementById('currentTool').value;
+    if (toolId !== '0') {
+        alert('Please select Camera Tool (C0) first');
+        return;
+    }
+    
+    fetch('/api/printer/get_position')
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            cameraReference = {x: data.x, y: data.y, z: data.z};
+            document.getElementById('cameraRefStatus').textContent = `Set: X${data.x} Y${data.y} Z${data.z}`;
+            document.getElementById('cameraRefStatus').className = 'status-indicator set';
+            alert('Camera reference position recorded!');
+        }
+    });
+}
+
+function recordApproximatePosition(toolId) {
+    if (!cameraReference) {
+        alert('Please set camera reference position first');
+        return;
+    }
+    
+    fetch('/api/printer/get_position')
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            const tool = tools.find(t => t.id === toolId);
+            tool.offsetX = (data.x - cameraReference.x).toFixed(1);
+            tool.offsetY = (data.y - cameraReference.y).toFixed(1);
+            tool.offsetZ = (data.z - cameraReference.z).toFixed(1);
+            renderToolList();
+            alert(`Approximate offset recorded for ${tool.name}`);
+        }
+    });
+}
+
+function startPrecisionCalibration(toolId) {
+    const tool = tools.find(t => t.id === toolId);
+    alert(`1. Dispense material with ${tool.name}\\n2. Switch to camera tool (C0)\\n3. Click on dispensed material in image`);
+    window.precisionCalibrationMode = toolId;
+}
+
+function addNewTool() {
+    currentEditingTool = null;
+    document.getElementById('modalTitle').textContent = 'Add New Tool';
+    document.getElementById('toolName').value = '';
+    document.getElementById('toolId').value = tools.length;
+    document.getElementById('toolType').value = 'extruder';
+    document.getElementById('offsetX').value = '0';
+    document.getElementById('offsetY').value = '0';
+    document.getElementById('offsetZ').value = '0';
+    document.getElementById('preciseX').value = '0';
+    document.getElementById('preciseY').value = '0';
+    document.getElementById('preciseZ').value = '0';
+    document.getElementById('toolModal').style.display = 'block';
+}
+
+function editTool(toolId) {
+    const tool = tools.find(t => t.id === toolId);
+    currentEditingTool = toolId;
+    document.getElementById('modalTitle').textContent = 'Edit Tool';
+    document.getElementById('toolName').value = tool.name;
+    document.getElementById('toolId').value = tool.id;
+    document.getElementById('toolType').value = tool.type;
+    
+    const isCamera = tool.type === 'camera';
+    document.getElementById('offsetX').value = isCamera ? '0' : tool.offsetX;
+    document.getElementById('offsetY').value = isCamera ? '0' : tool.offsetY;
+    document.getElementById('offsetZ').value = isCamera ? '0' : tool.offsetZ;
+    document.getElementById('preciseX').value = isCamera ? '0' : tool.preciseX;
+    document.getElementById('preciseY').value = isCamera ? '0' : tool.preciseY;
+    document.getElementById('preciseZ').value = isCamera ? '0' : tool.preciseZ;
+    
+    document.getElementById('offsetX').disabled = isCamera;
+    document.getElementById('offsetY').disabled = isCamera;
+    document.getElementById('offsetZ').disabled = isCamera;
+    document.getElementById('preciseX').disabled = isCamera;
+    document.getElementById('preciseY').disabled = isCamera;
+    document.getElementById('preciseZ').disabled = isCamera;
+    
+    document.getElementById('toolModal').style.display = 'block';
+}
+
+function saveTool() {
+    const toolData = {
+        id: parseInt(document.getElementById('toolId').value),
+        name: document.getElementById('toolName').value,
+        type: document.getElementById('toolType').value,
+        offsetX: parseFloat(document.getElementById('offsetX').value) || 0,
+        offsetY: parseFloat(document.getElementById('offsetY').value) || 0,
+        offsetZ: parseFloat(document.getElementById('offsetZ').value) || 0,
+        preciseX: parseFloat(document.getElementById('preciseX').value) || 0,
+        preciseY: parseFloat(document.getElementById('preciseY').value) || 0,
+        preciseZ: parseFloat(document.getElementById('preciseZ').value) || 0
+    };
+    
+    if (toolData.type === 'camera') {
+        toolData.offsetX = 0;
+        toolData.offsetY = 0;
+        toolData.offsetZ = 0;
+        toolData.preciseX = 0;
+        toolData.preciseY = 0;
+        toolData.preciseZ = 0;
+    }
+    
+    if (currentEditingTool !== null) {
+        const index = tools.findIndex(t => t.id === currentEditingTool);
+        tools[index] = toolData;
+    } else {
+        tools.push(toolData);
+    }
+    
+    renderToolList();
+    closeToolModal();
+    
+    fetch('/api/tools/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tools: tools})
+    });
+}
+
+function deleteTool(toolId) {
+    if (confirm('Are you sure you want to delete this tool?')) {
+        tools = tools.filter(t => t.id !== toolId);
+        renderToolList();
+        
+        fetch('/api/tools/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({tools: tools})
+        });
+    }
+}
+
+function closeToolModal() {
+    document.getElementById('toolModal').style.display = 'none';
+    currentEditingTool = null;
+    
+    document.getElementById('offsetX').disabled = false;
+    document.getElementById('offsetY').disabled = false;
+    document.getElementById('offsetZ').disabled = false;
+    document.getElementById('preciseX').disabled = false;
+    document.getElementById('preciseY').disabled = false;
+    document.getElementById('preciseZ').disabled = false;
+}
+
+// Initialize tool list when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    renderToolList();
+});
+
+
+
+
         </script>
     </head>
     <body>
@@ -978,9 +1691,755 @@ def index():
                 <button onclick="startStream()">Start Stream</button>
                 <button onclick="stopStream()" class="stop">Stop Stream</button>
                 <button onclick="capturePhoto()" class="photo">Take Photo</button>
+                <button onclick="startLineMeasurement()" class="calibration pixel-calibrate">Calibrate Pixel Size</button>
+                <button onclick="startCameraCentering()" class="calibration camera-center">Center Camera</button>
                 <button id="calibrationToggle" onclick="toggleCalibrationMode()" class="calibration">Enable Calibration Mode</button>
             </div>
+           
+
+
+
+<!-- Camera Calibration Tutorial Dropdown -->
+<div class="tutorial-container">
+    <button onclick="toggleTutorial()" class="tutorial-toggle">
+        📖 Camera Calibration Tutorial
+        <span id="tutorial-arrow">▼</span>
+    </button>
+    
+    <div id="tutorial-content" class="tutorial-content" style="display: none;">
+        <div class="tutorial-steps">
+            <h3>🎯 Camera Calibration Process</h3>
+            <p>Follow these steps to calibrate your camera for precise positioning:</p>
             
+            <div class="step-section">
+                <h4>Step 1: Print & Place Calibration Target</h4>
+                <ul>
+                    <li><strong>Copy the calibration target code below:</strong></li>
+                    <li>Save it as <code>calibration_target.svg</code> on your computer</li>
+                    <li>Open the SVG file and print at <strong>100% scale</strong> - Do not scale to fit page!</li>
+                    <li>Verify the 50mm scale bar measures exactly 50mm with a ruler</li>
+                    <li>Place the printed target on your print bed within camera view</li>
+                    <li>Target doesn't need to be perfectly centered initially</li>
+                </ul>
+                
+                <div class="svg-code-container">
+                    <h5>Calibration Target SVG Code:</h5>
+                    <textarea readonly style="width: 100%; height: 100px; font-family: monospace; font-size: 12px; resize: vertical;" onclick="this.select()">
+&lt;svg width="210mm" height="297mm" viewBox="0 0 210 297" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;text x="105" y="25" text-anchor="middle" font-family="Arial" font-size="6" font-weight="bold"&gt;CAMERA CALIBRATION TARGET&lt;/text&gt;
+  &lt;text x="105" y="32" text-anchor="middle" font-family="Arial" font-size="4"&gt;Print at 100% scale - Do not scale to fit&lt;/text&gt;
+  &lt;g transform="translate(105, 150)"&gt;
+    &lt;g stroke="black" stroke-width="0.3" fill="none"&gt;
+      &lt;line x1="-25" y1="0" x2="25" y2="0"/&gt;
+      &lt;line x1="0" y1="-25" x2="0" y2="25"/&gt;
+      &lt;line x1="-20" y1="-2" x2="-20" y2="2"/&gt;
+      &lt;line x1="-10" y1="-2" x2="-10" y2="2"/&gt;
+      &lt;line x1="10" y1="-2" x2="10" y2="2"/&gt;
+      &lt;line x1="20" y1="-2" x2="20" y2="2"/&gt;
+      &lt;line x1="-2" y1="-20" x2="2" y2="-20"/&gt;
+      &lt;line x1="-2" y1="-10" x2="2" y2="-10"/&gt;
+      &lt;line x1="-2" y1="10" x2="2" y2="10"/&gt;
+      &lt;line x1="-2" y1="20" x2="2" y2="20"/&gt;
+    &lt;/g&gt;
+    &lt;circle cx="0" cy="0" r="2" fill="none" stroke="black" stroke-width="0.3"/&gt;
+    &lt;circle cx="0" cy="0" r="1" fill="black"/&gt;
+    &lt;g fill="black" stroke="black" stroke-width="0.2"&gt;
+      &lt;g transform="translate(-40, -40)"&gt;
+        &lt;circle cx="0" cy="0" r="1.5" fill="none" stroke="black" stroke-width="0.3"/&gt;
+        &lt;circle cx="0" cy="0" r="0.5" fill="black"/&gt;
+        &lt;text x="0" y="-5" text-anchor="middle" font-family="Arial" font-size="3"&gt;TL&lt;/text&gt;
+      &lt;/g&gt;
+      &lt;g transform="translate(40, -40)"&gt;
+        &lt;circle cx="0" cy="0" r="1.5" fill="none" stroke="black" stroke-width="0.3"/&gt;
+        &lt;circle cx="0" cy="0" r="0.5" fill="black"/&gt;
+        &lt;text x="0" y="-5" text-anchor="middle" font-family="Arial" font-size="3"&gt;TR&lt;/text&gt;
+      &lt;/g&gt;
+      &lt;g transform="translate(-40, 40)"&gt;
+        &lt;circle cx="0" cy="0" r="1.5" fill="none" stroke="black" stroke-width="0.3"/&gt;
+        &lt;circle cx="0" cy="0" r="0.5" fill="black"/&gt;
+        &lt;text x="0" y="8" text-anchor="middle" font-family="Arial" font-size="3"&gt;BL&lt;/text&gt;
+      &lt;/g&gt;
+      &lt;g transform="translate(40, 40)"&gt;
+        &lt;circle cx="0" cy="0" r="1.5" fill="none" stroke="black" stroke-width="0.3"/&gt;
+        &lt;circle cx="0" cy="0" r="0.5" fill="black"/&gt;
+        &lt;text x="0" y="8" text-anchor="middle" font-family="Arial" font-size="3"&gt;BR&lt;/text&gt;
+      &lt;/g&gt;
+    &lt;/g&gt;
+    &lt;g font-family="Arial" font-size="3" fill="black"&gt;
+      &lt;text x="-15" y="-6" text-anchor="middle"&gt;10mm&lt;/text&gt;
+      &lt;text x="-5" y="-6" text-anchor="middle"&gt;10mm&lt;/text&gt;
+      &lt;text x="5" y="-6" text-anchor="middle"&gt;10mm&lt;/text&gt;
+      &lt;text x="15" y="-6" text-anchor="middle"&gt;10mm&lt;/text&gt;
+      &lt;text x="0" y="-32" text-anchor="middle" font-weight="bold"&gt;50mm&lt;/text&gt;
+      &lt;text x="32" y="2" text-anchor="middle" font-weight="bold" transform="rotate(-90, 32, 2)"&gt;50mm&lt;/text&gt;
+    &lt;/g&gt;
+  &lt;/g&gt;
+  &lt;g transform="translate(20, 250)" font-family="Arial" font-size="4" fill="black"&gt;
+    &lt;text x="0" y="0" font-weight="bold"&gt;CALIBRATION INSTRUCTIONS:&lt;/text&gt;
+    &lt;text x="0" y="8"&gt;1. Print this page at 100% scale (no scaling!)&lt;/text&gt;
+    &lt;text x="0" y="16"&gt;2. Place on printer bed within camera view&lt;/text&gt;
+    &lt;text x="0" y="24"&gt;3. Use "Calibrate Pixel Size" - draw 50mm line across center crosshair&lt;/text&gt;
+    &lt;text x="0" y="32"&gt;4. Use "Center Camera" - click on center dot to auto-center&lt;/text&gt;
+    &lt;text x="0" y="40"&gt;5. Add reference points by clicking corner targets (TL, TR, BL, BR)&lt;/text&gt;
+  &lt;/g&gt;
+  &lt;g transform="translate(130, 250)" stroke="black" stroke-width="0.3" fill="black"&gt;
+    &lt;line x1="0" y1="0" x2="50" y2="0"/&gt;
+    &lt;line x1="0" y1="-2" x2="0" y2="2"/&gt;
+    &lt;line x1="50" y1="-2" x2="50" y2="2"/&gt;
+    &lt;text x="25" y="-4" text-anchor="middle" font-family="Arial" font-size="3"&gt;50mm Scale Check&lt;/text&gt;
+    &lt;text x="25" y="8" text-anchor="middle" font-family="Arial" font-size="3"&gt;Measure with ruler to verify&lt;/text&gt;
+    &lt;text x="25" y="16" text-anchor="middle" font-family="Arial" font-size="3"&gt;correct print scale&lt;/text&gt;
+  &lt;/g&gt;
+&lt;/svg&gt;
+</textarea>
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                        <strong>Instructions:</strong> Select all text above (click in box, then Ctrl+A), copy it (Ctrl+C), 
+                        paste into a text editor, and save as "calibration_target.svg"
+                    </p>
+                </div>
+            </div>
+            
+            <div class="step-section">
+                <h4>Step 2: Calibrate Pixel Scale (Required First!)</h4>
+                <ul>
+                    <li>Click the <strong style="color: #ff6b35;">Calibrate Pixel Size</strong> button</li>
+                    <li>Click and drag to draw a line across a known dimension of your object</li>
+                    <li>Enter the actual measurement in millimeters when prompted</li>
+                    <li>The system will calculate microns per pixel automatically</li>
+                    <li><strong>⚠️ This must be done before using Center Camera!</strong></li>
+                </ul>
+            </div>
+            
+            <div class="step-section">
+                <h4>Step 3: Center the Reference Object</h4>
+                <ul>
+                    <li>Click the <strong style="color: #3498db;">Center Camera</strong> button</li>
+                    <li>Click directly on your reference object in the image</li>
+                    <li>The camera will automatically move to center the object under the green crosshair</li>
+                    <li>Repeat if needed for fine adjustment</li>
+                </ul>
+            </div>
+            
+            <div class="step-section">
+                <h4>Step 4: Add Reference Points</h4>
+                <ul>
+                    <li>Click on specific features in the image to add calibration points</li>
+                    <li>Each click records the pixel position and current printer coordinates</li>
+                    <li><strong>Minimum:</strong> One reference point for basic functionality</li>
+                    <li><strong>Recommended:</strong> 3-4 points near bed corners for higher precision</li>
+                </ul>
+                <div class="reference-points-explanation">
+                    <h5>Why Multiple Points?</h5>
+                    <ul>
+                        <li><strong>Single Point:</strong> Good accuracy near reference, ±2-5mm error at bed edges</li>
+                        <li><strong>Multiple Points:</strong> Corrects camera distortion, bed rotation, and perspective effects</li>
+                        <li><strong>Best for Multi-Tool:</strong> Essential for accurate tool switching across the bed</li>
+                    </ul>
+                </div>
+            </div>
+            
+            <div class="step-section success-box">
+                <h4>✅ Calibration Complete!</h4>
+                <p>Your camera is now calibrated. You can:</p>
+                <ul>
+                    <li>Click anywhere in the image to get precise printer coordinates</li>
+                    <li>Use the tools to measure distances and positions accurately</li>
+                    <li>Switch between different tools with known positional relationships</li>
+                </ul>
+            </div>
+            
+            <div class="tips-section">
+                <h4>💡 Pro Tips</h4>
+                <ul>
+                    <li><strong>Use a ruler or grid pattern</strong> for the most accurate calibration</li>
+                    <li><strong>Start with one reference point</strong> for quick testing, add more for precision</li>
+                    <li><strong>Place additional points near bed corners</strong> for full-bed accuracy</li>
+                    <li><strong>Recalibrate</strong> if you change camera height or focus</li>
+                    <li><strong>The green crosshair</strong> shows the exact center of your camera view</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.tutorial-container {
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.tutorial-toggle {
+    width: 100%;
+    padding: 12px 15px;
+    background-color: #f1f1f1;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #3498db !important;  /* Blue hyperlink color */
+    text-decoration: none;
+}
+
+.tutorial-toggle:hover {
+    background-color: #e8e8e8;
+}
+
+.tutorial-content {
+    padding: 20px;
+    background-color: white;
+    border-top: 1px solid #ddd;
+}
+
+.tutorial-steps h3 {
+    color: #2c3e50;
+    margin-top: 0;
+    margin-bottom: 15px;
+}
+
+.step-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    border-left: 4px solid #3498db;
+    background-color: #f8f9fa;
+}
+
+.step-section h4 {
+    color: #2c3e50;
+    margin-top: 0;
+    margin-bottom: 10px;
+}
+
+.step-section ul {
+    margin: 10px 0;
+    padding-left: 20px;
+}
+
+.step-section li {
+    margin-bottom: 8px;
+    line-height: 1.4;
+}
+
+.success-box {
+    border-left-color: #27ae60;
+    background-color: #d5f4e6;
+}
+
+.tips-section {
+    border-left-color: #f39c12;
+    background-color: #fef9e7;
+}
+
+.svg-code-container {
+    margin: 15px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+}
+
+.svg-code-container h5 {
+    margin-top: 0;
+    margin-bottom: 10px;
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.svg-code-container textarea {
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    padding: 10px;
+}
+
+.svg-code-container p {
+    margin-bottom: 0;
+}
+
+.reference-points-explanation {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #e8f4fd;
+    border: 1px solid #3498db;
+    border-radius: 4px;
+}
+
+.reference-points-explanation h5 {
+    margin-top: 0;
+    margin-bottom: 8px;
+    color: #2c3e50;
+    font-size: 14px;
+}
+
+.reference-points-explanation ul {
+    margin-bottom: 5px;
+    font-size: 13px;
+}
+
+.reference-points-explanation li {
+    margin-bottom: 4px;
+}
+
+.tutorial-content p {
+    margin-bottom: 15px;
+    line-height: 1.5;
+}
+
+#tutorial-arrow {
+    transition: transform 0.3s ease;
+}
+
+.tutorial-arrow-up {
+    transform: rotate(180deg);
+}
+</style>
+
+
+
+<!--Tool management html -->
+<!-- Tool Management Interface -->
+<!-- Tool Management Interface (Dropdown Version) -->
+<div class="tool-management-container">
+    <button onclick="toggleToolManagement()" class="tool-management-toggle">
+        🔧 Tool Management & Calibration
+        <span id="tool-arrow">▼</span>
+    </button>
+    
+    <div id="tool-management-content" class="tool-management-content" style="display: none;">
+        <!-- Current Active Tool -->
+        <div class="current-tool-section">
+            <h4>Current Active Tool</h4>
+            <select id="currentTool" onchange="selectTool()">
+                <option value="0">Camera Tool (C0)</option>
+                <option value="1">Extruder 1 (E0)</option>
+                <option value="2">Extruder 2 (E1)</option>
+                <option value="3">Liquid Dispenser (L0)</option>
+            </select>
+            <button onclick="getCurrentPosition()" class="get-position-btn">Get Current Position</button>
+        </div>
+
+        <!-- Tool List -->
+        <div class="tool-list-section">
+            <h4>Registered Tools</h4>
+            <div id="toolList" class="tool-list">
+                <!-- Tools will be populated here -->
+            </div>
+            <button onclick="addNewTool()" class="add-tool-btn">+ Add New Tool</button>
+        </div>
+
+        <!-- Calibration Workflow -->
+        <div class="calibration-workflow">
+            <h4>📐 Calibration Workflow</h4>
+            
+            <div class="workflow-step">
+                <h5>Step 1: Set Camera Reference Point</h5>
+                <p>Center camera (C0) on fiducial target, then click:</p>
+                <button onclick="setCameraReference()" class="workflow-btn">Set Camera Reference</button>
+                <span id="cameraRefStatus" class="status-indicator">Not Set</span>
+                <p><em>Note: Camera tool (C0) has no offsets - it's the reference point for all other tools.</em></p>
+            </div>
+
+            <div class="workflow-step">
+                <h5>Step 2: Record Approximate Tool Positions</h5>
+                <p>For each tool (E0, E1, L0), manually move to reference location:</p>
+                <div id="approximateCalibration">
+                    <!-- Approximate calibration buttons will be populated here -->
+                </div>
+            </div>
+
+            <div class="workflow-step">
+                <h5>Step 3: Precision Calibration</h5>
+                <p>Dispense material with each tool, then use camera to find exact location:</p>
+                <div id="precisionCalibration">
+                    <!-- Precision calibration buttons will be populated here -->
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Tool Details Modal -->
+<div id="toolModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeToolModal()">&times;</span>
+        <h3 id="modalTitle">Tool Configuration</h3>
+        
+        <div class="tool-form">
+            <label>Tool Name:</label>
+            <input type="text" id="toolName" placeholder="e.g., Extruder 1 (E0)">
+            
+            <label>Tool ID:</label>
+            <input type="number" id="toolId" placeholder="1" min="0" max="99">
+            
+            <label>Tool Type:</label>
+            <select id="toolType">
+                <option value="camera">Camera</option>
+                <option value="extruder">Extruder</option>
+                <option value="dispenser">Liquid Dispenser</option>
+                <option value="probe">Probe</option>
+                <option value="other">Other</option>
+            </select>
+            
+            <h4>Approximate Offsets (mm)</h4>
+            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                <em>Note: Camera Tool (C0) has no offsets - it's the reference point.</em>
+            </p>
+            <div class="coordinate-inputs">
+                <label>X Offset:</label>
+                <input type="number" id="offsetX" step="0.1" placeholder="0.0">
+                
+                <label>Y Offset:</label>
+                <input type="number" id="offsetY" step="0.1" placeholder="0.0">
+                
+                <label>Z Offset:</label>
+                <input type="number" id="offsetZ" step="0.1" placeholder="0.0">
+            </div>
+            
+            <h4>Precision Offsets (mm)</h4>
+            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
+                <em>Calculated automatically from camera clicks on dispensed material.</em>
+            </p>
+            <div class="coordinate-inputs">
+                <label>Precise X:</label>
+                <input type="number" id="preciseX" step="0.01" placeholder="0.00">
+                
+                <label>Precise Y:</label>
+                <input type="number" id="preciseY" step="0.01" placeholder="0.00">
+                
+                <label>Precise Z:</label>
+                <input type="number" id="preciseZ" step="0.01" placeholder="0.00">
+            </div>
+            
+            <div class="modal-buttons">
+                <button onclick="saveTool()" class="save-btn">Save Tool</button>
+                <button onclick="closeToolModal()" class="cancel-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+.tool-management-container {
+    margin: 10px 0;
+    border: 1px solid #ddd;
+    border-radius: 5px;
+    background-color: #f9f9f9;
+}
+
+.tool-management-toggle {
+    width: 100%;
+    padding: 12px 15px;
+    background-color: #f1f1f1;
+    border: none;
+    border-radius: 5px;
+    cursor: pointer;
+    font-size: 16px;
+    font-weight: bold;
+    text-align: left;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    color: #2c3e50 !important;
+    text-decoration: none;
+}
+
+.tool-management-toggle:hover {
+    background-color: #e8e8e8;
+    text-decoration: underline;
+}
+
+.tool-management-content {
+    padding: 20px;
+    background-color: white;
+    border-top: 1px solid #ddd;
+}
+
+.current-tool-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: white;
+    border-radius: 5px;
+    border: 1px solid #e0e0e0;
+}
+
+.current-tool-section select {
+    padding: 8px 12px;
+    margin-right: 10px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.get-position-btn {
+    padding: 8px 16px;
+    background-color: #17a2b8;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.get-position-btn:hover {
+    background-color: #138496;
+}
+
+.tool-list {
+    margin: 10px 0;
+    max-height: 200px;
+    overflow-y: auto;
+}
+
+.tool-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px;
+    margin: 5px 0;
+    background-color: white;
+    border: 1px solid #e0e0e0;
+    border-radius: 4px;
+}
+
+.tool-info {
+    flex-grow: 1;
+}
+
+.tool-name {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.tool-details {
+    font-size: 12px;
+    color: #666;
+    margin-top: 2px;
+}
+
+.tool-actions {
+    display: flex;
+    gap: 5px;
+}
+
+.tool-actions button {
+    padding: 4px 8px;
+    border: none;
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 12px;
+}
+
+.edit-btn {
+    background-color: #ffc107;
+    color: black;
+}
+
+.delete-btn {
+    background-color: #dc3545;
+    color: white;
+}
+
+.add-tool-btn {
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-weight: bold;
+}
+
+.add-tool-btn:hover {
+    background-color: #218838;
+}
+
+.workflow-step {
+    margin: 15px 0;
+    padding: 15px;
+    background-color: white;
+    border-radius: 5px;
+    border-left: 4px solid #007bff;
+}
+
+.workflow-step h5 {
+    margin-top: 0;
+    color: #2c3e50;
+}
+
+.workflow-btn {
+    padding: 8px 16px;
+    background-color: #007bff;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    margin-right: 10px;
+}
+
+.workflow-btn:hover {
+    background-color: #0056b3;
+}
+
+.status-indicator {
+    padding: 4px 8px;
+    border-radius: 12px;
+    font-size: 12px;
+    font-weight: bold;
+}
+
+.status-indicator.not-set {
+    background-color: #ffc107;
+    color: black;
+}
+
+.status-indicator.set {
+    background-color: #28a745;
+    color: white;
+}
+
+#tool-arrow {
+    transition: transform 0.3s ease;
+}
+
+.tool-arrow-up {
+    transform: rotate(180deg);
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    z-index: 1000;
+    left: 0;
+    top: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0,0,0,0.5);
+}
+
+.modal-content {
+    background-color: white;
+    margin: 5% auto;
+    padding: 20px;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+}
+
+.close {
+    color: #aaa;
+    float: right;
+    font-size: 28px;
+    font-weight: bold;
+    cursor: pointer;
+}
+
+.close:hover {
+    color: black;
+}
+
+.tool-form label {
+    display: block;
+    margin-top: 10px;
+    margin-bottom: 5px;
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.tool-form input, .tool-form select {
+    width: 100%;
+    padding: 8px 12px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.coordinate-inputs {
+    display: grid;
+    grid-template-columns: 1fr 2fr;
+    gap: 10px;
+    align-items: center;
+    margin: 10px 0;
+}
+
+.coordinate-inputs label {
+    margin: 0;
+}
+
+.coordinate-inputs input {
+    margin: 0;
+}
+
+.modal-buttons {
+    display: flex;
+    gap: 10px;
+    margin-top: 20px;
+    justify-content: flex-end;
+}
+
+.save-btn {
+    padding: 10px 20px;
+    background-color: #28a745;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.cancel-btn {
+    padding: 10px 20px;
+    background-color: #6c757d;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+</style>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<script>
+function toggleTutorial() {
+    const content = document.getElementById('tutorial-content');
+    const arrow = document.getElementById('tutorial-arrow');
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        arrow.classList.add('tutorial-arrow-up');
+    } else {
+        content.style.display = 'none';
+        arrow.classList.remove('tutorial-arrow-up');
+    }
+}
+</script>
+
+
+
+
+
+
+
+
+
+
             <div id="focusControls" class="controls" style="display: none;">
                 <button onclick="setFocusAuto()" class="focus">Auto Focus</button>
                 <div class="slider-container">
@@ -1026,23 +2485,187 @@ def index():
             <div id="streamContainer" class="media-container" style="display: none;">
                 <h3>Live Stream</h3>
                 <img id="streamImg" class="clickable-image" 
-                     onclick="handleImageClick(event, 'stream')"
-                     src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" 
-                     alt="Live Stream">
+
+<img id="streamImg" class="clickable-image" 
+     onmousedown="measureClick(event)" 
+     onmousemove="measureClick(event)" 
+     onmouseup="measureClick(event)"
+     onclick="handleImageClick(event, 'stream'); measureClick(event); centerCameraClick(event);"
+     src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" 
+     alt="Live Stream">
+
             </div>
-            
+
+
+
+
+
             <div id="photoContainer" class="media-container" style="display: none;">
                 <h3>Latest Photo</h3>
-                <img id="photoImg" class="clickable-image"
-                     onclick="handleImageClick(event, 'snapshot')"
-                     src="/latest_photo" 
-                     alt="Latest Captured Photo">
+
+<img id="photoImg" class="clickable-image"
+     onmousedown="measureClick(event)" 
+     onmousemove="measureClick(event)" 
+     onmouseup="measureClick(event)"
+     onclick="handleImageClick(event, 'snapshot'); measureClick(event); centerCameraClick(event);"
+     src="/latest_photo" 
+     alt="Latest Captured Photo">
+
             </div>
+
+
+
         </div>
     </body>
     </html>
     """
     return html
+
+
+
+
+# Add this to your Flask application
+
+@app.route('/api/printer/move_camera', methods=['POST'])
+def api_move_camera():
+    """Move the camera tool by a relative offset"""
+    try:
+        data = request.json
+        offset_x = float(data.get("offset_x", 0))
+        offset_y = float(data.get("offset_y", 0))
+        
+        logger.info(f"Moving camera tool by offset: X={offset_x:.3f}mm, Y={offset_y:.3f}mm")
+        
+        # Get current position
+        current_pos = send_gcode("M114")
+        if not current_pos:
+            return jsonify({"status": "error", "message": "Failed to get current position"})
+        
+        # Parse current position (format: "X:123.45 Y:67.89 Z:...")
+        try:
+            pos_parts = current_pos.strip().split()
+            current_x = None
+            current_y = None
+            
+            for part in pos_parts:
+                if part.startswith("X:"):
+                    current_x = float(part[2:])
+                elif part.startswith("Y:"):
+                    current_y = float(part[2:])
+            
+            if current_x is None or current_y is None:
+                return jsonify({"status": "error", "message": "Could not parse current position"})
+                
+        except (ValueError, IndexError):
+            return jsonify({"status": "error", "message": "Invalid position format from printer"})
+        
+        # Calculate new position
+        new_x = current_x + offset_x
+        new_y = current_y + offset_y
+        
+        # Ensure camera tool is selected (T0 assuming camera is tool 0)
+        tool_result = send_gcode("T0")  # Select camera tool
+        if not tool_result:
+            logger.warning("Failed to select camera tool, continuing anyway")
+        
+        # Move to new position
+        move_command = f"G1 X{new_x:.3f} Y{new_y:.3f} F3000"
+        move_result = send_gcode(move_command)
+        
+        if move_result:
+            logger.info(f"Camera moved from ({current_x:.3f}, {current_y:.3f}) to ({new_x:.3f}, {new_y:.3f})")
+            return jsonify({
+                "status": "success", 
+                "message": f"Camera moved to X{new_x:.3f} Y{new_y:.3f}",
+                "old_position": {"x": current_x, "y": current_y},
+                "new_position": {"x": new_x, "y": new_y},
+                "offset": {"x": offset_x, "y": offset_y}
+            })
+        else:
+            return jsonify({"status": "error", "message": "Failed to move camera"})
+            
+    except Exception as e:
+        logger.error(f"Error moving camera: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+
+
+@app.route('/api/printer/select_tool', methods=['POST'])
+def api_select_tool():
+    """Select a specific tool using correct commands"""
+    try:
+        data = request.json
+        tool_command = data.get("tool_command", "C0")
+        
+        logger.info(f"Selecting tool {tool_command}")
+        
+        # Send tool selection command (C0, E0, E1, L0)
+        result = send_gcode(tool_command)
+        
+        if result:
+            return jsonify({
+                "status": "success", 
+                "message": f"Tool {tool_command} selected",
+                "tool_command": tool_command
+            })
+        else:
+            return jsonify({"status": "error", "message": f"Failed to select tool {tool_command}"})
+            
+    except Exception as e:
+        logger.error(f"Error selecting tool: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+
+
+# Add to existing send_gcode function or modify if needed
+def send_gcode(command):
+    """Send G-code command to printer via MQTT"""
+    try:
+        logger.info(f"Sending G-code: {command}")
+        
+        # Clear any previous response
+        global gcode_response
+        gcode_response = None
+        
+        # Publish G-code command
+        mqtt_client.publish("printer/gcode", command)
+        
+        # Wait for response (with timeout)
+        start_time = time.time()
+        while gcode_response is None and (time.time() - start_time) < 10:  # 10 second timeout
+            time.sleep(0.1)
+        
+        if gcode_response:
+            logger.info(f"G-code response: {gcode_response}")
+            return gcode_response
+        else:
+            logger.error(f"G-code timeout for command: {command}")
+            return None
+            
+    except Exception as e:
+        logger.error(f"Error sending G-code: {e}")
+        return None
+
+# Global variable to store G-code responses
+gcode_response = None
+
+def on_gcode_response(client, userdata, message):
+    """Handle G-code response from printer"""
+    global gcode_response
+    try:
+        gcode_response = message.payload.decode('utf-8')
+        logger.info(f"Received G-code response: {gcode_response}")
+    except Exception as e:
+        logger.error(f"Error processing G-code response: {e}")
+
+# Subscribe to G-code response topic (add this to your MQTT setup)
+# mqtt_client.subscribe("printer/gcode/response")
+# mqtt_client.message_callback_add("printer/gcode/response", on_gcode_response)
+
+
+
+
+
 
 # Enhanced printer position API endpoint with better error handling
 @app.route('/api/printer/position')
@@ -1192,6 +2815,37 @@ def api_calibration_convert():
     except Exception as e:
         return jsonify({"status": "error", "message": str(e)})
 
+
+
+@app.route('/api/scaler/calculate', methods=['POST'])
+def api_scaler_calculate():
+    try:
+        data = request.json
+        width_mm = float(data["width_mm"])
+        height_mm = float(data["height_mm"])
+        pixel_width = float(data["pixel_width"])
+        pixel_height = float(data["pixel_height"])
+        
+        microns_x = (width_mm * 1000) / pixel_width
+        microns_y = (height_mm * 1000) / pixel_height
+        
+        # Update calibration data
+        calibration_data["microns_per_pixel_x"] = microns_x
+        calibration_data["microns_per_pixel_y"] = microns_y
+        save_calibration_data()
+        
+        return jsonify({
+            "status": "success",
+            "microns_per_pixel_x": microns_x,
+            "microns_per_pixel_y": microns_y
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+
+
+
+
 # Keep all existing routes
 @app.route('/stream')
 def stream():
@@ -1323,6 +2977,10 @@ def api_status():
         "calibration": calibration_data,
         "printer_position": current_pos
     })
+
+# Initialize tools configuration on startup
+load_tools_config()
+
 
 if __name__ == '__main__':
     try:
