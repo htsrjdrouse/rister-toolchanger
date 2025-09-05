@@ -25,7 +25,6 @@ Each tutorial includes:
 ### 🎯 **Basic Operations**
 
 #### 1. [Tool Calibration and Homing](01-calibration-and-homing.md)
-**Video:** `01-calibration-and-homing.md`
 - Initial system setup and safety checks
 - Homing sequence and endstop verification
 - Tool offset calibration procedures
@@ -36,14 +35,12 @@ Each tutorial includes:
 ### 🔧 **Tool-Specific Operations**
 
 #### 2. [Klicky Probe Bed Leveling](02-klicky-bed-leveling.md)
-**Video:** `02-klicky-bed-leveling.md`
 - Klicky probe setup and calibration
 - Automated bed mesh generation
 - Manual probing techniques
 - Interpreting mesh data and corrections
 
 #### 3. [Camera Tool Focus and Positioning](03-camera-focus-positioning.md)
-**Video:** `03-camera-focus-positioning.md`
 - Camera tool mounting and alignment
 - Manual focus adjustment techniques
 <!--
@@ -51,22 +48,21 @@ Each tutorial includes:
 - Object detection and positioning
 -->
 #### 4. [Linear Actuator Pipette Operations](04-pipette-operations.md)
-**Video:** `04-pipette-operations.md`
 - Pipette tool setup and calibration
 - Liquid loading and dispensing procedures
 <!-- Volume accuracy and repeatability-->
 - Cleaning and maintenance protocols
 
 
-<!--
 ### 🚀 **Advanced Techniques**
 
 #### 5. Camera-Based Extruder Offset Calibration
-**Video:** `05-camera-offset-calibration.md`
-- 3D printing calibration targets
 - Computer vision setup and operation
-- Automated offset measurement
 - Integration with Klipper configuration
+- Automated offset measurement
+- 3D printing calibration targets
+
+<!--
 
 #### 6. Multi-Tool Workflow Automation
 **Video:** `06-multi-tool-workflows.md`
