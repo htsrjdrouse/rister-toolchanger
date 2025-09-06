@@ -660,6 +660,24 @@ def index():
             }
 
 
+.coordinate-overlay {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1000;
+    white-space: nowrap;
+}
+
+
+
+
 .camera-center {
     background-color: #3498db !important;  /* Blue color */
     border: 2px solid #3498db !important;
@@ -815,154 +833,267 @@ def index():
         <script>
 
 
-// Camera centering functionality
-let centeringMode = false;
-
-function startCameraCentering() {
-    centeringMode = true;
-    measuringLine = false; // Disable line measurement
-    console.log('Camera centering mode enabled');
-    alert('Click on a marking and the camera will move to center it in the view.');
+function hideCoordinateDisplay(imageElement) {
+    const overlay = imageElement.parentElement.querySelector('.coordinate-overlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
 }
 
-function centerCameraClick(event) {
-    if (!centeringMode) return;
-    
-    const rect = event.target.getBoundingClientRect();
-    const clickX = event.clientX - rect.left;
-    const clickY = event.clientY - rect.top;
-    
-    // Get image dimensions
-    const imageWidth = event.target.naturalWidth || event.target.width;
-    const imageHeight = event.target.naturalHeight || event.target.height;
-    
-    // Calculate offset from center (in pixels)
-    const centerX = imageWidth / 2;
-    const centerY = imageHeight / 2;
-    const offsetX = clickX - centerX;
-    const offsetY = clickY - centerY;
-    
-    console.log(`Clicked at (${clickX}, ${clickY}), center is (${centerX}, ${centerY}), offset: (${offsetX}, ${offsetY})`);
-    
-    // Convert pixel offset to real-world coordinates using calibration
-    moveCameraToCenter(offsetX, offsetY);
+function showCoordinateDisplay(imageElement) {
+    const overlay = imageElement.parentElement.querySelector('.coordinate-overlay');
+    if (overlay) {
+        overlay.style.display = 'block';
+    }
 }
 
-function moveCameraToCenter(pixelOffsetX, pixelOffsetY) {
-    // Get current calibration data
-    fetch('/api/calibration/info')
+
+
+
+
+// Add these variables at the top of your script section
+let imageFlipH = true;
+let imageFlipV = true;
+
+// Add these functions
+function flipImageHorizontal() {
+    imageFlipH = !imageFlipH;
+    applyImageTransforms();
+}
+
+function flipImageVertical() {
+    imageFlipV = !imageFlipV;
+    applyImageTransforms();
+}
+
+function resetImageFlip() {
+    imageFlipH = false;
+    imageFlipV = false;
+    applyImageTransforms();
+}
+
+
+function applyImageTransforms() {
+    const images = document.querySelectorAll('.clickable-image');
+    let transform = '';
+    
+    if (imageFlipH && imageFlipV) {
+        transform = 'scaleX(-1) scaleY(-1)';
+    } else if (imageFlipH) {
+        transform = 'scaleX(-1)';
+    } else if (imageFlipV) {
+        transform = 'scaleY(-1)';
+    } else {
+        transform = 'none';
+    }
+    
+    images.forEach(img => {
+        img.style.transform = transform;
+        img.style.transformOrigin = 'center';
+    });
+    
+    // Update crosshair position after transform
+    setTimeout(updateCrosshairPosition, 50);
+}
+
+
+
+
+function getCorrectCoordinates(event, imageElement) {
+    const rect = imageElement.getBoundingClientRect();
+    let x = Math.round(event.clientX - rect.left);
+    let y = Math.round(event.clientY - rect.top);
+    
+    // Apply coordinate transformation based on flip state
+    if (imageFlipH) {
+        x = rect.width - x;
+    }
+    if (imageFlipV) {
+        y = rect.height - y;
+    }
+    
+    return { x, y };
+}
+
+function handleImageClick(event, imageType) {
+    if (!calibrationMode) return;
+    
+    console.log('Image clicked in calibration mode');
+    
+    const coords = getCorrectCoordinates(event, event.target);
+    console.log(`Corrected pixel coordinates: (${coords.x}, ${coords.y})`);
+    
+    showCoordinates(event.target, coords.x, coords.y);
+    
+    fetch('/api/printer/position')
         .then(response => response.json())
-        .then(calibration => {
-            if (!calibration.microns_per_pixel_x || !calibration.microns_per_pixel_y) {
-                alert('Camera calibration required! Please calibrate pixel size first.');
-                centeringMode = false;
-                return;
+        .then(data => {
+            if (data.status === 'success' || data.status === 'timeout') {
+                addReferencePoint(coords.x, coords.y, data.position.x, data.position.y, data.position.z);
+            } else {
+                alert('Failed to get printer position: ' + (data.message || 'Unknown error'));
             }
-            
-            // Convert pixel offset to mm
-            const offsetMmX = (pixelOffsetX * calibration.microns_per_pixel_x) / 1000;
-            const offsetMmY = -(pixelOffsetY * calibration.microns_per_pixel_y) / 1000; // Y axis inverted
-            
-            console.log(`Moving camera by offset: X=${offsetMmX.toFixed(3)}mm, Y=${offsetMmY.toFixed(3)}mm`);
-            
-            // Send move command to move camera tool
-            fetch('/api/printer/move_camera', {
-                method: 'POST',
-                headers: {'Content-Type': 'application/json'},
-                body: JSON.stringify({
-                    offset_x: offsetMmX,
-                    offset_y: offsetMmY
-                })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.status === 'success') {
-                    alert(`Camera moved to center the marking!\nOffset: X=${offsetMmX.toFixed(3)}mm, Y=${offsetMmY.toFixed(3)}mm`);
-                } else {
-                    alert('Failed to move camera: ' + (data.message || 'Unknown error'));
-                }
-                centeringMode = false;
-            })
-            .catch(error => {
-                console.error('Error moving camera:', error);
-                alert('Error moving camera: ' + error);
-                centeringMode = false;
-            });
         })
         .catch(error => {
-            console.error('Error getting calibration:', error);
-            alert('Error getting calibration data');
-            centeringMode = false;
+            console.error('Error getting printer position:', error);
+            alert('Error getting printer position: ' + error);
         });
 }
 
-// Add fiducial crosshair overlay
-function addFiducialCrosshair(imageElement) {
-    // Remove existing crosshair
-    const existing = imageElement.parentElement.querySelector('.fiducial-crosshair');
-    if (existing) existing.remove();
+function updateCoordinateDisplay(event, imageElement) {
+    let overlay = imageElement.parentElement.querySelector('.coordinate-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'coordinate-overlay';
+        imageElement.parentElement.appendChild(overlay);
+    }
     
-    // Create crosshair container
-    const crosshair = document.createElement('div');
-    crosshair.className = 'fiducial-crosshair';
-    crosshair.style.position = 'absolute';
-    crosshair.style.top = '50%';
-    crosshair.style.left = '50%';
-    crosshair.style.transform = 'translate(-50%, -50%)';
-    crosshair.style.pointerEvents = 'none';
-    crosshair.style.zIndex = '500';
+    // Get corrected coordinates
+    const coords = getCorrectCoordinates(event, imageElement);
     
-    // Create circle
-    const circle = document.createElement('div');
-    circle.style.width = '40px';
-    circle.style.height = '40px';
-    circle.style.border = '2px solid #00ff00';
-    circle.style.borderRadius = '50%';
-    circle.style.position = 'relative';
+    const micronsPerPixelX = parseFloat(document.getElementById('micronPerPixelX').value) || 200.77730819;
+    const micronsPerPixelY = parseFloat(document.getElementById('micronPerPixelY').value) || 200.77730819;
     
-    // Create horizontal line
-    const hLine = document.createElement('div');
-    hLine.style.position = 'absolute';
-    hLine.style.top = '50%';
-    hLine.style.left = '10%';
-    hLine.style.right = '10%';
-    hLine.style.height = '2px';
-    hLine.style.backgroundColor = '#00ff00';
-    hLine.style.transform = 'translateY(-50%)';
+    // Calculate offset from center of image (489.5, 275.5)
+    const centerX = 489.5;
+    const centerY = 275.5;
+    const pixelOffsetX = coords.x - centerX;
+    const pixelOffsetY = coords.y - centerY;
     
-    // Create vertical line
-    const vLine = document.createElement('div');
-    vLine.style.position = 'absolute';
-    vLine.style.left = '50%';
-    vLine.style.top = '10%';
-    vLine.style.bottom = '10%';
-    vLine.style.width = '2px';
-    vLine.style.backgroundColor = '#00ff00';
-    vLine.style.transform = 'translateX(-50%)';
+    // Convert to mm offset - FIX THE X-AXIS DIRECTION
+    const mmOffsetX = -(pixelOffsetX * micronsPerPixelX) / 1000;  // Negative sign to flip X direction
+    const mmOffsetY = (pixelOffsetY * micronsPerPixelY) / 1000;   // Y direction stays the same
     
-    circle.appendChild(hLine);
-    circle.appendChild(vLine);
-    crosshair.appendChild(circle);
+    // Get current printer position
+    const currentPrinterX = debugInfo.printer_position?.x || 227.7;
+    const currentPrinterY = debugInfo.printer_position?.y || 150;
     
-    // Ensure parent container is positioned
-    imageElement.parentElement.style.position = 'relative';
-    imageElement.parentElement.appendChild(crosshair);
+    // Calculate target printer coordinates
+    const targetX = currentPrinterX + mmOffsetX;
+    const targetY = currentPrinterY + mmOffsetY;
+    
+    // Update overlay display
+    overlay.innerHTML = `
+        Pixel: (${coords.x}, ${coords.y})<br>
+        Offset: (${mmOffsetX > 0 ? '+' : ''}${mmOffsetX.toFixed(2)}mm, ${mmOffsetY > 0 ? '+' : ''}${mmOffsetY.toFixed(2)}mm)<br>
+        Move to: X${targetX.toFixed(1)} Y${targetY.toFixed(1)}
+    `;
 }
 
-// Initialize fiducial on page load
+
+
+
+
+
+// Camera centering functionality
+let centeringMode = false;
+function addFiducialCrosshair(imageElement) {
+    // Remove existing crosshair
+    const existing = document.querySelector('.fiducial-crosshair-fixed');
+    if (existing) existing.remove();
+    
+    // Get the image container position
+    const rect = imageElement.getBoundingClientRect();
+    
+    // Create crosshair positioned absolutely to the viewport
+    const crosshair = document.createElement('div');
+    crosshair.className = 'fiducial-crosshair-fixed';
+    crosshair.style.cssText = `
+        position: fixed;
+        left: ${rect.left + rect.width / 2}px;
+        top: ${rect.top + rect.height / 2}px;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        z-index: 1000;
+        color: #00ff00;
+        font-size: 20px;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    `;
+    crosshair.innerHTML = '+';
+    
+    // Append to body (outside any transform context)
+    document.body.appendChild(crosshair);
+    
+    return crosshair;
+}
+
+
+function updateCrosshairPosition() {
+    const crosshair = document.querySelector('.fiducial-crosshair-fixed');
+    const streamImg = document.getElementById('streamImg');
+    const photoImg = document.getElementById('photoImg');
+    
+    if (crosshair && streamImg && streamImg.offsetParent) {
+        const rect = streamImg.getBoundingClientRect();
+        crosshair.style.left = (rect.left + rect.width / 2) + 'px';
+        crosshair.style.top = (rect.top + rect.height / 2) + 'px';
+    } else if (crosshair && photoImg && photoImg.offsetParent) {
+        const rect = photoImg.getBoundingClientRect();
+        crosshair.style.left = (rect.left + rect.width / 2) + 'px';
+        crosshair.style.top = (rect.top + rect.height / 2) + 'px';
+    }
+}
+
+// Add event listeners
+window.addEventListener('resize', updateCrosshairPosition);
+window.addEventListener('scroll', updateCrosshairPosition);
+
+
+
+
+
+function debugCrosshairPosition() {
+    const img = document.getElementById('streamImg');
+    if (img) {
+        console.log(`Image dimensions: ${img.width} x ${img.height}`);
+        console.log(`Natural dimensions: ${img.naturalWidth} x ${img.naturalHeight}`);
+        console.log(`Mathematical center should be: (${img.width/2}, ${img.height/2})`);
+        
+        // Test click at mathematical center
+        const rect = img.getBoundingClientRect();
+        const centerX = img.width / 2;
+        const centerY = img.height / 2;
+        console.log(`Click at center would give coordinates: (${centerX}, ${centerY})`);
+    }
+}
+
+
 document.addEventListener('DOMContentLoaded', function() {
-    // Add crosshairs to both stream and photo images
+    // Hide photo container on page load
+    document.getElementById('photoContainer').style.display = 'none';
+    
+    // Apply default flips immediately
+    applyImageTransforms();
+    
+    // Initialize crosshair when images load
     const streamImg = document.getElementById('streamImg');
     const photoImg = document.getElementById('photoImg');
     
     if (streamImg) {
-        streamImg.addEventListener('load', () => addFiducialCrosshair(streamImg));
-        addFiducialCrosshair(streamImg); // Add immediately if already loaded
+        streamImg.addEventListener('load', () => {
+            if (document.getElementById('streamContainer').style.display !== 'none') {
+                // Ensure flips are applied to newly loaded images
+                applyImageTransforms();
+                setTimeout(() => {
+                    addFiducialCrosshair(streamImg);
+                    updateCrosshairPosition();
+                }, 100);
+            }
+        });
     }
     
     if (photoImg) {
-        photoImg.addEventListener('load', () => addFiducialCrosshair(photoImg));
-        addFiducialCrosshair(photoImg); // Add immediately if already loaded
+        photoImg.addEventListener('load', () => {
+            if (document.getElementById('photoContainer').style.display !== 'none') {
+                // Ensure flips are applied to newly loaded images
+                applyImageTransforms();
+                setTimeout(() => {
+                    addFiducialCrosshair(photoImg);
+                    updateCrosshairPosition();
+                }, 100);
+            }
+        });
     }
 });
 
@@ -984,34 +1115,46 @@ document.addEventListener('DOMContentLoaded', function() {
                 setInterval(checkStatus, 3000);
             };
             
-            function checkStatus() {
-                fetch('/api/status')
-                    .then(response => response.json())
-                    .then(data => {
-                        debugInfo = data;
-                        updateDebugPanel();
-                        
-                        if (data.streaming) {
-                            document.getElementById('streamContainer').style.display = 'block';
-                            document.getElementById('focusControls').style.display = 'flex';
-                            refreshStreamImage();
-                        } else {
-                            document.getElementById('streamContainer').style.display = 'none';
-                            document.getElementById('focusControls').style.display = 'none';
-                        }
-                        
-                        // Update calibration status
-                        if (data.calibration) {
-                            document.getElementById('micronPerPixelX').value = data.calibration.microns_per_pixel_x || 10;
-                            document.getElementById('micronPerPixelY').value = data.calibration.microns_per_pixel_y || 10;
-                            updateCalibrationStatus(data.calibration.enabled);
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error checking status:', error);
-                        updateDebugPanel('Error: ' + error);
-                    });
+function checkStatus() {
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            debugInfo = data;
+            updateDebugPanel();
+            
+            if (data.streaming) {
+                document.getElementById('streamContainer').style.display = 'block';
+                document.getElementById('focusControls').style.display = 'flex';
+                refreshStreamImage();
+                // Update crosshair for stream
+                setTimeout(() => {
+                    const streamImg = document.getElementById('streamImg');
+                    if (streamImg.complete) {
+                        addFiducialCrosshair(streamImg);
+                        updateCrosshairPosition();
+                    }
+                }, 100);
+            } else {
+                document.getElementById('streamContainer').style.display = 'none';
+                document.getElementById('focusControls').style.display = 'none';
             }
+            
+            // Update calibration status
+            if (data.calibration) {
+                document.getElementById('micronPerPixelX').value = data.calibration.microns_per_pixel_x || 10;
+                document.getElementById('micronPerPixelY').value = data.calibration.microns_per_pixel_y || 10;
+                updateCalibrationStatus(data.calibration.enabled);
+            }
+        })
+        .catch(error => {
+            console.error('Error checking status:', error);
+            updateDebugPanel('Error: ' + error);
+        });
+}
+
+
+
+
             
             function updateDebugPanel(error = null) {
                 const panel = document.getElementById('debugPanel');
@@ -1034,18 +1177,22 @@ document.addEventListener('DOMContentLoaded', function() {
                 img.src = '/stream?t=' + new Date().getTime();
             }
             
-            function startStream() {
-                fetch('/api/stream/start')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.streaming) {
-                            document.getElementById('streamContainer').style.display = 'block';
-                            document.getElementById('focusControls').style.display = 'flex';
-                            setTimeout(refreshStreamImage, 1000);
-                        }
-                    });
+
+function startStream() {
+    fetch('/api/stream/start')
+        .then(response => response.json())
+        .then(data => {
+            if (data.streaming) {
+                document.getElementById('streamContainer').style.display = 'block';
+                document.getElementById('focusControls').style.display = 'flex';
+                // Make sure photo container is hidden when starting stream
+                document.getElementById('photoContainer').style.display = 'none';
+                setTimeout(refreshStreamImage, 1000);
             }
-            
+        });
+}
+
+
             function stopStream() {
                 fetch('/api/stream/stop')
                     .then(response => response.json())
@@ -1055,20 +1202,37 @@ document.addEventListener('DOMContentLoaded', function() {
                     });
             }
             
-            function capturePhoto() {
-                fetch('/api/capture')
-                    .then(response => response.json())
-                    .then(data => {
-                        document.getElementById('photoContainer').style.display = 'block';
-                        document.getElementById('photoImg').src = '/latest_photo?t=' + new Date().getTime();
-                        currentImageType = 'snapshot';
-                    });
+
+function capturePhoto() {
+    // Hide stream container when taking photo
+    document.getElementById('streamContainer').style.display = 'none';
+    
+    fetch('/api/capture')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('photoContainer').style.display = 'block';
+                document.getElementById('photoImg').src = '/latest_photo?t=' + new Date().getTime();
+                currentImageType = 'snapshot';
+                
+                // Add crosshair to photo after it loads
+                const photoImg = document.getElementById('photoImg');
+                photoImg.onload = function() {
+                    addFiducialCrosshair(photoImg);
+                };
             }
-            
+        })
+        .catch(error => {
+            console.error('Error capturing photo:', error);
+        });
+}
+
+
+
             function toggleCalibrationMode() {
                 calibrationMode = !calibrationMode;
                 document.getElementById('calibrationToggle').textContent = 
-                    calibrationMode ? 'Disable Calibration Mode' : 'Enable Calibration Mode';
+                    calibrationMode ? 'Disable Image Mapper' : 'Enable Image Mapper';
                 document.getElementById('calibrationPanel').style.display = 
                     calibrationMode ? 'block' : 'none';
                     
@@ -1692,24 +1856,28 @@ document.addEventListener('DOMContentLoaded', function() {
                 <button onclick="stopStream()" class="stop">Stop Stream</button>
                 <button onclick="capturePhoto()" class="photo">Take Photo</button>
                 <button onclick="startLineMeasurement()" class="calibration pixel-calibrate">Calibrate Pixel Size</button>
-                <button onclick="startCameraCentering()" class="calibration camera-center">Center Camera</button>
-                <button id="calibrationToggle" onclick="toggleCalibrationMode()" class="calibration">Enable Calibration Mode</button>
+                <!--<button onclick="startCameraCentering()" class="calibration camera-center">Center Camera</button>-->
+                <button id="calibrationToggle" onclick="toggleCalibrationMode()" class="calibration">Image Mapper</button>
+                <button onclick="flipImageHorizontal()" class="calibration">Flip Horizontal</button>
+                <button onclick="flipImageVertical()" class="calibration">Flip Vertical</button>
+                <button onclick="resetImageFlip()" class="calibration">Reset Flip</button>
             </div>
            
 
 
 
 <!-- Camera Calibration Tutorial Dropdown -->
+<!-- Camera Calibration Tutorial Dropdown -->
 <div class="tutorial-container">
     <button onclick="toggleTutorial()" class="tutorial-toggle">
-        📖 Camera Calibration Tutorial
+        📖 Image Mapper Tutorial
         <span id="tutorial-arrow">▼</span>
     </button>
     
     <div id="tutorial-content" class="tutorial-content" style="display: none;">
         <div class="tutorial-steps">
-            <h3>🎯 Camera Calibration Process</h3>
-            <p>Follow these steps to calibrate your camera for precise positioning:</p>
+            <h3>🎯 Image Mapper Process</h3>
+            <p>Follow these steps to map pixel coordinates to real printer positions:</p>
             
             <div class="step-section">
                 <h4>Step 1: Print & Place Calibration Target</h4>
@@ -1719,7 +1887,6 @@ document.addEventListener('DOMContentLoaded', function() {
                     <li>Open the SVG file and print at <strong>100% scale</strong> - Do not scale to fit page!</li>
                     <li>Verify the 50mm scale bar measures exactly 50mm with a ruler</li>
                     <li>Place the printed target on your print bed within camera view</li>
-                    <li>Target doesn't need to be perfectly centered initially</li>
                 </ul>
                 
                 <div class="svg-code-container">
@@ -1779,8 +1946,8 @@ document.addEventListener('DOMContentLoaded', function() {
     &lt;text x="0" y="8"&gt;1. Print this page at 100% scale (no scaling!)&lt;/text&gt;
     &lt;text x="0" y="16"&gt;2. Place on printer bed within camera view&lt;/text&gt;
     &lt;text x="0" y="24"&gt;3. Use "Calibrate Pixel Size" - draw 50mm line across center crosshair&lt;/text&gt;
-    &lt;text x="0" y="32"&gt;4. Use "Center Camera" - click on center dot to auto-center&lt;/text&gt;
-    &lt;text x="0" y="40"&gt;5. Add reference points by clicking corner targets (TL, TR, BL, BR)&lt;/text&gt;
+    &lt;text x="0" y="32"&gt;4. Use "Image Mapper" - click on targets to map coordinates&lt;/text&gt;
+    &lt;text x="0" y="40"&gt;5. Use coordinates to manually center camera and add reference points&lt;/text&gt;
   &lt;/g&gt;
   &lt;g transform="translate(130, 250)" stroke="black" stroke-width="0.3" fill="black"&gt;
     &lt;line x1="0" y1="0" x2="50" y2="0"/&gt;
@@ -1800,204 +1967,71 @@ document.addEventListener('DOMContentLoaded', function() {
             </div>
             
             <div class="step-section">
-                <h4>Step 2: Calibrate Pixel Scale (Required First!)</h4>
+                <h4>Step 2: Calibrate Pixel Scale</h4>
                 <ul>
                     <li>Click the <strong style="color: #ff6b35;">Calibrate Pixel Size</strong> button</li>
-                    <li>Click and drag to draw a line across a known dimension of your object</li>
+                    <li>Click and drag to draw a line across a known dimension (like the 50mm crosshair)</li>
                     <li>Enter the actual measurement in millimeters when prompted</li>
-                    <li>The system will calculate microns per pixel automatically</li>
-                    <li><strong>⚠️ This must be done before using Center Camera!</strong></li>
+                    <li>The system calculates microns per pixel automatically</li>
                 </ul>
             </div>
             
             <div class="step-section">
-                <h4>Step 3: Center the Reference Object</h4>
+                <h4>Step 3: Use Image Mapper</h4>
                 <ul>
-                    <li>Click the <strong style="color: #3498db;">Center Camera</strong> button</li>
-                    <li>Click directly on your reference object in the image</li>
-                    <li>The camera will automatically move to center the object under the green crosshair</li>
-                    <li>Repeat if needed for fine adjustment</li>
+                    <li>Click the <strong style="color: #FF9800;">Image Mapper</strong> button</li>
+                    <li>Click on specific features in the image (center dot, corner targets)</li>
+                    <li>Each click shows you both pixel coordinates and current printer position</li>
+                    <li>Use this information to manually move your printer/camera to center targets</li>
+                    <li>Add multiple reference points for better coordinate mapping accuracy</li>
                 </ul>
             </div>
             
             <div class="step-section">
-                <h4>Step 4: Add Reference Points</h4>
+                <h4>Step 4: Manual Camera Positioning</h4>
                 <ul>
-                    <li>Click on specific features in the image to add calibration points</li>
-                    <li>Each click records the pixel position and current printer coordinates</li>
-                    <li><strong>Minimum:</strong> One reference point for basic functionality</li>
-                    <li><strong>Recommended:</strong> 3-4 points near bed corners for higher precision</li>
+                    <li>Use the coordinate information from Image Mapper clicks</li>
+                    <li>Manually move your printer to center the camera on targets</li>
+                    <li>Build up reference points at different locations for full-bed accuracy</li>
+                    <li>Use flip buttons if your camera image appears inverted</li>
                 </ul>
-                <div class="reference-points-explanation">
-                    <h5>Why Multiple Points?</h5>
-                    <ul>
-                        <li><strong>Single Point:</strong> Good accuracy near reference, ±2-5mm error at bed edges</li>
-                        <li><strong>Multiple Points:</strong> Corrects camera distortion, bed rotation, and perspective effects</li>
-                        <li><strong>Best for Multi-Tool:</strong> Essential for accurate tool switching across the bed</li>
-                    </ul>
-                </div>
             </div>
             
             <div class="step-section success-box">
-                <h4>✅ Calibration Complete!</h4>
-                <p>Your camera is now calibrated. You can:</p>
+                <h4>✅ Mapping Complete!</h4>
+                <p>Your camera coordinates are now mapped. You can:</p>
                 <ul>
                     <li>Click anywhere in the image to get precise printer coordinates</li>
-                    <li>Use the tools to measure distances and positions accurately</li>
-                    <li>Switch between different tools with known positional relationships</li>
+                    <li>Use the coordinate data to manually position your camera</li>
+                    <li>Build reference points for accurate coordinate conversion across the bed</li>
+                    <li>Measure distances and positions accurately in your images</li>
                 </ul>
             </div>
             
             <div class="tips-section">
                 <h4>💡 Pro Tips</h4>
                 <ul>
-                    <li><strong>Use a ruler or grid pattern</strong> for the most accurate calibration</li>
-                    <li><strong>Start with one reference point</strong> for quick testing, add more for precision</li>
-                    <li><strong>Place additional points near bed corners</strong> for full-bed accuracy</li>
-                    <li><strong>Recalibrate</strong> if you change camera height or focus</li>
+                    <li><strong>Start with the center target</strong> for initial reference point</li>
+                    <li><strong>Add corner targets</strong> for full-bed coordinate accuracy</li>
+                    <li><strong>Use the flip buttons</strong> if your camera view is inverted</li>
+                    <li><strong>Recalibrate pixel size</strong> if you change camera height or focus</li>
                     <li><strong>The green crosshair</strong> shows the exact center of your camera view</li>
+                    <li><strong>Manual positioning</strong> gives you full control over camera movement</li>
                 </ul>
             </div>
         </div>
     </div>
 </div>
 
-<style>
-.tutorial-container {
-    margin: 10px 0;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    background-color: #f9f9f9;
-}
 
-.tutorial-toggle {
-    width: 100%;
-    padding: 12px 15px;
-    background-color: #f1f1f1;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    text-align: left;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #3498db !important;  /* Blue hyperlink color */
-    text-decoration: none;
-}
 
-.tutorial-toggle:hover {
-    background-color: #e8e8e8;
-}
 
-.tutorial-content {
-    padding: 20px;
-    background-color: white;
-    border-top: 1px solid #ddd;
-}
 
-.tutorial-steps h3 {
-    color: #2c3e50;
-    margin-top: 0;
-    margin-bottom: 15px;
-}
 
-.step-section {
-    margin-bottom: 20px;
-    padding: 15px;
-    border-left: 4px solid #3498db;
-    background-color: #f8f9fa;
-}
 
-.step-section h4 {
-    color: #2c3e50;
-    margin-top: 0;
-    margin-bottom: 10px;
-}
 
-.step-section ul {
-    margin: 10px 0;
-    padding-left: 20px;
-}
 
-.step-section li {
-    margin-bottom: 8px;
-    line-height: 1.4;
-}
 
-.success-box {
-    border-left-color: #27ae60;
-    background-color: #d5f4e6;
-}
-
-.tips-section {
-    border-left-color: #f39c12;
-    background-color: #fef9e7;
-}
-
-.svg-code-container {
-    margin: 15px 0;
-    padding: 15px;
-    background-color: #f8f9fa;
-    border: 1px solid #dee2e6;
-    border-radius: 4px;
-}
-
-.svg-code-container h5 {
-    margin-top: 0;
-    margin-bottom: 10px;
-    color: #2c3e50;
-    font-size: 14px;
-}
-
-.svg-code-container textarea {
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    padding: 10px;
-}
-
-.svg-code-container p {
-    margin-bottom: 0;
-}
-
-.reference-points-explanation {
-    margin-top: 15px;
-    padding: 10px;
-    background-color: #e8f4fd;
-    border: 1px solid #3498db;
-    border-radius: 4px;
-}
-
-.reference-points-explanation h5 {
-    margin-top: 0;
-    margin-bottom: 8px;
-    color: #2c3e50;
-    font-size: 14px;
-}
-
-.reference-points-explanation ul {
-    margin-bottom: 5px;
-    font-size: 13px;
-}
-
-.reference-points-explanation li {
-    margin-bottom: 4px;
-}
-
-.tutorial-content p {
-    margin-bottom: 15px;
-    line-height: 1.5;
-}
-
-#tutorial-arrow {
-    transition: transform 0.3s ease;
-}
-
-.tutorial-arrow-up {
-    transform: rotate(180deg);
-}
-</style>
 
 
 
@@ -2450,7 +2484,7 @@ function toggleTutorial() {
             </div>
             
             <div id="calibrationPanel" class="calibration-panel" style="display: none;">
-                <h2>Pixel-to-Printer Coordinate Calibration</h2>
+                <h2>Image Mapper - Pixel-to-Printer Coordinate Mapping</h2>
                 <p><strong>Status:</strong> <span id="calibrationStatus">DISABLED</span></p>
                 
                 <div class="input-group">
@@ -2474,28 +2508,29 @@ function toggleTutorial() {
                 
                 <p><strong>Instructions:</strong></p>
                 <ul style="text-align: left;">
-                    <li>1. Measure your calibration object (ruler, etc.) and calculate microns per pixel</li>
-                    <li>2. Move printer to a known position</li>
-                    <li>3. Click on the corresponding point in the image</li>
-                    <li>4. Repeat for multiple reference points for better accuracy</li>
-                    <li>5. Enable calibration to start using pixel-to-printer coordinate conversion</li>
+                    <li>1. Use "Image Mapper" to click on features in the image</li>
+                    <li>2. Each click records pixel coordinates and current printer position</li>
+                    <li>3. Use the coordinate information to manually position your camera/printer</li>
+                    <li>4. Use flip buttons if your camera image is inverted</li>
+                    <li>5. Build reference points for accurate coordinate mapping</li>
                 </ul>
             </div>
             
             <div id="streamContainer" class="media-container" style="display: none;">
                 <h3>Live Stream</h3>
-                <img id="streamImg" class="clickable-image" 
 
 <img id="streamImg" class="clickable-image" 
      onmousedown="measureClick(event)" 
-     onmousemove="measureClick(event)" 
+     onmousemove="measureClick(event); updateCoordinateDisplay(event, this)" 
      onmouseup="measureClick(event)"
-     onclick="handleImageClick(event, 'stream'); measureClick(event); centerCameraClick(event);"
+     onmouseenter="showCoordinateDisplay(this)"
+     onmouseleave="hideCoordinateDisplay(this)"
+     onclick="handleImageClick(event, 'stream'); measureClick(event);"
      src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" 
      alt="Live Stream">
 
-            </div>
 
+            </div>
 
 
 
@@ -2505,9 +2540,11 @@ function toggleTutorial() {
 
 <img id="photoImg" class="clickable-image"
      onmousedown="measureClick(event)" 
-     onmousemove="measureClick(event)" 
+     onmousemove="measureClick(event); updateCoordinateDisplay(event, this)" 
      onmouseup="measureClick(event)"
-     onclick="handleImageClick(event, 'snapshot'); measureClick(event); centerCameraClick(event);"
+     onmouseenter="showCoordinateDisplay(this)"
+     onmouseleave="hideCoordinateDisplay(this)"
+     onclick="handleImageClick(event, 'snapshot'); measureClick(event);"
      src="/latest_photo" 
      alt="Latest Captured Photo">
 
@@ -2526,143 +2563,15 @@ function toggleTutorial() {
 
 # Add this to your Flask application
 
-@app.route('/api/printer/move_camera', methods=['POST'])
-def api_move_camera():
-    """Move the camera tool by a relative offset"""
-    try:
-        data = request.json
-        offset_x = float(data.get("offset_x", 0))
-        offset_y = float(data.get("offset_y", 0))
-        
-        logger.info(f"Moving camera tool by offset: X={offset_x:.3f}mm, Y={offset_y:.3f}mm")
-        
-        # Get current position
-        current_pos = send_gcode("M114")
-        if not current_pos:
-            return jsonify({"status": "error", "message": "Failed to get current position"})
-        
-        # Parse current position (format: "X:123.45 Y:67.89 Z:...")
-        try:
-            pos_parts = current_pos.strip().split()
-            current_x = None
-            current_y = None
-            
-            for part in pos_parts:
-                if part.startswith("X:"):
-                    current_x = float(part[2:])
-                elif part.startswith("Y:"):
-                    current_y = float(part[2:])
-            
-            if current_x is None or current_y is None:
-                return jsonify({"status": "error", "message": "Could not parse current position"})
-                
-        except (ValueError, IndexError):
-            return jsonify({"status": "error", "message": "Invalid position format from printer"})
-        
-        # Calculate new position
-        new_x = current_x + offset_x
-        new_y = current_y + offset_y
-        
-        # Ensure camera tool is selected (T0 assuming camera is tool 0)
-        tool_result = send_gcode("T0")  # Select camera tool
-        if not tool_result:
-            logger.warning("Failed to select camera tool, continuing anyway")
-        
-        # Move to new position
-        move_command = f"G1 X{new_x:.3f} Y{new_y:.3f} F3000"
-        move_result = send_gcode(move_command)
-        
-        if move_result:
-            logger.info(f"Camera moved from ({current_x:.3f}, {current_y:.3f}) to ({new_x:.3f}, {new_y:.3f})")
-            return jsonify({
-                "status": "success", 
-                "message": f"Camera moved to X{new_x:.3f} Y{new_y:.3f}",
-                "old_position": {"x": current_x, "y": current_y},
-                "new_position": {"x": new_x, "y": new_y},
-                "offset": {"x": offset_x, "y": offset_y}
-            })
-        else:
-            return jsonify({"status": "error", "message": "Failed to move camera"})
-            
-    except Exception as e:
-        logger.error(f"Error moving camera: {e}")
-        return jsonify({"status": "error", "message": str(e)})
-
-
-
-@app.route('/api/printer/select_tool', methods=['POST'])
-def api_select_tool():
-    """Select a specific tool using correct commands"""
-    try:
-        data = request.json
-        tool_command = data.get("tool_command", "C0")
-        
-        logger.info(f"Selecting tool {tool_command}")
-        
-        # Send tool selection command (C0, E0, E1, L0)
-        result = send_gcode(tool_command)
-        
-        if result:
-            return jsonify({
-                "status": "success", 
-                "message": f"Tool {tool_command} selected",
-                "tool_command": tool_command
-            })
-        else:
-            return jsonify({"status": "error", "message": f"Failed to select tool {tool_command}"})
-            
-    except Exception as e:
-        logger.error(f"Error selecting tool: {e}")
-        return jsonify({"status": "error", "message": str(e)})
-
-
-
-# Add to existing send_gcode function or modify if needed
-def send_gcode(command):
-    """Send G-code command to printer via MQTT"""
-    try:
-        logger.info(f"Sending G-code: {command}")
-        
-        # Clear any previous response
-        global gcode_response
-        gcode_response = None
-        
-        # Publish G-code command
-        mqtt_client.publish("printer/gcode", command)
-        
-        # Wait for response (with timeout)
-        start_time = time.time()
-        while gcode_response is None and (time.time() - start_time) < 10:  # 10 second timeout
-            time.sleep(0.1)
-        
-        if gcode_response:
-            logger.info(f"G-code response: {gcode_response}")
-            return gcode_response
-        else:
-            logger.error(f"G-code timeout for command: {command}")
-            return None
-            
-    except Exception as e:
-        logger.error(f"Error sending G-code: {e}")
-        return None
-
-# Global variable to store G-code responses
-gcode_response = None
-
-def on_gcode_response(client, userdata, message):
-    """Handle G-code response from printer"""
-    global gcode_response
-    try:
-        gcode_response = message.payload.decode('utf-8')
-        logger.info(f"Received G-code response: {gcode_response}")
-    except Exception as e:
-        logger.error(f"Error processing G-code response: {e}")
-
-# Subscribe to G-code response topic (add this to your MQTT setup)
-# mqtt_client.subscribe("printer/gcode/response")
-# mqtt_client.message_callback_add("printer/gcode/response", on_gcode_response)
-
-
+@app.route('/api/calibration/info')
+def api_calibration_info():
+    """Get calibration info (alias for data endpoint)"""
+    return jsonify({
+        "microns_per_pixel_x": calibration_data["microns_per_pixel_x"],
+        "microns_per_pixel_y": calibration_data["microns_per_pixel_y"],
+        "reference_points": calibration_data["reference_points"],
+        "enabled": calibration_data["enabled"]
+    })
 
 
 
@@ -2787,8 +2696,14 @@ def api_calibration_clear():
 
 @app.route('/api/calibration/data')
 def api_calibration_data():
-    """Get calibration data"""
-    return jsonify(calibration_data)
+    """Get calibration data in expected format"""
+    return jsonify({
+        "microns_per_pixel_x": calibration_data["microns_per_pixel_x"],
+        "microns_per_pixel_y": calibration_data["microns_per_pixel_y"], 
+        "reference_points": calibration_data["reference_points"],
+        "enabled": calibration_data["enabled"]
+    })
+
 
 @app.route('/api/calibration/convert', methods=['POST'])
 def api_calibration_convert():
