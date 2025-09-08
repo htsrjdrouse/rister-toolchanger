@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
 """
-Camera Controller with Flask and MQTT - Stream, Capture, and Focus Slider
-With improved stream handling, MQTT command interface, and direct IMX519 focusing
-SAFARI COMPATIBLE VERSION with enhanced MJPEG streaming
+Camera Controller with Flask and MQTT - Enhanced with Calibration Tool
+FIXED: Uses the working publish_position.sh method for position reporting
 """
+
+import requests
 import os
 import time
 import threading
@@ -11,12 +12,17 @@ import subprocess
 import logging
 import json
 from datetime import datetime
-from flask import Flask, Response, send_file, jsonify
+from flask import Flask, Response, send_file, jsonify, request
 import paho.mqtt.client as mqtt
 
-# Configure logging
+
+# Tool management configuration
+TOOLS_CONFIG_FILE = "/home/pi/tools_config.json"
+tools_config = {"tools": [], "camera_reference": None}
+
+# Configure logging with more detailed output
 logging.basicConfig(
-    level=logging.INFO,
+    level=logging.DEBUG,
     format='%(asctime)s - %(name)s - %(levelname)s - %(message)s',
     handlers=[
         logging.StreamHandler()
@@ -26,27 +32,41 @@ logger = logging.getLogger("camera_flask_mqtt")
 
 # Camera settings
 CAPTURE_DIR = "/home/pi/captures"
+CALIBRATION_DIR = "/home/pi/calibration"
 HTTP_PORT = 8080
 STREAM_ACTIVE = False
 STREAM_WIDTH = 1280
 STREAM_HEIGHT = 720
 CAPTURE_WIDTH = 4656
 CAPTURE_HEIGHT = 3496
-STREAM_QUALITY = "medium"  # low, medium, high
+STREAM_QUALITY = "medium"
 
-# Focus settings - Using direct values for libcamera-still --lens-position
-FOCUS_MODE = "auto"  # auto or manual
-FOCUS_POSITION = 10  # Default starting position for manual focus
+# Focus settings
+FOCUS_MODE = "auto"
+FOCUS_POSITION = 10
 
 # MQTT Settings
-MQTT_BROKER = "192.168.1.89"  # Your Klipper Pi (MQTT broker)
+MQTT_BROKER = "192.168.1.89"
 MQTT_PORT = 1883
 MQTT_COMMAND_TOPIC = "dakash/camera/command"
 MQTT_CONFIG_TOPIC = "dakash/camera/config"
 MQTT_STATUS_TOPIC = "dakash/camera/status"
+MQTT_KLIPPER_GCODE_TOPIC = "dakash/klipper/gcode"
+MQTT_KLIPPER_POSITION_RESPONSE = "dakash/klipper/position/response"
+MQTT_CALIBRATION_TOPIC = "dakash/camera/calibration"
 
-# Ensure capture directory exists
+# Calibration settings
+calibration_data = {
+    "microns_per_pixel_x": 10.0,
+    "microns_per_pixel_y": 10.0,
+    "reference_points": [],
+    "enabled": False,
+    "scaler_measurements": []
+}
+
+# Ensure directories exist
 os.makedirs(CAPTURE_DIR, exist_ok=True)
+os.makedirs(CALIBRATION_DIR, exist_ok=True)
 
 # Create Flask app
 app = Flask(__name__)
@@ -57,7 +77,104 @@ keep_streaming = False
 current_frame = None
 frame_lock = threading.Lock()
 mqtt_client = None
-frame_count = 0  # For Safari compatibility
+frame_count = 0
+
+# FIXED: Better position tracking with thread safety
+current_printer_position = {"x": 0.0, "y": 0.0, "z": 0.0}
+position_lock = threading.Lock()
+position_request_pending = False
+position_request_timestamp = 0
+
+def load_calibration_data():
+    """Load calibration data from file"""
+    global calibration_data
+    try:
+        cal_file = os.path.join(CALIBRATION_DIR, "calibration.json")
+        if os.path.exists(cal_file):
+            with open(cal_file, 'r') as f:
+                calibration_data = json.load(f)
+                logger.info("Calibration data loaded")
+    except Exception as e:
+        logger.error(f"Failed to load calibration data: {e}")
+
+def save_calibration_data():
+    """Save calibration data to file"""
+    try:
+        cal_file = os.path.join(CALIBRATION_DIR, "calibration.json")
+        with open(cal_file, 'w') as f:
+            json.dump(calibration_data, f, indent=2)
+        logger.info("Calibration data saved")
+        return True
+    except Exception as e:
+        logger.error(f"Failed to save calibration data: {e}")
+        return False
+
+def request_printer_position():
+    """Get printer position directly from Klipper API - much faster than MQTT"""
+    global current_printer_position, position_request_pending
+    
+    logger.debug("request_printer_position() called - using direct API")
+    
+    try:
+        # Get position directly from Klipper API
+        klipper_ip = "192.168.1.89"
+        url = f"http://{klipper_ip}/printer/objects/query?gcode_move"
+        
+        response = requests.get(url, timeout=3)
+        
+        if response.status_code == 200:
+            data = response.json()
+            gcode_pos = data['result']['status']['gcode_move']['gcode_position']
+            
+            with position_lock:
+                current_printer_position = {
+                    "x": round(float(gcode_pos[0]), 3),
+                    "y": round(float(gcode_pos[1]), 3),
+                    "z": round(float(gcode_pos[2]), 3)
+                }
+                position_request_pending = False
+            
+            logger.info(f"Got position from Klipper API: {current_printer_position}")
+            return True
+        else:
+            logger.error(f"Klipper API request failed: {response.status_code}")
+            return False
+            
+    except Exception as e:
+        logger.error(f"Error getting position from Klipper API: {e}")
+        with position_lock:
+            position_request_pending = False
+        return False
+
+
+
+def pixel_to_printer_coordinates(pixel_x, pixel_y, reference_printer_x, reference_printer_y):
+    """Convert pixel coordinates to printer coordinates using calibration"""
+    if not calibration_data["enabled"] or len(calibration_data["reference_points"]) == 0:
+        return None
+    
+    # Use the most recent reference point for simple linear conversion
+    ref_point = calibration_data["reference_points"][-1]
+    
+    # Calculate offset in pixels from reference point
+    pixel_offset_x = pixel_x - ref_point["pixel_x"]
+    pixel_offset_y = pixel_y - ref_point["pixel_y"]
+    
+    # Convert to printer coordinates using microns per pixel
+    printer_offset_x = pixel_offset_x * calibration_data["microns_per_pixel_x"] / 1000.0
+    printer_offset_y = pixel_offset_y * calibration_data["microns_per_pixel_y"] / 1000.0
+    
+    # Calculate absolute printer coordinates
+    printer_x = ref_point["printer_x"] + printer_offset_x
+    printer_y = ref_point["printer_y"] - printer_offset_y  # Y axis is typically inverted
+    
+    return {
+        "x": round(printer_x, 3),
+        "y": round(printer_y, 3),
+        "reference_point": ref_point,
+        "pixel_offset": {"x": pixel_offset_x, "y": pixel_offset_y},
+        "printer_offset": {"x": printer_offset_x, "y": printer_offset_y}
+    }
 
 def get_focus_info():
     """Get current focus mode and position"""
@@ -75,19 +192,14 @@ def control_autofocus(mode="auto", position=None):
         logger.info(f"Setting focus: mode={mode}, position={position}")
         
         if mode == "auto":
-            # Store auto focus mode
             FOCUS_MODE = "auto"
-            FOCUS_POSITION = 10  # Default position
+            FOCUS_POSITION = 10
             return True
             
         elif mode == "manual" and position is not None:
-            # Direct use of position value, ensure it's in range 0-30
             pos = max(0, min(30, float(position)))
-            
-            # Store manual focus mode and position
             FOCUS_MODE = "manual"
             FOCUS_POSITION = pos
-            
             return True
         else:
             logger.error(f"Invalid focus parameters: mode={mode}, position={position}")
@@ -101,10 +213,8 @@ def capture_frame():
     global current_frame, frame_lock, FOCUS_MODE, FOCUS_POSITION, frame_count
     
     try:
-        # Use a temporary file
         temp_file = "/tmp/stream_frame.jpg"
         
-        # Capture frame using libcamera-still with focus parameters
         cmd = [
             "libcamera-still",
             "--output", temp_file,
@@ -113,14 +223,13 @@ def capture_frame():
             "--height", str(STREAM_HEIGHT),
             "--immediate",
             "--nopreview",
-            "--quality", "85",  # Specific quality for Safari compatibility
+            "--quality", "85",
             "--encoding", "jpg"
         ]
         
-        # Add focus parameters
         if FOCUS_MODE == "auto":
             cmd.extend(["--autofocus-mode", "auto"])
-        else:  # manual
+        else:
             cmd.extend(["--autofocus-mode", "manual", "--lens-position", str(FOCUS_POSITION)])
         
         result = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -150,7 +259,6 @@ def streaming_worker():
     while keep_streaming:
         if capture_frame():
             consecutive_failures = 0
-            # Safari-friendly frame rate (12 fps for stability)
             time.sleep(1/12)
         else:
             consecutive_failures += 1
@@ -172,12 +280,10 @@ def start_stream():
         logger.info("Stream already active")
         return True
     
-    # Reset frame buffer and counter
     with frame_lock:
         current_frame = None
         frame_count = 0
     
-    # Start streaming thread
     keep_streaming = True
     STREAM_ACTIVE = True
     streaming_thread = threading.Thread(target=streaming_worker)
@@ -185,7 +291,6 @@ def start_stream():
     streaming_thread.start()
     
     logger.info("Stream started")
-    # Send status update via MQTT
     publish_status()
     return True
 
@@ -197,17 +302,14 @@ def stop_stream():
         logger.info("No stream active")
         return True
     
-    # Signal thread to stop
     keep_streaming = False
     
-    # Wait for thread to finish
     if streaming_thread and streaming_thread.is_alive():
         streaming_thread.join(timeout=3)
     
     STREAM_ACTIVE = False
     streaming_thread = None
     logger.info("Stream stopped")
-    # Send status update via MQTT
     publish_status()
     return True
 
@@ -219,7 +321,6 @@ def capture_image():
         timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
         filename = f"{CAPTURE_DIR}/capture_{timestamp}.jpg"
         
-        # Capture image using libcamera-still with focus parameters
         cmd = [
             "libcamera-still",
             "--output", filename,
@@ -229,10 +330,9 @@ def capture_image():
             "--nopreview"
         ]
         
-        # Add focus parameters
         if FOCUS_MODE == "auto":
             cmd.extend(["--autofocus-mode", "auto"])
-        else:  # manual
+        else:
             cmd.extend(["--autofocus-mode", "manual", "--lens-position", str(FOCUS_POSITION)])
         
         result = subprocess.run(cmd, stderr=subprocess.PIPE, stdout=subprocess.PIPE)
@@ -253,28 +353,24 @@ def update_camera_config(config):
     global STREAM_WIDTH, STREAM_HEIGHT, CAPTURE_WIDTH, CAPTURE_HEIGHT, STREAM_QUALITY
     
     try:
-        # Update stream dimensions if provided
         if "stream_width" in config and isinstance(config["stream_width"], int):
             STREAM_WIDTH = config["stream_width"]
         
         if "stream_height" in config and isinstance(config["stream_height"], int):
             STREAM_HEIGHT = config["stream_height"]
             
-        # Update capture dimensions if provided
         if "capture_width" in config and isinstance(config["capture_width"], int):
             CAPTURE_WIDTH = config["capture_width"]
             
         if "capture_height" in config and isinstance(config["capture_height"], int):
             CAPTURE_HEIGHT = config["capture_height"]
             
-        # Update stream quality if provided
         if "stream_quality" in config and config["stream_quality"] in ["low", "medium", "high"]:
             STREAM_QUALITY = config["stream_quality"]
             
         logger.info(f"Camera config updated: stream={STREAM_WIDTH}x{STREAM_HEIGHT}, "
                     f"capture={CAPTURE_WIDTH}x{CAPTURE_HEIGHT}, quality={STREAM_QUALITY}")
         
-        # Send status update via MQTT
         publish_status()
         return True
     except Exception as e:
@@ -288,6 +384,9 @@ def publish_status():
     if mqtt_client and mqtt_client.is_connected():
         focus_info = get_focus_info()
         
+        with position_lock:
+            current_pos = current_printer_position.copy()
+        
         status = {
             "timestamp": datetime.now().isoformat(),
             "streaming": STREAM_ACTIVE,
@@ -297,7 +396,9 @@ def publish_status():
             "stream_height": STREAM_HEIGHT,
             "capture_width": CAPTURE_WIDTH,
             "capture_height": CAPTURE_HEIGHT,
-            "stream_quality": STREAM_QUALITY
+            "stream_quality": STREAM_QUALITY,
+            "calibration": calibration_data,
+            "current_position": current_pos
         }
         
         mqtt_client.publish(MQTT_STATUS_TOPIC, json.dumps(status))
@@ -309,31 +410,52 @@ def publish_status():
 def on_connect(client, userdata, flags, rc):
     if rc == 0:
         logger.info("Connected to MQTT broker")
-        # Subscribe to command and config topics
         client.subscribe(MQTT_COMMAND_TOPIC)
         client.subscribe(MQTT_CONFIG_TOPIC)
-        # Publish initial status
+        client.subscribe(MQTT_KLIPPER_POSITION_RESPONSE)
+        logger.info(f"Subscribed to topics: {MQTT_COMMAND_TOPIC}, {MQTT_CONFIG_TOPIC}, {MQTT_KLIPPER_POSITION_RESPONSE}")
         publish_status()
     else:
         logger.error(f"Failed to connect to MQTT broker, return code {rc}")
 
 def on_message(client, userdata, msg):
-    """Handle received MQTT messages"""
+    """FIXED: Handle received MQTT messages with better debugging"""
+    global current_printer_position, position_request_pending
+    
     try:
         topic = msg.topic
-        payload = json.loads(msg.payload.decode())
-        logger.info(f"MQTT message received: {topic} = {payload}")
+        payload_str = msg.payload.decode()
+        logger.debug(f"Raw MQTT message: {topic} = {payload_str}")
         
-        # Handle command messages
+        payload = json.loads(payload_str)
+        logger.info(f"Parsed MQTT message: {topic} = {payload}")
+        
         if topic == MQTT_COMMAND_TOPIC:
             handle_command_message(payload)
-        
-        # Handle config messages
         elif topic == MQTT_CONFIG_TOPIC:
             update_camera_config(payload)
+        elif topic == MQTT_KLIPPER_POSITION_RESPONSE:
+            logger.info(f"Position response received: {payload}")
+            # Handle printer position response from publish_position.sh
+            if isinstance(payload, dict) and "x" in payload and "y" in payload and "z" in payload:
+                if payload.get("status") == "success":
+                    with position_lock:
+                        current_printer_position = {
+                            "x": float(payload["x"]),
+                            "y": float(payload["y"]),
+                            "z": float(payload["z"])
+                        }
+                        position_request_pending = False
+                    logger.info(f"Printer position updated to: {current_printer_position}")
+                else:
+                    logger.error(f"Position request failed: {payload}")
+                    with position_lock:
+                        position_request_pending = False
+            else:
+                logger.error(f"Invalid position response format: {payload}")
             
-    except json.JSONDecodeError:
-        logger.error(f"Invalid JSON in MQTT message: {msg.payload}")
+    except json.JSONDecodeError as e:
+        logger.error(f"JSON decode error in MQTT message: {e}, payload: {msg.payload}")
     except Exception as e:
         logger.error(f"Error processing MQTT message: {e}")
 
@@ -347,28 +469,20 @@ def handle_command_message(payload):
             return False
             
         command = payload["command"]
+        logger.info(f"Processing command: {command}")
         
-        # Handle stream control commands
         if command == "stream_start":
             start_stream()
-            
         elif command == "stream_stop":
             stop_stream()
-            
-        # Handle capture command
         elif command == "capture":
             capture_image()
-            
-        # Handle focus commands
         elif command == "focus":
             mode = payload.get("mode", "auto")
             position = payload.get("position", 10)
             control_autofocus(mode, position)
-            
-        # Handle status command
         elif command == "status":
             publish_status()
-            
         else:
             logger.warning(f"Unknown command: {command}")
             return False
@@ -386,31 +500,176 @@ def setup_mqtt_client():
         client_id = f"camera_flask_{os.getpid()}"
         mqtt_client = mqtt.Client(client_id=client_id)
         
-        # Set callbacks
         mqtt_client.on_connect = on_connect
         mqtt_client.on_message = on_message
         
-        # Connect to broker
+        logger.info(f"Connecting MQTT client to {MQTT_BROKER}:{MQTT_PORT}")
         mqtt_client.connect(MQTT_BROKER, MQTT_PORT, 60)
-        
-        # Start network loop in background thread
         mqtt_client.loop_start()
         
-        logger.info(f"MQTT client initialized, connecting to {MQTT_BROKER}:{MQTT_PORT}")
+        logger.info(f"MQTT client initialized and connecting")
         return True
     except Exception as e:
         logger.error(f"Failed to setup MQTT client: {e}")
         return False
 
-# Flask routes
+
+
+
+
+#Tool management functions
+#tools configuration
+def load_tools_config():
+    """Load tools configuration from file"""
+    global tools_config
+    try:
+        if os.path.exists(TOOLS_CONFIG_FILE):
+            with open(TOOLS_CONFIG_FILE, 'r') as f:
+                tools_config = json.load(f)
+        else:
+            # Default configuration
+            tools_config = {
+                "tools": [
+                    {"id": 0, "name": "Camera Tool (C0)", "type": "camera", "fiducialX": 0, "fiducialY": 0, "fiducialZ": 0, "isReference": True},
+                    {"id": 1, "name": "Extruder 1 (E0)", "type": "extruder", "fiducialX": 0, "fiducialY": 0, "fiducialZ": 0, "isReference": False},
+                    {"id": 2, "name": "Extruder 2 (E1)", "type": "extruder", "fiducialX": 0, "fiducialY": 0, "fiducialZ": 0, "isReference": False},
+                    {"id": 3, "name": "Liquid Dispenser (L0)", "type": "dispenser", "fiducialX": 0, "fiducialY": 0, "fiducialZ": 0, "isReference": False}
+                ],
+                "reference_tool_id": 0
+            }
+            save_tools_config()
+    except Exception as e:
+        logger.error(f"Error loading tools config: {e}")
+
+
+
+
+
+def save_tools_config():
+    """Save tools configuration to file"""
+    try:
+        with open(TOOLS_CONFIG_FILE, 'w') as f:
+            json.dump(tools_config, f, indent=2)
+        logger.info("Tools configuration saved successfully")
+    except Exception as e:
+        logger.error(f"Error saving tools config: {e}")
+
+
+def calculate_tool_offsets(tool_id):
+    """Calculate automatic offsets for a tool based on the reference tool"""
+    try:
+        reference_tool = None
+        target_tool = None
+        
+        for tool in tools_config["tools"]:
+            if tool.get("isReference", False):
+                reference_tool = tool
+            if tool["id"] == tool_id:
+                target_tool = tool
+        
+        if not reference_tool or not target_tool:
+            return {"offsetX": 0, "offsetY": 0, "offsetZ": 0}
+        
+        # Calculate offsets: target - reference
+        offset_x = target_tool["fiducialX"] - reference_tool["fiducialX"]
+        offset_y = target_tool["fiducialY"] - reference_tool["fiducialY"]
+        offset_z = target_tool["fiducialZ"] - reference_tool["fiducialZ"]
+        
+        return {
+            "offsetX": round(offset_x, 3),
+            "offsetY": round(offset_y, 3),
+            "offsetZ": round(offset_z, 3)
+        }
+    except Exception as e:
+        logger.error(f"Error calculating tool offsets: {e}")
+        return {"offsetX": 0, "offsetY": 0, "offsetZ": 0}
+
+
+
+
+
+
+
+#Tool management functions @app.routes
+#tools configuration
+@app.route('/api/tools/save', methods=['POST'])
+def api_save_tools():
+    """Save tools configuration"""
+    try:
+        data = request.json
+        tools_config["tools"] = data.get("tools", [])
+        save_tools_config()
+        return jsonify({"status": "success", "message": "Tools configuration saved"})
+    except Exception as e:
+        logger.error(f"Error saving tools: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/tools/load', methods=['GET'])
+def api_load_tools():
+    """Load tools configuration"""
+    try:
+        load_tools_config()
+        return jsonify({
+            "status": "success", 
+            "tools": tools_config["tools"],
+            "camera_reference": tools_config["camera_reference"]
+        })
+    except Exception as e:
+        logger.error(f"Error loading tools: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/printer/get_position', methods=['GET'])
+def api_get_printer_position():
+    """Get current printer position"""
+    try:
+        # Send M114 command to get position
+        position_response = send_gcode("M114")
+        if not position_response:
+            return jsonify({"status": "error", "message": "Failed to get position from printer"})
+        
+        # Parse position (format: "X:123.45 Y:67.89 Z:10.20 E:0.00")
+        try:
+            pos_parts = position_response.strip().split()
+            x, y, z = None, None, None
+            
+            for part in pos_parts:
+                if part.startswith("X:"):
+                    x = float(part[2:])
+                elif part.startswith("Y:"):
+                    y = float(part[2:])
+                elif part.startswith("Z:"):
+                    z = float(part[2:])
+            
+            if x is None or y is None or z is None:
+                return jsonify({"status": "error", "message": "Could not parse position data"})
+                
+            return jsonify({
+                "status": "success",
+                "x": round(x, 3),
+                "y": round(y, 3),
+                "z": round(z, 3),
+                "raw_response": position_response
+            })
+            
+        except (ValueError, IndexError) as e:
+            return jsonify({"status": "error", "message": f"Error parsing position: {e}"})
+            
+    except Exception as e:
+        logger.error(f"Error getting printer position: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+
+
+
+# Enhanced Flask routes with calibration functionality
 @app.route('/')
 def index():
-    """Safari-enhanced camera control interface with focus slider"""
+    """Enhanced camera control interface with calibration tools"""
     html = """
     <!DOCTYPE html>
     <html>
     <head>
-        <title>Rister Camera Controller</title>
+        <title>Rister Camera Controller with Calibration</title>
         <meta name="viewport" content="width=device-width, initial-scale=1.0">
         <style>
             body { 
@@ -420,14 +679,14 @@ def index():
                 background-color: #f5f5f5;
             }
             .container {
-                max-width: 800px;
+                max-width: 1000px;
                 margin: 0 auto;
                 background-color: white;
                 padding: 20px;
                 border-radius: 10px;
                 box-shadow: 0 0 10px rgba(0,0,0,0.1);
             }
-            h1 {
+            h1, h2 {
                 color: #333;
                 margin-top: 0;
             }
@@ -437,6 +696,198 @@ def index():
                 justify-content: center;
                 flex-wrap: wrap;
             }
+
+
+.reference-checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 15px 0;
+    padding: 10px;
+    background-color: #e8f4fd;
+    border: 1px solid #bee5eb;
+    border-radius: 4px;
+}
+
+.reference-checkbox-container input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+.reference-checkbox-container label {
+    margin: 0;
+    font-weight: bold;
+    color: #0c5460;
+}
+
+.offset-display {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+
+.coordinate-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin: 15px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+}
+
+.coordinate-inputs .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.coordinate-inputs label {
+    margin: 0;
+    font-weight: 600;
+    color: #495057;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.coordinate-inputs input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    background-color: white;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.coordinate-inputs input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+    background-color: #fafafa;
+}
+
+.coordinate-inputs input:hover {
+    border-color: #adb5bd;
+}
+
+.tool-form h4 {
+    margin: 20px 0 10px 0;
+    color: #343a40;
+    font-size: 16px;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 5px;
+}
+
+.offset-display {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.offset-display div {
+    margin: 5px 0;
+    padding: 3px 0;
+}
+
+.offset-display span {
+    font-weight: bold;
+    color: #28a745;
+}
+
+
+.modal-buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.save-btn {
+    background-color: #28a745;
+    color: white;
+}
+
+.cancel-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+
+
+
+
+
+
+.coordinate-overlay {
+    position: absolute;
+    top: 10px;
+    left: 10px;
+    background-color: rgba(0, 0, 0, 0.8);
+    color: white;
+    padding: 8px 12px;
+    border-radius: 5px;
+    font-family: monospace;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 1000;
+    white-space: nowrap;
+}
+
+
+
+
+.camera-center {
+    background-color: #3498db !important;  /* Blue color */
+    border: 2px solid #3498db !important;
+}
+
+.camera-center:hover {
+    background-color: #2980b9 !important;  /* Darker blue on hover */
+    border: 2px solid #2980b9 !important;
+}
+
+
+.pixel-calibrate {
+    background-color: #ff6b35 !important;  /* Orange color */
+    border: 2px solid #ff6b35 !important;
+}
+
+.pixel-calibrate:hover {
+    background-color: #e55a2b !important;  /* Darker orange on hover */
+    border: 2px solid #e55a2b !important;
+}
+
+.clickable-image {
+    max-width: 100%;
+    max-height: 600px;
+    border-radius: 5px;
+    display: block;
+    margin: 0 auto;
+    cursor: crosshair;
+    user-select: none;
+    -webkit-user-select: none;
+    -moz-user-select: none;
+    -webkit-user-drag: none;
+    -webkit-touch-callout: none;
+}
+
+
             button {
                 margin: 5px;
                 padding: 10px 20px;
@@ -447,74 +898,56 @@ def index():
                 font-weight: bold;
                 cursor: pointer;
                 transition: background-color 0.3s;
-                -webkit-appearance: none;
-                appearance: none;
             }
-            button:hover {
-                background-color: #3e8e41;
-            }
-            button.stop {
-                background-color: #f44336;
-            }
-            button.stop:hover {
-                background-color: #d32f2f;
-            }
-            button.photo {
-                background-color: #2196F3;
-            }
-            button.photo:hover {
-                background-color: #1976D2;
-            }
-            button.focus {
-                background-color: #9C27B0;
-            }
-            button.focus:hover {
-                background-color: #7B1FA2;
-            }
-            .slider-container {
-                display: flex;
-                flex-direction: column;
-                align-items: center;
-                margin: 0 10px;
-                min-width: 250px;
-            }
-            .slider {
-                width: 100%;
-                height: 25px;
-                background: #d3d3d3;
-                outline: none;
-                opacity: 0.7;
-                -webkit-transition: .2s;
-                transition: opacity .2s;
+            button:hover { background-color: #3e8e41; }
+            button.stop { background-color: #f44336; }
+            button.stop:hover { background-color: #d32f2f; }
+            button.photo { background-color: #2196F3; }
+            button.photo:hover { background-color: #1976D2; }
+            button.focus { background-color: #9C27B0; }
+            button.focus:hover { background-color: #7B1FA2; }
+            button.calibration { background-color: #FF9800; }
+            button.calibration:hover { background-color: #F57C00; }
+            
+            .debug-panel {
+                background-color: #f0f0f0;
+                border: 1px solid #ccc;
                 border-radius: 5px;
-                margin-top: 5px;
-                -webkit-appearance: none;
-                appearance: none;
+                padding: 15px;
+                margin: 20px 0;
+                text-align: left;
+                font-family: monospace;
+                font-size: 12px;
             }
-            .slider:hover {
-                opacity: 1;
+            
+            .calibration-panel {
+                background-color: #fff3cd;
+                border: 1px solid #ffeaa7;
+                border-radius: 5px;
+                padding: 15px;
+                margin: 20px 0;
+                text-align: left;
             }
-            .slider::-webkit-slider-thumb {
-                -webkit-appearance: none;
-                appearance: none;
-                width: 25px;
-                height: 25px;
-                border-radius: 50%;
-                background: #9C27B0;
-                cursor: pointer;
+            
+            .input-group {
+                margin: 10px 0;
+                display: flex;
+                align-items: center;
+                gap: 10px;
             }
-            .slider::-moz-range-thumb {
-                width: 25px;
-                height: 25px;
-                border-radius: 50%;
-                background: #9C27B0;
-                cursor: pointer;
-                border: none;
+            
+            .input-group label {
+                min-width: 150px;
+                font-weight: bold;
             }
-            #streamContainer, #photoContainer {
-                display: none;
-                margin-top: 20px;
+            
+            .input-group input {
+                padding: 5px;
+                border: 1px solid #ccc;
+                border-radius: 3px;
+                width: 100px;
             }
+            
             .media-container {
                 border: 1px solid #ddd;
                 padding: 10px;
@@ -523,219 +956,717 @@ def index():
                 background: #000;
                 position: relative;
             }
-            #streamImg {
+            
+            .clickable-image {
                 max-width: 100%;
-                max-height: 480px;
+                max-height: 600px;
                 border-radius: 5px;
                 display: block;
                 margin: 0 auto;
+                cursor: crosshair;
             }
-            img {
-                max-width: 100%;
-                max-height: 480px;
-                border-radius: 5px;
+            
+            .coordinates-display {
+                background-color: rgba(0, 0, 0, 0.8);
+                color: white;
+                padding: 5px 10px;
+                border-radius: 3px;
+                position: absolute;
+                top: 10px;
+                left: 10px;
+                font-family: monospace;
+                font-size: 12px;
             }
+            
             .status {
                 margin-top: 10px;
                 font-style: italic;
                 color: #666;
             }
-            .focus-info {
-                margin-top: 5px;
+            
+            .reference-points {
+                max-height: 200px;
+                overflow-y: auto;
+                background-color: #f8f9fa;
+                border: 1px solid #dee2e6;
+                border-radius: 3px;
+                padding: 10px;
+                margin: 10px 0;
+            }
+            
+            .reference-point {
+                background-color: white;
+                border: 1px solid #ccc;
+                border-radius: 3px;
+                padding: 5px;
+                margin: 5px 0;
+                font-family: monospace;
                 font-size: 12px;
-                color: #666;
-            }
-            .loading {
-                position: absolute;
-                top: 50%;
-                left: 50%;
-                transform: translate(-50%, -50%);
-                color: white;
-                font-size: 16px;
-                display: none;
-            }
-            .spinner {
-                display: inline-block;
-                width: 20px;
-                height: 20px;
-                border: 3px solid #f3f3f3;
-                border-top: 3px solid #007AFF;
-                border-radius: 50%;
-                animation: spin 1s linear infinite;
-                margin-right: 10px;
-            }
-            @keyframes spin {
-                0% { transform: rotate(0deg); }
-                100% { transform: rotate(360deg); }
             }
         </style>
         <script>
-            // Track whether user has adjusted focus
-            window.userAdjustedFocus = false;
-            window.streamRefreshInterval = null;
+
+
+
+function updateOffsetDisplay() {
+    const fiducialX = parseFloat(document.getElementById('fiducialX').value) || 0;
+    const fiducialY = parseFloat(document.getElementById('fiducialY').value) || 0;
+    const fiducialZ = parseFloat(document.getElementById('fiducialZ').value) || 0;
+    const isReference = document.getElementById('isReference').checked;
+    
+    if (isReference) {
+        document.getElementById('calcOffsetX').textContent = '0.000';
+        document.getElementById('calcOffsetY').textContent = '0.000';
+        document.getElementById('calcOffsetZ').textContent = '0.000';
+    } else {
+        // Find reference tool
+        const referenceTool = tools.find(t => t.isReference);
+        
+        if (referenceTool) {
+            const offsetX = fiducialX - (referenceTool.fiducialX || 0);
+            const offsetY = fiducialY - (referenceTool.fiducialY || 0);
+            const offsetZ = fiducialZ - (referenceTool.fiducialZ || 0);
             
-            // Check streaming status when page loads
+            document.getElementById('calcOffsetX').textContent = offsetX.toFixed(3);
+            document.getElementById('calcOffsetY').textContent = offsetY.toFixed(3);
+            document.getElementById('calcOffsetZ').textContent = offsetZ.toFixed(3);
+        }
+    }
+}
+
+
+
+function hideCoordinateDisplay(imageElement) {
+    const overlay = imageElement.parentElement.querySelector('.coordinate-overlay');
+    if (overlay) {
+        overlay.style.display = 'none';
+    }
+}
+
+function showCoordinateDisplay(imageElement) {
+    const overlay = imageElement.parentElement.querySelector('.coordinate-overlay');
+    if (overlay) {
+        overlay.style.display = 'block';
+    }
+}
+
+
+
+
+
+// Add these variables at the top of your script section
+let imageFlipH = true;
+let imageFlipV = true;
+
+// Add these functions
+function flipImageHorizontal() {
+    imageFlipH = !imageFlipH;
+    applyImageTransforms();
+}
+
+function flipImageVertical() {
+    imageFlipV = !imageFlipV;
+    applyImageTransforms();
+}
+
+function resetImageFlip() {
+    imageFlipH = false;
+    imageFlipV = false;
+    applyImageTransforms();
+}
+
+
+function applyImageTransforms() {
+    const images = document.querySelectorAll('.clickable-image');
+    let transform = '';
+    
+    if (imageFlipH && imageFlipV) {
+        transform = 'scaleX(-1) scaleY(-1)';
+    } else if (imageFlipH) {
+        transform = 'scaleX(-1)';
+    } else if (imageFlipV) {
+        transform = 'scaleY(-1)';
+    } else {
+        transform = 'none';
+    }
+    
+    images.forEach(img => {
+        img.style.transform = transform;
+        img.style.transformOrigin = 'center';
+    });
+    
+    // Update crosshair position after transform
+    setTimeout(updateCrosshairPosition, 50);
+}
+
+
+
+
+function getCorrectCoordinates(event, imageElement) {
+    const rect = imageElement.getBoundingClientRect();
+    let x = Math.round(event.clientX - rect.left);
+    let y = Math.round(event.clientY - rect.top);
+    
+    // Apply coordinate transformation based on flip state
+    if (imageFlipH) {
+        x = rect.width - x;
+    }
+    if (imageFlipV) {
+        y = rect.height - y;
+    }
+    
+    return { x, y };
+}
+
+function handleImageClick(event, imageType) {
+    if (!calibrationMode) return;
+    
+    console.log('Image clicked in calibration mode');
+    
+    const coords = getCorrectCoordinates(event, event.target);
+    console.log(`Corrected pixel coordinates: (${coords.x}, ${coords.y})`);
+    
+    showCoordinates(event.target, coords.x, coords.y);
+    
+    fetch('/api/printer/position')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success' || data.status === 'timeout') {
+                addReferencePoint(coords.x, coords.y, data.position.x, data.position.y, data.position.z);
+            } else {
+                alert('Failed to get printer position: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error getting printer position:', error);
+            alert('Error getting printer position: ' + error);
+        });
+}
+
+function updateCoordinateDisplay(event, imageElement) {
+    let overlay = imageElement.parentElement.querySelector('.coordinate-overlay');
+    if (!overlay) {
+        overlay = document.createElement('div');
+        overlay.className = 'coordinate-overlay';
+        imageElement.parentElement.appendChild(overlay);
+    }
+    
+    // Get corrected coordinates
+    const coords = getCorrectCoordinates(event, imageElement);
+    
+    const micronsPerPixelX = parseFloat(document.getElementById('micronPerPixelX').value) || 200.77730819;
+    const micronsPerPixelY = parseFloat(document.getElementById('micronPerPixelY').value) || 200.77730819;
+    
+    // Calculate offset from center of image (489.5, 275.5)
+    const centerX = 489.5;
+    const centerY = 275.5;
+    const pixelOffsetX = coords.x - centerX;
+    const pixelOffsetY = coords.y - centerY;
+    
+    // Convert to mm offset - FIX THE X-AXIS DIRECTION
+    const mmOffsetX = -(pixelOffsetX * micronsPerPixelX) / 1000;  // Negative sign to flip X direction
+    const mmOffsetY = (pixelOffsetY * micronsPerPixelY) / 1000;   // Y direction stays the same
+    
+    // Get current printer position
+    const currentPrinterX = debugInfo.printer_position?.x || 227.7;
+    const currentPrinterY = debugInfo.printer_position?.y || 150;
+    
+    // Calculate target printer coordinates
+    const targetX = currentPrinterX + mmOffsetX;
+    const targetY = currentPrinterY + mmOffsetY;
+    
+    // Update overlay display
+    overlay.innerHTML = `
+        Pixel: (${coords.x}, ${coords.y})<br>
+        Offset: (${mmOffsetX > 0 ? '+' : ''}${mmOffsetX.toFixed(2)}mm, ${mmOffsetY > 0 ? '+' : ''}${mmOffsetY.toFixed(2)}mm)
+    `;
+}
+
+
+
+
+
+
+// Camera centering functionality
+let centeringMode = false;
+function addFiducialCrosshair(imageElement) {
+    // Remove existing crosshair
+    const existing = document.querySelector('.fiducial-crosshair-fixed');
+    if (existing) existing.remove();
+    
+    // Get the image container position
+    const rect = imageElement.getBoundingClientRect();
+    
+    // Create crosshair positioned absolutely to the viewport
+    const crosshair = document.createElement('div');
+    crosshair.className = 'fiducial-crosshair-fixed';
+    crosshair.style.cssText = `
+        position: fixed;
+        left: ${rect.left + rect.width / 2}px;
+        top: ${rect.top + rect.height / 2}px;
+        transform: translate(-50%, -50%);
+        pointer-events: none;
+        z-index: 1000;
+        color: #00ff00;
+        font-size: 20px;
+        font-weight: bold;
+        text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
+    `;
+    crosshair.innerHTML = '+';
+    
+    // Append to body (outside any transform context)
+    document.body.appendChild(crosshair);
+    
+    return crosshair;
+}
+
+
+function updateCrosshairPosition() {
+    const crosshair = document.querySelector('.fiducial-crosshair-fixed');
+    const streamImg = document.getElementById('streamImg');
+    const photoImg = document.getElementById('photoImg');
+    
+    if (crosshair && streamImg && streamImg.offsetParent) {
+        const rect = streamImg.getBoundingClientRect();
+        crosshair.style.left = (rect.left + rect.width / 2) + 'px';
+        crosshair.style.top = (rect.top + rect.height / 2) + 'px';
+    } else if (crosshair && photoImg && photoImg.offsetParent) {
+        const rect = photoImg.getBoundingClientRect();
+        crosshair.style.left = (rect.left + rect.width / 2) + 'px';
+        crosshair.style.top = (rect.top + rect.height / 2) + 'px';
+    }
+}
+
+// Add event listeners
+window.addEventListener('resize', updateCrosshairPosition);
+window.addEventListener('scroll', updateCrosshairPosition);
+
+
+
+
+
+function debugCrosshairPosition() {
+    const img = document.getElementById('streamImg');
+    if (img) {
+        console.log(`Image dimensions: ${img.width} x ${img.height}`);
+        console.log(`Natural dimensions: ${img.naturalWidth} x ${img.naturalHeight}`);
+        console.log(`Mathematical center should be: (${img.width/2}, ${img.height/2})`);
+        
+        // Test click at mathematical center
+        const rect = img.getBoundingClientRect();
+        const centerX = img.width / 2;
+        const centerY = img.height / 2;
+        console.log(`Click at center would give coordinates: (${centerX}, ${centerY})`);
+    }
+}
+
+
+// Add this function to load tools from the backend
+function loadToolsFromBackend() {
+    fetch('/api/tools/load')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                tools = data.tools || [];
+                cameraReference = data.camera_reference;
+                updateToolDropdown();
+                console.log('Tools loaded from backend:', tools);
+            } else {
+                console.error('Failed to load tools:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading tools:', error);
+        });
+}
+
+// Update the existing DOMContentLoaded event listener
+document.addEventListener('DOMContentLoaded', function() {
+    // Hide photo container on page load
+    document.getElementById('photoContainer').style.display = 'none';
+    
+    // Apply default flips immediately
+    applyImageTransforms();
+    
+    // Load tools from backend instead of just rendering the default list
+    loadToolsFromBackend();
+    
+    // Initialize crosshair when images load
+    const streamImg = document.getElementById('streamImg');
+    const photoImg = document.getElementById('photoImg');
+    
+    if (streamImg) {
+        streamImg.addEventListener('load', () => {
+            if (document.getElementById('streamContainer').style.display !== 'none') {
+                applyImageTransforms();
+                setTimeout(() => {
+                    addFiducialCrosshair(streamImg);
+                    updateCrosshairPosition();
+                }, 100);
+            }
+        });
+    }
+    
+    if (photoImg) {
+        photoImg.addEventListener('load', () => {
+            if (document.getElementById('photoContainer').style.display !== 'none') {
+                applyImageTransforms();
+                setTimeout(() => {
+                    addFiducialCrosshair(photoImg);
+                    updateCrosshairPosition();
+                }, 100);
+            }
+        });
+    }
+
+    // Add event listeners for fiducial inputs to update offset display
+    const fiducialInputs = ['fiducialX', 'fiducialY', 'fiducialZ', 'isReference'];
+    fiducialInputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', updateOffsetDisplay);
+            element.addEventListener('change', updateOffsetDisplay);
+        }
+    });
+
+});
+
+
+
+
+
+
+
+
+            let calibrationMode = false;
+            let currentImageType = 'stream';
+            let debugInfo = {};
+            
             window.onload = function() {
                 checkStatus();
-                // Check every 3 seconds
+                loadCalibrationData();
                 setInterval(checkStatus, 3000);
             };
             
-            function checkStatus() {
-                fetch('/api/status')
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Status:', data);
-                        // Update stream container visibility
-                        if (data.streaming) {
-                            document.getElementById('streamContainer').style.display = 'block';
-                            document.getElementById('focusControls').style.display = 'flex';
-                            
-                            // Safari-specific: refresh stream periodically to prevent freezing
-                            if (navigator.userAgent.includes('Safari') && !navigator.userAgent.includes('Chrome')) {
-                                if (!window.streamRefreshInterval) {
-                                    refreshStreamImage();
-                                    window.streamRefreshInterval = setInterval(refreshStreamImage, 30000);
-                                }
-                            } else {
-                                refreshStreamImage();
-                            }
-                            
-                            // Only update the focus slider if we're in auto mode or it's the first load
-                            if (data.focus_mode === "auto") {
-                                document.getElementById('focusSlider').value = 10;
-                                document.getElementById('focusValue').textContent = 10;
-                            } else if (data.focus_mode === "manual" && !window.userAdjustedFocus) {
-                                document.getElementById('focusSlider').value = data.focus_position;
-                                document.getElementById('focusValue').textContent = data.focus_position;
-                            }
-                        } else {
-                            document.getElementById('streamContainer').style.display = 'none';
-                            document.getElementById('focusControls').style.display = 'none';
-                            
-                            // Clear stream refresh interval
-                            if (window.streamRefreshInterval) {
-                                clearInterval(window.streamRefreshInterval);
-                                window.streamRefreshInterval = null;
-                            }
-                            
-                            // Clear the stream image
-                            const img = document.getElementById('streamImg');
-                            img.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
-                            
-                            // Reset focus adjustment tracking
-                            window.userAdjustedFocus = false;
-                        }
-                    })
-                    .catch(error => console.error('Error checking status:', error));
+function checkStatus() {
+    fetch('/api/status')
+        .then(response => response.json())
+        .then(data => {
+            debugInfo = data;
+            updateDebugPanel();
+            
+            if (data.streaming) {
+                document.getElementById('streamContainer').style.display = 'block';
+                document.getElementById('focusControls').style.display = 'flex';
+                refreshStreamImage();
+                // Update crosshair for stream
+                setTimeout(() => {
+                    const streamImg = document.getElementById('streamImg');
+                    if (streamImg.complete) {
+                        addFiducialCrosshair(streamImg);
+                        updateCrosshairPosition();
+                    }
+                }, 100);
+            } else {
+                document.getElementById('streamContainer').style.display = 'none';
+                document.getElementById('focusControls').style.display = 'none';
+            }
+            
+            // Update calibration status
+            if (data.calibration) {
+                document.getElementById('micronPerPixelX').value = data.calibration.microns_per_pixel_x || 10;
+                document.getElementById('micronPerPixelY').value = data.calibration.microns_per_pixel_y || 10;
+                updateCalibrationStatus(data.calibration.enabled);
+            }
+        })
+        .catch(error => {
+            console.error('Error checking status:', error);
+            updateDebugPanel('Error: ' + error);
+        });
+}
+
+
+
+
+            
+            function updateDebugPanel(error = null) {
+                const panel = document.getElementById('debugPanel');
+                if (error) {
+                    panel.innerHTML = '<strong>Error:</strong> ' + error;
+                } else {
+                    panel.innerHTML = `
+                        <strong>Debug Info:</strong><br>
+                        Current Position: X${debugInfo.printer_position?.x || 0} Y${debugInfo.printer_position?.y || 0} Z${debugInfo.printer_position?.z || 0}<br>
+                        Streaming: ${debugInfo.streaming || false}<br>
+                        Calibration Enabled: ${debugInfo.calibration?.enabled || false}<br>
+                        Reference Points: ${debugInfo.calibration?.reference_points?.length || 0}<br>
+                        Last Update: ${new Date().toLocaleTimeString()}
+                    `;
+                }
             }
             
             function refreshStreamImage() {
                 const img = document.getElementById('streamImg');
-                const loading = document.getElementById('loading');
-                
-                // Show loading indicator
-                loading.style.display = 'block';
-                
-                // Create new image with cache-busting timestamp
-                const newSrc = '/stream?t=' + new Date().getTime();
-                
-                // Handle image load success
-                img.onload = function() {
-                    loading.style.display = 'none';
-                };
-                
-                // Handle image load error
-                img.onerror = function() {
-                    loading.style.display = 'none';
-                    console.warn('Stream image failed to load');
-                };
-                
-                img.src = newSrc;
+                img.src = '/stream?t=' + new Date().getTime();
             }
             
-            function startStream() {
-                fetch('/api/stream/start')
-                    .then(response => response.json())
-                    .then(data => {
-                        console.log('Start stream response:', data);
-                        if (data.streaming) {
-                            document.getElementById('streamContainer').style.display = 'block';
-                            document.getElementById('focusControls').style.display = 'flex';
-                            
-                            // Wait a moment for stream to initialize, then refresh
-                            setTimeout(refreshStreamImage, 1000);
-                        }
-                    })
-                    .catch(error => console.error('Error starting stream:', error));
+
+function startStream() {
+    fetch('/api/stream/start')
+        .then(response => response.json())
+        .then(data => {
+            if (data.streaming) {
+                document.getElementById('streamContainer').style.display = 'block';
+                document.getElementById('focusControls').style.display = 'flex';
+                // Make sure photo container is hidden when starting stream
+                document.getElementById('photoContainer').style.display = 'none';
+                setTimeout(refreshStreamImage, 1000);
             }
-            
+        });
+}
+
+
             function stopStream() {
                 fetch('/api/stream/stop')
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Stop stream response:', data);
                         document.getElementById('streamContainer').style.display = 'none';
                         document.getElementById('focusControls').style.display = 'none';
-                        
-                        // Clear refresh interval
-                        if (window.streamRefreshInterval) {
-                            clearInterval(window.streamRefreshInterval);
-                            window.streamRefreshInterval = null;
-                        }
-                        
-                        // Clear the stream image
-                        const img = document.getElementById('streamImg');
-                        img.src = 'data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==';
-                    })
-                    .catch(error => console.error('Error stopping stream:', error));
+                    });
             }
             
-            function capturePhoto() {
-                fetch('/api/capture')
+
+function capturePhoto() {
+    // Hide stream container when taking photo
+    document.getElementById('streamContainer').style.display = 'none';
+    
+    fetch('/api/capture')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                document.getElementById('photoContainer').style.display = 'block';
+                document.getElementById('photoImg').src = '/latest_photo?t=' + new Date().getTime();
+                currentImageType = 'snapshot';
+                
+                // Add crosshair to photo after it loads
+                const photoImg = document.getElementById('photoImg');
+                photoImg.onload = function() {
+                    addFiducialCrosshair(photoImg);
+                };
+            }
+        })
+        .catch(error => {
+            console.error('Error capturing photo:', error);
+        });
+}
+
+
+
+            function toggleCalibrationMode() {
+                calibrationMode = !calibrationMode;
+                document.getElementById('calibrationToggle').textContent = 
+                    calibrationMode ? 'Disable Image Mapper' : 'Enable Image Mapper';
+                document.getElementById('calibrationPanel').style.display = 
+                    calibrationMode ? 'block' : 'none';
+                    
+                // Update cursor style
+                const images = document.querySelectorAll('.clickable-image');
+                images.forEach(img => {
+                    img.style.cursor = calibrationMode ? 'crosshair' : 'default';
+                });
+            }
+            
+            function handleImageClick(event, imageType) {
+                if (!calibrationMode) return;
+                
+                console.log('Image clicked in calibration mode');
+                
+                const rect = event.target.getBoundingClientRect();
+                const x = Math.round(event.clientX - rect.left);
+                const y = Math.round(event.clientY - rect.top);
+                
+                console.log(`Pixel coordinates: (${x}, ${y})`);
+                
+                // Show click coordinates immediately
+                showCoordinates(event.target, x, y);
+                
+                // Request current printer position with detailed logging
+                console.log('Requesting printer position...');
+                fetch('/api/printer/position')
+                    .then(response => {
+                        console.log('Position request response received:', response);
+                        return response.json();
+                    })
+                    .then(data => {
+                        console.log('Position data:', data);
+                        if (data.status === 'success' || data.status === 'timeout') {
+                            console.log(`Printer position: X${data.position.x} Y${data.position.y} Z${data.position.z}`);
+                            addReferencePoint(x, y, data.position.x, data.position.y, data.position.z);
+                        } else {
+                            console.error('Failed to get printer position:', data);
+                            alert('Failed to get printer position: ' + (data.message || 'Unknown error'));
+                        }
+                    })
+                    .catch(error => {
+                        console.error('Error getting printer position:', error);
+                        alert('Error getting printer position: ' + error);
+                    });
+            }
+            
+            function showCoordinates(imgElement, x, y) {
+                // Remove existing coordinate display
+                const existing = imgElement.parentElement.querySelector('.coordinates-display');
+                if (existing) existing.remove();
+                
+                // Create new coordinate display
+                const coordDiv = document.createElement('div');
+                coordDiv.className = 'coordinates-display';
+                coordDiv.textContent = `Pixel: (${x}, ${y})`;
+                imgElement.parentElement.appendChild(coordDiv);
+                
+                // Remove after 3 seconds
+                setTimeout(() => {
+                    if (coordDiv.parentElement) {
+                        coordDiv.remove();
+                    }
+                }, 3000);
+            }
+            
+            function addReferencePoint(pixelX, pixelY, printerX, printerY, printerZ) {
+                console.log(`Adding reference point: Pixel(${pixelX}, ${pixelY}) -> Printer(${printerX}, ${printerY}, ${printerZ})`);
+                
+                const data = {
+                    pixel_x: pixelX,
+                    pixel_y: pixelY,
+                    printer_x: printerX,
+                    printer_y: printerY,
+                    printer_z: printerZ
+                };
+                
+                fetch('/api/calibration/add_point', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify(data)
+                })
+                .then(response => response.json())
+                .then(result => {
+                    console.log('Add point result:', result);
+                    if (result.status === 'success') {
+                        loadCalibrationData();
+                        alert(`Reference point added successfully!\\nPixel: (${pixelX}, ${pixelY})\\nPrinter: X${printerX} Y${printerY} Z${printerZ}`);
+                    } else {
+                        alert('Failed to add reference point: ' + (result.message || 'Unknown error'));
+                    }
+                })
+                .catch(error => {
+                    console.error('Error adding reference point:', error);
+                    alert('Error adding reference point: ' + error);
+                });
+            }
+            
+            function updateMicronsPerPixel() {
+                const x = parseFloat(document.getElementById('micronPerPixelX').value);
+                const y = parseFloat(document.getElementById('micronPerPixelY').value);
+                
+                fetch('/api/calibration/set_microns', {
+                    method: 'POST',
+                    headers: {'Content-Type': 'application/json'},
+                    body: JSON.stringify({microns_per_pixel_x: x, microns_per_pixel_y: y})
+                })
+                .then(response => response.json())
+                .then(result => {
+                    if (result.status === 'success') {
+                        alert('Microns per pixel updated');
+                    }
+                });
+            }
+            
+            function enableCalibration() {
+                fetch('/api/calibration/enable', {method: 'POST'})
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.status === 'success') {
+                            updateCalibrationStatus(true);
+                        }
+                    });
+            }
+            
+            function disableCalibration() {
+                fetch('/api/calibration/disable', {method: 'POST'})
+                    .then(response => response.json())
+                    .then(result => {
+                        if (result.status === 'success') {
+                            updateCalibrationStatus(false);
+                        }
+                    });
+            }
+            
+            function clearCalibration() {
+                if (confirm('Clear all calibration data?')) {
+                    fetch('/api/calibration/clear', {method: 'POST'})
+                        .then(response => response.json())
+                        .then(result => {
+                            if (result.status === 'success') {
+                                loadCalibrationData();
+                            }
+                        });
+                }
+            }
+            
+            function loadCalibrationData() {
+                fetch('/api/calibration/data')
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Capture response:', data);
-                        document.getElementById('photoContainer').style.display = 'block';
-                        // Update the photo with cache-busting
-                        document.getElementById('photoImg').src = '/latest_photo?t=' + new Date().getTime();
-                    })
-                    .catch(error => console.error('Error capturing photo:', error));
+                        const container = document.getElementById('referencePoints');
+                        container.innerHTML = '';
+                        
+                        if (data.reference_points && data.reference_points.length > 0) {
+                            data.reference_points.forEach((point, index) => {
+                                const div = document.createElement('div');
+                                div.className = 'reference-point';
+                                div.innerHTML = `
+                                    <strong>Point ${index + 1}:</strong><br>
+                                    Pixel: (${point.pixel_x}, ${point.pixel_y})<br>
+                                    Printer: X${point.printer_x} Y${point.printer_y} Z${point.printer_z}
+                                `;
+                                container.appendChild(div);
+                            });
+                        } else {
+                            container.innerHTML = '<div class="reference-point">No reference points set</div>';
+                        }
+                        
+                        updateCalibrationStatus(data.enabled);
+                    });
             }
             
+            function updateCalibrationStatus(enabled) {
+                const statusElement = document.getElementById('calibrationStatus');
+                statusElement.textContent = enabled ? 'ENABLED' : 'DISABLED';
+                statusElement.style.color = enabled ? 'green' : 'red';
+            }
+            
+            // Focus control functions
             function updateFocusValue(value) {
-                // Update the displayed focus value as the slider moves
                 document.getElementById('focusValue').textContent = value;
             }
             
             function setFocusAuto() {
-                // Reset focus adjustment tracking
-                window.userAdjustedFocus = false;
-                
                 fetch('/api/focus/auto')
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Focus response:', data);
                         if (data.status === 'success') {
-                            // Reset slider to default position
                             document.getElementById('focusSlider').value = 10;
                             document.getElementById('focusValue').textContent = 10;
                             alert('Auto focus enabled');
                         }
-                    })
-                    .catch(error => console.error('Error setting focus:', error));
+                    });
             }
             
             function setFocusManual(position) {
-                // Track that user has adjusted the focus
-                window.userAdjustedFocus = true;
-                
                 fetch('/api/focus/manual/' + position)
                     .then(response => response.json())
                     .then(data => {
-                        console.log('Focus response:', data);
                         if (data.status === 'success') {
-                            // Show a brief visual confirmation
                             const focusValue = document.getElementById('focusValue');
                             const originalColor = focusValue.style.color;
                             focusValue.style.color = '#4CAF50';
@@ -743,67 +1674,1456 @@ def index():
                                 focusValue.style.color = originalColor;
                             }, 500);
                         }
-                    })
-                    .catch(error => console.error('Error setting focus:', error));
+                    });
             }
+
+
+let measuringLine = false;
+let lineStart = null;
+let currentLine = null;
+let isDrawingLine = false;
+
+
+
+function startLineMeasurement() {
+    measuringLine = true;
+    lineStart = null;
+    isDrawingLine = false;
+    currentLine = null;
+    console.log('Line measurement mode enabled');
+    alert('Click and drag to draw a measurement line on the image.');
+}
+
+
+function measureClick(event) {
+    if (!measuringLine) return;
+    
+    if (event.type === 'mousedown') {
+        startDrawingLine(event);
+    } else if (event.type === 'mousemove' && isDrawingLine) {
+        updateLine(event);
+    } else if (event.type === 'mouseup' && isDrawingLine) {
+        finishLine(event);
+    }
+}
+
+function startDrawingLine(event) {
+    event.preventDefault();
+    const rect = event.target.getBoundingClientRect();
+    lineStart = {
+        x: event.clientX - rect.left,
+        y: event.clientY - rect.top
+    };
+    
+    isDrawingLine = true;
+    
+    // Create line element positioned absolutely on the page
+    currentLine = document.createElement('div');
+    currentLine.style.position = 'fixed'; // Use fixed positioning
+    currentLine.style.backgroundColor = '#ff4444';
+    currentLine.style.height = '2px';
+    currentLine.style.transformOrigin = '0 0';
+    currentLine.style.pointerEvents = 'none';
+    currentLine.style.zIndex = '1000';
+    currentLine.style.left = (rect.left + lineStart.x) + 'px';
+    currentLine.style.top = (rect.top + lineStart.y) + 'px';
+    
+    // Add to body for fixed positioning
+    document.body.appendChild(currentLine);
+}
+
+function updateLine(event) {
+    if (!isDrawingLine || !currentLine || !lineStart) return;
+    
+    const rect = event.target.getBoundingClientRect();
+    const currentX = event.clientX - rect.left;
+    const currentY = event.clientY - rect.top;
+    
+    const deltaX = currentX - lineStart.x;
+    const deltaY = currentY - lineStart.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    const angle = Math.atan2(deltaY, deltaX) * 180 / Math.PI;
+    
+    // Update line width and rotation only - position is set in startDrawingLine
+    currentLine.style.width = distance + 'px';
+    currentLine.style.transform = 'rotate(' + angle + 'deg)';
+}
+
+
+function finishLine(event) {
+    if (!isDrawingLine || !currentLine || !lineStart) return;
+    
+    const rect = event.target.getBoundingClientRect();
+    const endX = event.clientX - rect.left;
+    const endY = event.clientY - rect.top;
+    
+    const deltaX = endX - lineStart.x;
+    const deltaY = endY - lineStart.y;
+    const distance = Math.sqrt(deltaX * deltaX + deltaY * deltaY);
+    
+    if (distance < 10) {
+        // Line too short, remove it
+        currentLine.remove();
+        isDrawingLine = false;
+        return;
+    }
+    
+    const actualMM = prompt('Line is ' + Math.round(distance) + ' pixels long.\\nWhat is the actual length in mm?');
+    
+    if (actualMM && !isNaN(actualMM)) {
+        const micronsPerPixel = (parseFloat(actualMM) * 1000) / distance;
+        
+        fetch('/api/scaler/calculate', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({
+                width_mm: actualMM,
+                height_mm: actualMM,
+                pixel_width: distance,
+                pixel_height: distance
+            })
+        }).then(() => {
+            alert('Calculated: ' + micronsPerPixel.toFixed(2) + ' μm/pixel\\nCalibration updated!');
+            location.reload();
+        });
+    }
+    
+    // Clean up
+    currentLine.remove();
+    measuringLine = false;
+    lineStart = null;
+    isDrawingLine = false;
+}
+
+
+//Tool management javascript
+// Tool management state
+let tools = [
+    {id: 0, name: "Camera Tool (C0)", type: "camera", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+    {id: 1, name: "Extruder 1 (E0)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+    {id: 2, name: "Extruder 2 (E1)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+    {id: 3, name: "Liquid Dispenser (L0)", type: "dispenser", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0}
+];
+
+let cameraReference = null;
+let currentEditingTool = null;
+
+function toggleToolManagement() {
+    const content = document.getElementById('tool-management-content');
+    const arrow = document.getElementById('tool-arrow');
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        arrow.classList.add('tool-arrow-up');
+    } else {
+        content.style.display = 'none';
+        arrow.classList.remove('tool-arrow-up');
+    }
+}
+
+
+
+
+
+
+
+
+
+
+function selectTool() {
+    const toolId = document.getElementById('currentTool').value;
+    let toolCommand;
+    
+    switch(toolId) {
+        case '0': toolCommand = 'C0'; break;
+        case '1': toolCommand = 'E0'; break;
+        case '2': toolCommand = 'E1'; break;
+        case '3': toolCommand = 'L0'; break;
+        default: toolCommand = 'C0';
+    }
+    
+    fetch('/api/printer/select_tool', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tool_command: toolCommand})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(`Tool ${toolCommand} selected`);
+        } else {
+            alert('Failed to select tool: ' + data.message);
+        }
+    });
+}
+
+function getCurrentPosition() {
+    fetch('/api/printer/get_position')
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            alert(`Current Position: X${data.x} Y${data.y} Z${data.z}`);
+        } else {
+            alert('Failed to get position: ' + data.message);
+        }
+    });
+}
+
+
+
+
+
+//For testing
+function testModal() {
+    const modal = document.getElementById('toolModal');
+    console.log('Modal element:', modal);
+    if (modal) {
+        modal.style.display = 'block';
+        console.log('Modal should be visible now');
+    } else {
+        console.log('Modal element not found!');
+    }
+}
+
+//For testing
+function debugTools() {
+    console.log('Tools array:', tools);
+    console.log('Tools length:', tools.length);
+    console.log('Current tool value:', document.getElementById('currentTool').value);
+}
+
+
+
+
+function editTool(toolId) {
+    const tool = tools.find(t => t.id === toolId);
+    if (!tool) return;
+    
+    currentEditingTool = toolId;
+    document.getElementById('modalTitle').textContent = 'Edit Tool';
+    document.getElementById('toolName').value = tool.name;
+    document.getElementById('toolId').value = tool.id;
+    document.getElementById('toolType').value = tool.type;
+    document.getElementById('isReference').checked = tool.isReference || false;
+    
+    document.getElementById('fiducialX').value = tool.fiducialX || 0;
+    document.getElementById('fiducialY').value = tool.fiducialY || 0;
+    document.getElementById('fiducialZ').value = tool.fiducialZ || 0;
+    
+    updateOffsetDisplay();
+    document.getElementById('toolModal').style.display = 'block';
+}
+
+
+
+
+
+
+// Fixed saveTool function with proper frontend update
+function saveTool() {
+    const toolData = {
+        id: parseInt(document.getElementById('toolId').value),
+        name: document.getElementById('toolName').value,
+        type: document.getElementById('toolType').value,
+        fiducialX: parseFloat(document.getElementById('fiducialX').value) || 0,
+        fiducialY: parseFloat(document.getElementById('fiducialY').value) || 0,
+        fiducialZ: parseFloat(document.getElementById('fiducialZ').value) || 0,
+        isReference: document.getElementById('isReference').checked
+    };
+    
+    // Validate required fields
+    if (!toolData.name || toolData.name.trim() === '') {
+        alert('Please enter a tool name');
+        return;
+    }
+    
+    // Enforce single reference tool rule
+    if (toolData.isReference) {
+        // Check if another tool is already the reference
+        const existingReference = tools.find(t => t.isReference && t.id !== toolData.id);
+        if (existingReference) {
+            const confirmChange = confirm(`"${existingReference.name}" is currently the reference tool. Do you want to make "${toolData.name}" the new reference tool instead?`);
+            if (!confirmChange) {
+                return; // User cancelled, don't save
+            }
+        }
+        
+        // Unset all other reference tools
+        tools.forEach(tool => {
+            if (tool.id !== toolData.id) {
+                tool.isReference = false;
+            }
+        });
+    }
+    
+    // Update tools array
+    if (currentEditingTool !== null) {
+        const index = tools.findIndex(t => t.id === currentEditingTool);
+        if (index !== -1) {
+            tools[index] = toolData;
+        }
+    } else {
+        const existingIndex = tools.findIndex(t => t.id === toolData.id);
+        if (existingIndex !== -1) {
+            tools[existingIndex] = toolData;
+        } else {
+            tools.push(toolData);
+        }
+    }
+    
+    updateToolDropdown();
+    closeToolModal();
+    
+    // Save to backend
+    fetch('/api/tools/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tools: tools})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            console.log('Tools saved successfully');
+            loadToolsFromBackend();
+        } else {
+            alert('Error saving tools: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving tools:', error);
+        alert('Error saving tools: ' + error);
+    });
+}
+
+
+
+// Enhanced loadToolsFromBackend function
+function loadToolsFromBackend() {
+    console.log('Loading tools from backend...');
+    
+    fetch('/api/tools/load')
+        .then(response => {
+            console.log('Backend response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Backend response data:', data);
             
-            // Clean up on page unload
-            window.addEventListener('beforeunload', function() {
-                if (window.streamRefreshInterval) {
-                    clearInterval(window.streamRefreshInterval);
+            if (data.status === 'success') {
+                tools = data.tools || [];
+                cameraReference = data.camera_reference;
+                console.log('Tools loaded from backend:', tools);
+                updateToolDropdown();
+                // Update current tool dropdown
+                const currentToolSelect = document.getElementById('currentTool');
+                if (currentToolSelect) {
+                    const currentValue = currentToolSelect.value;
+                    currentToolSelect.innerHTML = '';
+                    
+                    tools.forEach(tool => {
+                        const option = document.createElement('option');
+                        option.value = tool.id;
+                        option.textContent = tool.name;
+                        currentToolSelect.appendChild(option);
+                    });
+                    
+                    // Restore previous selection if still valid
+                    if (Array.from(currentToolSelect.options).some(opt => opt.value === currentValue)) {
+                        currentToolSelect.value = currentValue;
+                    }
                 }
-            });
+            } else {
+                console.error('Failed to load tools:', data.message);
+                // Use default tools if backend fails
+                tools = [
+                    {id: 0, name: "Camera Tool (C0)", type: "camera", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                    {id: 1, name: "Extruder 1 (E0)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                    {id: 2, name: "Extruder 2 (E1)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                    {id: 3, name: "Liquid Dispenser (L0)", type: "dispenser", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0}
+                ];
+                updateToolDropdown();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading tools:', error);
+            // Use default tools if request fails
+            tools = [
+                {id: 0, name: "Camera Tool (C0)", type: "camera", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                {id: 1, name: "Extruder 1 (E0)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                {id: 2, name: "Extruder 2 (E1)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                {id: 3, name: "Liquid Dispenser (L0)", type: "dispenser", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0}
+            ];
+            updateToolDropdown();
+        });
+}
+
+
+
+// Test function to debug tool list
+function debugToolList() {
+    console.log('=== TOOL DEBUG INFO ===');
+    console.log('Current tools array:', tools);
+    console.log('Tools array length:', tools.length);
+    console.log('Tools array type:', typeof tools);
+    console.log('Is tools an array?', Array.isArray(tools));
+    
+    const toolListElement = document.getElementById('toolList');
+    console.log('Tool list element exists?', !!toolListElement);
+    console.log('Tool list innerHTML:', toolListElement ? toolListElement.innerHTML : 'N/A');
+    
+    tools.forEach((tool, index) => {
+        console.log(`Tool ${index}:`, tool);
+    });
+    console.log('=== END DEBUG INFO ===');
+}
+
+
+
+
+function deleteTool(toolId) {
+    if (confirm('Are you sure you want to delete this tool?')) {
+        tools = tools.filter(t => t.id !== toolId);
+        updateToolDropdown();
+
+        fetch('/api/tools/save', {
+            method: 'POST',
+            headers: {'Content-Type': 'application/json'},
+            body: JSON.stringify({tools: tools})
+        });
+    }
+}
+
+function closeToolModal() {
+    document.getElementById('toolModal').style.display = 'none';
+    currentEditingTool = null;
+    
+    document.getElementById('offsetX').disabled = false;
+    document.getElementById('offsetY').disabled = false;
+    document.getElementById('offsetZ').disabled = false;
+    document.getElementById('preciseX').disabled = false;
+    document.getElementById('preciseY').disabled = false;
+    document.getElementById('preciseZ').disabled = false;
+}
+
+// Initialize tool list when page loads
+document.addEventListener('DOMContentLoaded', function() {
+    updateToolDropdown();
+});
+
+
+
+
         </script>
     </head>
     <body>
         <div class="container">
-            <h1>Rister Camera Controller</h1>
+            <h1>Rister Camera Controller with Calibration</h1>
+            
+            <!-- Debug Panel -->
+            <div id="debugPanel" class="debug-panel">
+                Loading debug info...
+            </div>
             
             <div class="controls">
                 <button onclick="startStream()">Start Stream</button>
                 <button onclick="stopStream()" class="stop">Stop Stream</button>
                 <button onclick="capturePhoto()" class="photo">Take Photo</button>
+                <button onclick="startLineMeasurement()" class="calibration pixel-calibrate">Calibrate Pixel Size</button>
+                <!--<button onclick="startCameraCentering()" class="calibration camera-center">Center Camera</button>-->
+                <button id="calibrationToggle" onclick="toggleCalibrationMode()" class="calibration">Image Mapper</button>
+                <button onclick="flipImageHorizontal()" class="calibration">Flip Horizontal</button>
+                <button onclick="flipImageVertical()" class="calibration">Flip Vertical</button>
+                <button onclick="resetImageFlip()" class="calibration">Reset Flip</button>
+            </div>
+           
+
+
+
+<!-- Camera Calibration Tutorial Dropdown -->
+<!-- Camera Calibration Tutorial Dropdown -->
+<div class="tutorial-container">
+    <button onclick="toggleTutorial()" class="tutorial-toggle">
+        📖 Image Mapper Tutorial
+        <span id="tutorial-arrow">▼</span>
+    </button>
+    
+    <div id="tutorial-content" class="tutorial-content" style="display: none;">
+        <div class="tutorial-steps">
+            <h3>🎯 Image Mapper Process</h3>
+            <p>Follow these steps to map pixel coordinates to real printer positions:</p>
+            
+            <div class="step-section">
+                <h4>Step 1: Print & Place Calibration Target</h4>
+                <ul>
+                    <li><strong>Copy the calibration target code below:</strong></li>
+                    <li>Save it as <code>calibration_target.svg</code> on your computer</li>
+                    <li>Open the SVG file and print at <strong>100% scale</strong> - Do not scale to fit page!</li>
+                    <li>Verify the 50mm scale bar measures exactly 50mm with a ruler</li>
+                    <li>Place the printed target on your print bed within camera view</li>
+                </ul>
+                
+                <div class="svg-code-container">
+                    <h5>Calibration Target SVG Code:</h5>
+                    <textarea readonly style="width: 100%; height: 100px; font-family: monospace; font-size: 12px; resize: vertical;" onclick="this.select()">
+&lt;svg width="210mm" height="297mm" viewBox="0 0 210 297" xmlns="http://www.w3.org/2000/svg"&gt;
+  &lt;text x="105" y="25" text-anchor="middle" font-family="Arial" font-size="6" font-weight="bold"&gt;CAMERA CALIBRATION TARGET&lt;/text&gt;
+  &lt;text x="105" y="32" text-anchor="middle" font-family="Arial" font-size="4"&gt;Print at 100% scale - Do not scale to fit&lt;/text&gt;
+  &lt;g transform="translate(105, 150)"&gt;
+    &lt;g stroke="black" stroke-width="0.3" fill="none"&gt;
+      &lt;line x1="-25" y1="0" x2="25" y2="0"/&gt;
+      &lt;line x1="0" y1="-25" x2="0" y2="25"/&gt;
+      &lt;line x1="-20" y1="-2" x2="-20" y2="2"/&gt;
+      &lt;line x1="-10" y1="-2" x2="-10" y2="2"/&gt;
+      &lt;line x1="10" y1="-2" x2="10" y2="2"/&gt;
+      &lt;line x1="20" y1="-2" x2="20" y2="2"/&gt;
+      &lt;line x1="-2" y1="-20" x2="2" y2="-20"/&gt;
+      &lt;line x1="-2" y1="-10" x2="2" y2="-10"/&gt;
+      &lt;line x1="-2" y1="10" x2="2" y2="10"/&gt;
+      &lt;line x1="-2" y1="20" x2="2" y2="20"/&gt;
+    &lt;/g&gt;
+    &lt;circle cx="0" cy="0" r="2" fill="none" stroke="black" stroke-width="0.3"/&gt;
+    &lt;circle cx="0" cy="0" r="1" fill="black"/&gt;
+    &lt;g fill="black" stroke="black" stroke-width="0.2"&gt;
+      &lt;g transform="translate(-40, -40)"&gt;
+        &lt;circle cx="0" cy="0" r="1.5" fill="none" stroke="black" stroke-width="0.3"/&gt;
+        &lt;circle cx="0" cy="0" r="0.5" fill="black"/&gt;
+        &lt;text x="0" y="-5" text-anchor="middle" font-family="Arial" font-size="3"&gt;TL&lt;/text&gt;
+      &lt;/g&gt;
+      &lt;g transform="translate(40, -40)"&gt;
+        &lt;circle cx="0" cy="0" r="1.5" fill="none" stroke="black" stroke-width="0.3"/&gt;
+        &lt;circle cx="0" cy="0" r="0.5" fill="black"/&gt;
+        &lt;text x="0" y="-5" text-anchor="middle" font-family="Arial" font-size="3"&gt;TR&lt;/text&gt;
+      &lt;/g&gt;
+      &lt;g transform="translate(-40, 40)"&gt;
+        &lt;circle cx="0" cy="0" r="1.5" fill="none" stroke="black" stroke-width="0.3"/&gt;
+        &lt;circle cx="0" cy="0" r="0.5" fill="black"/&gt;
+        &lt;text x="0" y="8" text-anchor="middle" font-family="Arial" font-size="3"&gt;BL&lt;/text&gt;
+      &lt;/g&gt;
+      &lt;g transform="translate(40, 40)"&gt;
+        &lt;circle cx="0" cy="0" r="1.5" fill="none" stroke="black" stroke-width="0.3"/&gt;
+        &lt;circle cx="0" cy="0" r="0.5" fill="black"/&gt;
+        &lt;text x="0" y="8" text-anchor="middle" font-family="Arial" font-size="3"&gt;BR&lt;/text&gt;
+      &lt;/g&gt;
+    &lt;/g&gt;
+    &lt;g font-family="Arial" font-size="3" fill="black"&gt;
+      &lt;text x="-15" y="-6" text-anchor="middle"&gt;10mm&lt;/text&gt;
+      &lt;text x="-5" y="-6" text-anchor="middle"&gt;10mm&lt;/text&gt;
+      &lt;text x="5" y="-6" text-anchor="middle"&gt;10mm&lt;/text&gt;
+      &lt;text x="15" y="-6" text-anchor="middle"&gt;10mm&lt;/text&gt;
+      &lt;text x="0" y="-32" text-anchor="middle" font-weight="bold"&gt;50mm&lt;/text&gt;
+      &lt;text x="32" y="2" text-anchor="middle" font-weight="bold" transform="rotate(-90, 32, 2)"&gt;50mm&lt;/text&gt;
+    &lt;/g&gt;
+  &lt;/g&gt;
+  &lt;g transform="translate(20, 250)" font-family="Arial" font-size="4" fill="black"&gt;
+    &lt;text x="0" y="0" font-weight="bold"&gt;CALIBRATION INSTRUCTIONS:&lt;/text&gt;
+    &lt;text x="0" y="8"&gt;1. Print this page at 100% scale (no scaling!)&lt;/text&gt;
+    &lt;text x="0" y="16"&gt;2. Place on printer bed within camera view&lt;/text&gt;
+    &lt;text x="0" y="24"&gt;3. Use "Calibrate Pixel Size" - draw 50mm line across center crosshair&lt;/text&gt;
+    &lt;text x="0" y="32"&gt;4. Use "Image Mapper" - click on targets to map coordinates&lt;/text&gt;
+    &lt;text x="0" y="40"&gt;5. Use coordinates to manually center camera and add reference points&lt;/text&gt;
+  &lt;/g&gt;
+  &lt;g transform="translate(130, 250)" stroke="black" stroke-width="0.3" fill="black"&gt;
+    &lt;line x1="0" y1="0" x2="50" y2="0"/&gt;
+    &lt;line x1="0" y1="-2" x2="0" y2="2"/&gt;
+    &lt;line x1="50" y1="-2" x2="50" y2="2"/&gt;
+    &lt;text x="25" y="-4" text-anchor="middle" font-family="Arial" font-size="3"&gt;50mm Scale Check&lt;/text&gt;
+    &lt;text x="25" y="8" text-anchor="middle" font-family="Arial" font-size="3"&gt;Measure with ruler to verify&lt;/text&gt;
+    &lt;text x="25" y="16" text-anchor="middle" font-family="Arial" font-size="3"&gt;correct print scale&lt;/text&gt;
+  &lt;/g&gt;
+&lt;/svg&gt;
+</textarea>
+                    <p style="font-size: 12px; color: #666; margin-top: 5px;">
+                        <strong>Instructions:</strong> Select all text above (click in box, then Ctrl+A), copy it (Ctrl+C), 
+                        paste into a text editor, and save as "calibration_target.svg"
+                    </p>
+                </div>
             </div>
             
+            <div class="step-section">
+                <h4>Step 2: Calibrate Pixel Scale</h4>
+                <ul>
+                    <li>Click the <strong style="color: #ff6b35;">Calibrate Pixel Size</strong> button</li>
+                    <li>Click and drag to draw a line across a known dimension (like the 50mm crosshair)</li>
+                    <li>Enter the actual measurement in millimeters when prompted</li>
+                    <li>The system calculates microns per pixel automatically</li>
+                </ul>
+            </div>
+            
+            <div class="step-section">
+                <h4>Step 3: Use Image Mapper</h4>
+                <ul>
+                    <li>Click the <strong style="color: #FF9800;">Image Mapper</strong> button</li>
+                    <li>Click on specific features in the image (center dot, corner targets)</li>
+                    <li>Each click shows you both pixel coordinates and current printer position</li>
+                    <li>Use this information to manually move your printer/camera to center targets</li>
+                    <li>Add multiple reference points for better coordinate mapping accuracy</li>
+                </ul>
+            </div>
+            
+            <div class="step-section">
+                <h4>Step 4: Manual Camera Positioning</h4>
+                <ul>
+                    <li>Use the coordinate information from Image Mapper clicks</li>
+                    <li>Manually move your printer to center the camera on targets</li>
+                    <li>Build up reference points at different locations for full-bed accuracy</li>
+                    <li>Use flip buttons if your camera image appears inverted</li>
+                </ul>
+            </div>
+            
+            <div class="step-section success-box">
+                <h4>✅ Mapping Complete!</h4>
+                <p>Your camera coordinates are now mapped. You can:</p>
+                <ul>
+                    <li>Click anywhere in the image to get precise printer coordinates</li>
+                    <li>Use the coordinate data to manually position your camera</li>
+                    <li>Build reference points for accurate coordinate conversion across the bed</li>
+                    <li>Measure distances and positions accurately in your images</li>
+                </ul>
+            </div>
+            
+            <div class="tips-section">
+                <h4>💡 Pro Tips</h4>
+                <ul>
+                    <li><strong>Start with the center target</strong> for initial reference point</li>
+                    <li><strong>Add corner targets</strong> for full-bed coordinate accuracy</li>
+                    <li><strong>Use the flip buttons</strong> if your camera view is inverted</li>
+                    <li><strong>Recalibrate pixel size</strong> if you change camera height or focus</li>
+                    <li><strong>The green crosshair</strong> shows the exact center of your camera view</li>
+                    <li><strong>Manual positioning</strong> gives you full control over camera movement</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+
+
+
+
+
+
+
+<!--Tool management html -->
+<!-- Tool Management Interface -->
+<div class="tool-management-container">
+    <button onclick="toggleToolManagement()" class="tool-management-toggle">
+        🔧 Tool Management
+        <span id="tool-arrow">▼</span>
+    </button>
+    
+    <div id="tool-management-content" class="tool-management-content" style="display: none;">
+        <!-- Tool Selection and Management -->
+        <div class="tool-selection-section">
+            <h4>Tool Management</h4>
+            <div class="tool-controls">
+                <label for="currentTool">Select Tool:</label>
+                <select id="currentTool">
+                    <option value="0">Camera Tool (C0)</option>
+                </select>
+                
+                <div class="tool-action-buttons">
+                    <button onclick="editSelectedTool()" class="edit-tool-btn">Edit</button>
+                    <button onclick="deleteSelectedTool()" class="delete-tool-btn">Delete</button>
+                    <button onclick="addNewTool()" class="add-tool-btn">+ Add New</button>
+                </div>
+            </div>
+            
+            <!-- Selected Tool Info Display -->
+            <div id="selectedToolInfo" class="selected-tool-info">
+                <p><strong>Selected:</strong> <span id="selectedToolName">Camera Tool (C0)</span></p>
+                <p><strong>Type:</strong> <span id="selectedToolType">camera</span></p>
+                <p><strong>Offsets:</strong> <span id="selectedToolOffsets">Reference Tool (No Offsets)</span></p>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+
+
+<style>
+.tool-selection-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: white;
+    border-radius: 5px;
+    border: 1px solid #e0e0e0;
+}
+
+.tool-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.tool-controls label {
+    font-weight: bold;
+    color: #2c3e50;
+}
+
+.tool-controls select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 200px;
+}
+
+.tool-action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.tool-action-buttons button {
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: bold;
+}
+
+.select-tool-btn {
+    background-color: #007bff;
+    color: white;
+}
+
+.select-tool-btn:hover {
+    background-color: #0056b3;
+}
+
+.edit-tool-btn {
+    background-color: #ffc107;
+    color: black;
+}
+
+.edit-tool-btn:hover {
+    background-color: #e0a800;
+}
+
+.delete-tool-btn {
+    background-color: #dc3545;
+    color: white;
+}
+
+.delete-tool-btn:hover {
+    background-color: #c82333;
+}
+
+.add-tool-btn {
+    background-color: #28a745;
+    color: white;
+}
+
+.add-tool-btn:hover {
+    background-color: #218838;
+}
+
+.selected-tool-info {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.selected-tool-info p {
+    margin: 5px 0;
+}
+
+.selected-tool-info span {
+    font-family: monospace;
+    color: #495057;
+}
+.tool-selection-section {
+    margin-bottom: 20px;
+    padding: 15px;
+    background-color: white;
+    border-radius: 5px;
+    border: 1px solid #e0e0e0;
+}
+
+.tool-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.tool-action-buttons {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.edit-tool-btn {
+    background-color: #ffc107;
+    color: black;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.delete-tool-btn {
+    background-color: #dc3545;
+    color: white;
+    padding: 8px 16px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+}
+
+.selected-tool-info {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 14px;
+}
+</style>
+
+<script>
+// Updated JavaScript functions for simplified tool management
+
+function editSelectedTool() {
+    const selectedId = parseInt(document.getElementById('currentTool').value);
+    editTool(selectedId);
+}
+
+function addNewTool() {
+    currentEditingTool = null;
+    document.getElementById('modalTitle').textContent = 'Add New Tool';
+    document.getElementById('toolName').value = '';
+    
+    // Find next available ID
+    const existingIds = tools.map(t => t.id);
+    let nextId = 0;
+    while (existingIds.includes(nextId)) {
+        nextId++;
+    }
+    
+    document.getElementById('toolId').value = nextId;
+    document.getElementById('toolType').value = 'extruder';
+    document.getElementById('isReference').checked = false;
+    document.getElementById('fiducialX').value = '0';
+    document.getElementById('fiducialY').value = '0';
+    document.getElementById('fiducialZ').value = '0';
+    
+    updateOffsetDisplay();
+    document.getElementById('toolModal').style.display = 'block';
+}
+
+
+function updateSelectedToolInfo() {
+    const currentToolSelect = document.getElementById('currentTool');
+    if (!currentToolSelect) {
+        console.error('currentTool select element not found');
+        return;
+    }
+    
+    const selectedId = parseInt(currentToolSelect.value);
+    const selectedTool = tools.find(t => t.id === selectedId);
+    
+    if (selectedTool) {
+        const nameElement = document.getElementById('selectedToolName');
+        const typeElement = document.getElementById('selectedToolType');
+        const offsetsElement = document.getElementById('selectedToolOffsets');
+        
+        if (nameElement) nameElement.textContent = selectedTool.name;
+        if (typeElement) typeElement.textContent = selectedTool.type;
+        
+        if (offsetsElement) {
+            if (selectedTool.type === 'camera') {
+                offsetsElement.textContent = 'Reference Tool (No Offsets)';
+            } else {
+                offsetsElement.textContent = 
+                    `X${selectedTool.offsetX} Y${selectedTool.offsetY} Z${selectedTool.offsetZ} | Precise: X${selectedTool.preciseX} Y${selectedTool.preciseY} Z${selectedTool.preciseZ}`;
+            }
+        }
+        
+        const deleteBtn = document.querySelector('.delete-tool-btn');
+        if (deleteBtn) {
+            deleteBtn.disabled = selectedTool.type === 'camera';
+            deleteBtn.style.opacity = selectedTool.type === 'camera' ? '0.5' : '1';
+        }
+        
+        // Auto-select tool
+        selectTool();
+    }
+}
+
+
+
+
+function deleteSelectedTool() {
+    const selectedId = parseInt(document.getElementById('currentTool').value);
+    const selectedTool = tools.find(t => t.id === selectedId);
+    
+    if (selectedTool && selectedTool.type === 'camera') {
+        alert('Cannot delete the camera tool - it is the reference tool.');
+        return;
+    }
+    
+    if (confirm(`Are you sure you want to delete "${selectedTool.name}"?`)) {
+        deleteTool(selectedId);
+    }
+}
+
+
+function updateToolDropdown() {
+    const currentToolSelect = document.getElementById('currentTool');
+    if (!currentToolSelect) return;
+    
+    const currentValue = currentToolSelect.value;
+    currentToolSelect.innerHTML = '';
+    
+    tools.forEach(tool => {
+        const option = document.createElement('option');
+        option.value = tool.id;
+        option.textContent = tool.name;
+        currentToolSelect.appendChild(option);
+    });
+    
+    if (Array.from(currentToolSelect.options).some(opt => opt.value === currentValue)) {
+        currentToolSelect.value = currentValue;
+    }
+    
+    updateSelectedToolInfo();
+    
+    currentToolSelect.onchange = function() {
+        updateSelectedToolInfo();
+    };
+}
+
+
+function saveTool() {
+    const toolData = {
+        id: parseInt(document.getElementById('toolId').value),
+        name: document.getElementById('toolName').value,
+        type: document.getElementById('toolType').value,
+        fiducialX: parseFloat(document.getElementById('fiducialX').value) || 0,
+        fiducialY: parseFloat(document.getElementById('fiducialY').value) || 0,
+        fiducialZ: parseFloat(document.getElementById('fiducialZ').value) || 0,
+        isReference: document.getElementById('isReference').checked
+    };
+    
+    // Validate required fields
+    if (!toolData.name || toolData.name.trim() === '') {
+        alert('Please enter a tool name');
+        return;
+    }
+    
+    // Update tools array
+    if (currentEditingTool !== null) {
+        const index = tools.findIndex(t => t.id === currentEditingTool);
+        if (index !== -1) {
+            tools[index] = toolData;
+        }
+    } else {
+        const existingIndex = tools.findIndex(t => t.id === toolData.id);
+        if (existingIndex !== -1) {
+            tools[existingIndex] = toolData;
+        } else {
+            tools.push(toolData);
+        }
+    }
+    
+    // If this tool is set as reference, unset all others
+    if (toolData.isReference) {
+        tools.forEach(tool => {
+            if (tool.id !== toolData.id) {
+                tool.isReference = false;
+            }
+        });
+    }
+    
+    updateToolDropdown();
+    closeToolModal();
+    
+    // Save to backend
+    fetch('/api/tools/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tools: tools})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            console.log('Tools saved successfully');
+            loadToolsFromBackend(); // Reload to get calculated offsets
+        } else {
+            alert('Error saving tools: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving tools:', error);
+        alert('Error saving tools: ' + error);
+    });
+}
+
+
+
+
+
+
+// Updated deleteTool function
+function deleteTool(toolId) {
+    const tool = tools.find(t => t.id === toolId);
+    if (tool && tool.type === 'camera') {
+        alert('Cannot delete the camera tool - it is the reference tool.');
+        return;
+    }
+    
+    tools = tools.filter(t => t.id !== toolId);
+    updateToolDropdown();
+    
+    // Save to backend
+    fetch('/api/tools/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tools: tools})
+    });
+}
+
+// Updated loadToolsFromBackend function
+function loadToolsFromBackend() {
+    fetch('/api/tools/load')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                tools = data.tools || [];
+                cameraReference = data.camera_reference;
+                updateToolDropdown();
+            } else {
+                // Use default tools if backend fails
+                tools = [
+                    {id: 0, name: "Camera Tool (C0)", type: "camera", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                    {id: 1, name: "Extruder 1 (E0)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                    {id: 2, name: "Extruder 2 (E1)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                    {id: 3, name: "Liquid Dispenser (L0)", type: "dispenser", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0}
+                ];
+                updateToolDropdown();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading tools:', error);
+            tools = [
+                {id: 0, name: "Camera Tool (C0)", type: "camera", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                {id: 1, name: "Extruder 1 (E0)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                {id: 2, name: "Extruder 2 (E1)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                {id: 3, name: "Liquid Dispenser (L0)", type: "dispenser", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0}
+            ];
+            updateToolDropdown();
+        });
+}
+</script>
+
+
+
+
+
+
+
+
+
+<script>
+function toggleTutorial() {
+    const content = document.getElementById('tutorial-content');
+    const arrow = document.getElementById('tutorial-arrow');
+    
+    if (content.style.display === 'none') {
+        content.style.display = 'block';
+        arrow.classList.add('tutorial-arrow-up');
+    } else {
+        content.style.display = 'none';
+        arrow.classList.remove('tutorial-arrow-up');
+    }
+}
+</script>
+
+
+
+
+
+
+
+
+
+
             <div id="focusControls" class="controls" style="display: none;">
                 <button onclick="setFocusAuto()" class="focus">Auto Focus</button>
                 <div class="slider-container">
                     <label for="focusSlider">Manual Focus: <span id="focusValue">10</span></label>
-                    <input type="range" min="0" max="30" value="10" step="0.5" class="slider" id="focusSlider" oninput="updateFocusValue(this.value)" onchange="setFocusManual(this.value)">
-                    <div class="focus-info">
-                        <small>0 = Near, 30 = Far</small><br>
-                        <small>For IMX519: useful range typically 10-20</small>
-                    </div>
+                    <input type="range" min="0" max="30" value="10" step="0.5" class="slider" id="focusSlider" 
+                           oninput="updateFocusValue(this.value)" onchange="setFocusManual(this.value)">
                 </div>
+            </div>
+            
+            <div id="calibrationPanel" class="calibration-panel" style="display: none;">
+                <h2>Image Mapper - Pixel-to-Printer Coordinate Mapping</h2>
+                <p><strong>Status:</strong> <span id="calibrationStatus">DISABLED</span></p>
+                
+                <div class="input-group">
+                    <label>Microns per pixel X:</label>
+                    <input type="number" id="micronPerPixelX" value="10" step="0.1" min="0.1" max="1000">
+                    <label>Microns per pixel Y:</label>
+                    <input type="number" id="micronPerPixelY" value="10" step="0.1" min="0.1" max="1000">
+                    <button onclick="updateMicronsPerPixel()">Update</button>
+                </div>
+                
+                <div class="controls">
+                    <button onclick="enableCalibration()" class="calibration">Enable Calibration</button>
+                    <button onclick="disableCalibration()" class="stop">Disable Calibration</button>
+                    <button onclick="clearCalibration()" class="stop">Clear All Points</button>
+                </div>
+                
+                <h3>Reference Points</h3>
+                <div id="referencePoints" class="reference-points">
+                    <div class="reference-point">No reference points set</div>
+                </div>
+                
+                <p><strong>Instructions:</strong></p>
+                <ul style="text-align: left;">
+                    <li>1. Use "Image Mapper" to click on features in the image</li>
+                    <li>2. Each click records pixel coordinates and current printer position</li>
+                    <li>3. Use the coordinate information to manually position your camera/printer</li>
+                    <li>4. Use flip buttons if your camera image is inverted</li>
+                    <li>5. Build reference points for accurate coordinate mapping</li>
+                </ul>
             </div>
             
             <div id="streamContainer" class="media-container" style="display: none;">
                 <h3>Live Stream</h3>
-                <div id="loading" class="loading">
-                    <div class="spinner"></div>
-                    Loading stream...
-                </div>
-                <img id="streamImg" src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" alt="Live Stream">
+
+<img id="streamImg" class="clickable-image" 
+     onmousedown="measureClick(event)" 
+     onmousemove="measureClick(event); updateCoordinateDisplay(event, this)" 
+     onmouseup="measureClick(event)"
+     onmouseenter="showCoordinateDisplay(this)"
+     onmouseleave="hideCoordinateDisplay(this)"
+     onclick="handleImageClick(event, 'stream'); measureClick(event);"
+     src="data:image/gif;base64,R0lGODlhAQABAAAAACH5BAEKAAEALAAAAAABAAEAAAICTAEAOw==" 
+     alt="Live Stream">
+
+
             </div>
-            
+
+
+
+
             <div id="photoContainer" class="media-container" style="display: none;">
                 <h3>Latest Photo</h3>
-                <img id="photoImg" src="/latest_photo" alt="Latest Captured Photo">
+
+<img id="photoImg" class="clickable-image"
+     onmousedown="measureClick(event)" 
+     onmousemove="measureClick(event); updateCoordinateDisplay(event, this)" 
+     onmouseup="measureClick(event)"
+     onmouseenter="showCoordinateDisplay(this)"
+     onmouseleave="hideCoordinateDisplay(this)"
+     onclick="handleImageClick(event, 'snapshot'); measureClick(event);"
+     src="/latest_photo" 
+     alt="Latest Captured Photo">
+
+            </div>
+
+
+
+        </div>
+
+
+<!-- Tool Details Modal - ADD THIS if it's missing -->
+<!-- Tool Details Modal -->
+<div id="toolModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeToolModal()">&times;</span>
+        <h3 id="modalTitle">Tool Configuration</h3>
+        
+        <div class="tool-form">
+            <label>Tool Name:</label>
+            <input type="text" id="toolName" placeholder="e.g., Extruder 1 (E0)">
+            
+            <label>Tool ID:</label>
+            <input type="number" id="toolId" placeholder="1" min="0" max="99">
+            
+            <label>Tool Type:</label>
+            <select id="toolType">
+                <option value="camera">Camera</option>
+                <option value="extruder">Extruder</option>
+                <option value="dispenser">Liquid Dispenser</option>
+                <option value="probe">Probe</option>
+                <option value="other">Other</option>
+            </select>
+            
+            <div class="reference-checkbox-container">
+                <input type="checkbox" id="isReference">
+                <label for="isReference">Set as Reference Tool</label>
+            </div>
+            
+<h4>Fiducial Position (mm)</h4>
+<p style="font-size: 12px; color: #666; margin: 5px 0 15px 0;">Enter the exact position where this tool should be positioned for calibration/alignment.</p>
+
+<div class="coordinate-inputs">
+    <div class="input-group">
+        <label>Fiducial X</label>
+        <input type="number" id="fiducialX" step="0.001" placeholder="0.000">
+    </div>
+    
+    <div class="input-group">
+        <label>Fiducial Y</label>
+        <input type="number" id="fiducialY" step="0.001" placeholder="0.000">
+    </div>
+    
+    <div class="input-group">
+        <label>Fiducial Z</label>
+        <input type="number" id="fiducialZ" step="0.001" placeholder="0.000">
+    </div>
+</div>
+
+
+
+
+            <h4>Calculated Offsets</h4>
+            <div id="offsetDisplay" class="offset-display">
+                <div>X Offset: <span id="calcOffsetX">0.000</span>mm</div>
+                <div>Y Offset: <span id="calcOffsetY">0.000</span>mm</div>
+                <div>Z Offset: <span id="calcOffsetZ">0.000</span>mm</div>
+            </div>
+            
+            <div class="modal-buttons">
+                <button onclick="saveTool()" class="save-btn">Save Tool</button>
+                <button onclick="closeToolModal()" class="cancel-btn">Cancel</button>
             </div>
         </div>
-    </body>
+    </div>
+</div>
+
+
+
+   </body>
     </html>
     """
     return html
 
+
+
+
+# Add this to your Flask application
+
+@app.route('/api/calibration/info')
+def api_calibration_info():
+    """Get calibration info (alias for data endpoint)"""
+    return jsonify({
+        "microns_per_pixel_x": calibration_data["microns_per_pixel_x"],
+        "microns_per_pixel_y": calibration_data["microns_per_pixel_y"],
+        "reference_points": calibration_data["reference_points"],
+        "enabled": calibration_data["enabled"]
+    })
+
+
+
+
+# Enhanced printer position API endpoint with better error handling
+@app.route('/api/printer/position')
+def api_printer_position():
+    """FIXED: Get current printer position via MQTT with better debugging"""
+    global current_printer_position, position_request_pending
+    
+    logger.info("API: Printer position requested")
+    
+    # First check if we already have a recent position
+    with position_lock:
+        current_pos = current_printer_position.copy()
+        is_pending = position_request_pending
+    
+    logger.info(f"Current cached position: {current_pos}")
+    
+    # Try to get fresh position
+    if request_printer_position():
+        logger.info("Position request sent, waiting for response...")
+        
+        # Wait for response with timeout
+        timeout = 10  # Increased timeout for debugging
+        start_time = time.time()
+        
+        while True:
+            with position_lock:
+                is_pending = position_request_pending
+                current_pos = current_printer_position.copy()
+            
+            if not is_pending:
+                logger.info(f"Position response received: {current_pos}")
+                return jsonify({
+                    "status": "success",
+                    "position": current_pos,
+                    "wait_time": round(time.time() - start_time, 2)
+                })
+            
+            if (time.time() - start_time) > timeout:
+                logger.warning(f"Position request timeout after {timeout}s, using cached position")
+                break
+                
+            time.sleep(0.1)
+        
+        # Timeout - return cached position with warning
+        return jsonify({
+            "status": "timeout",
+            "position": current_pos,
+            "message": f"Position request timed out after {timeout}s, using cached position",
+            "wait_time": timeout
+        })
+    else:
+        logger.error("Failed to send position request")
+        return jsonify({
+            "status": "error",
+            "position": current_pos,
+            "message": "Failed to request printer position - MQTT not connected"
+        })
+
+@app.route('/api/calibration/add_point', methods=['POST'])
+def api_calibration_add_point():
+    """Add a reference point for calibration"""
+    try:
+        data = request.json
+        logger.info(f"Adding calibration point: {data}")
+        
+        point = {
+            "pixel_x": int(data["pixel_x"]),
+            "pixel_y": int(data["pixel_y"]),
+            "printer_x": float(data["printer_x"]),
+            "printer_y": float(data["printer_y"]),
+            "printer_z": float(data["printer_z"]),
+            "timestamp": datetime.now().isoformat()
+        }
+        
+        calibration_data["reference_points"].append(point)
+        save_calibration_data()
+        
+        logger.info(f"Added calibration point: {point}")
+        
+        return jsonify({"status": "success", "point": point})
+    except Exception as e:
+        logger.error(f"Error adding calibration point: {e}")
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/calibration/set_microns', methods=['POST'])
+def api_calibration_set_microns():
+    """Set microns per pixel values"""
+    try:
+        data = request.json
+        calibration_data["microns_per_pixel_x"] = float(data["microns_per_pixel_x"])
+        calibration_data["microns_per_pixel_y"] = float(data["microns_per_pixel_y"])
+        save_calibration_data()
+        
+        return jsonify({"status": "success"})
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+@app.route('/api/calibration/enable', methods=['POST'])
+def api_calibration_enable():
+    """Enable calibration"""
+    calibration_data["enabled"] = True
+    save_calibration_data()
+    return jsonify({"status": "success"})
+
+@app.route('/api/calibration/disable', methods=['POST'])
+def api_calibration_disable():
+    """Disable calibration"""
+    calibration_data["enabled"] = False
+    save_calibration_data()
+    return jsonify({"status": "success"})
+
+@app.route('/api/calibration/clear', methods=['POST'])
+def api_calibration_clear():
+    """Clear all calibration data"""
+    calibration_data["reference_points"] = []
+    calibration_data["enabled"] = False
+    save_calibration_data()
+    return jsonify({"status": "success"})
+
+@app.route('/api/calibration/data')
+def api_calibration_data():
+    """Get calibration data in expected format"""
+    return jsonify({
+        "microns_per_pixel_x": calibration_data["microns_per_pixel_x"],
+        "microns_per_pixel_y": calibration_data["microns_per_pixel_y"], 
+        "reference_points": calibration_data["reference_points"],
+        "enabled": calibration_data["enabled"]
+    })
+
+
+@app.route('/api/calibration/convert', methods=['POST'])
+def api_calibration_convert():
+    """Convert pixel coordinates to printer coordinates"""
+    try:
+        data = request.json
+        pixel_x = int(data["pixel_x"])
+        pixel_y = int(data["pixel_y"])
+        
+        with position_lock:
+            current_pos = current_printer_position.copy()
+        
+        result = pixel_to_printer_coordinates(
+            pixel_x, pixel_y,
+            current_pos["x"],
+            current_pos["y"]
+        )
+        
+        if result:
+            return jsonify({"status": "success", "conversion": result})
+        else:
+            return jsonify({"status": "error", "message": "Calibration not available"})
+            
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+
+
+@app.route('/api/scaler/calculate', methods=['POST'])
+def api_scaler_calculate():
+    try:
+        data = request.json
+        width_mm = float(data["width_mm"])
+        height_mm = float(data["height_mm"])
+        pixel_width = float(data["pixel_width"])
+        pixel_height = float(data["pixel_height"])
+        
+        microns_x = (width_mm * 1000) / pixel_width
+        microns_y = (height_mm * 1000) / pixel_height
+        
+        # Update calibration data
+        calibration_data["microns_per_pixel_x"] = microns_x
+        calibration_data["microns_per_pixel_y"] = microns_y
+        save_calibration_data()
+        
+        return jsonify({
+            "status": "success",
+            "microns_per_pixel_x": microns_x,
+            "microns_per_pixel_y": microns_y
+        })
+    except Exception as e:
+        return jsonify({"status": "error", "message": str(e)})
+
+
+
+
+
+# Keep all existing routes
 @app.route('/stream')
 def stream():
     """Safari-compatible MJPEG stream endpoint"""
     global STREAM_ACTIVE, current_frame, frame_count
     
-    # If not streaming, return a blank image
     if not STREAM_ACTIVE:
-        # Create a 1x1 transparent GIF
         blank_gif = b'GIF89a\x01\x00\x01\x00\x80\x00\x00\xff\xff\xff\x00\x00\x00!\xf9\x04\x01\x00\x00\x00\x00,\x00\x00\x00\x00\x01\x00\x01\x00\x00\x02\x02D\x01\x00;'
         return Response(blank_gif, mimetype='image/gif')
     
@@ -811,23 +3131,19 @@ def stream():
         global STREAM_ACTIVE, current_frame, frame_count
         last_frame_count = 0
         
-        # Exit if streaming stops while generating
         if not STREAM_ACTIVE:
             return
         
-        # Initial wait for first frame
         attempts = 0
         while current_frame is None and STREAM_ACTIVE and attempts < 20:
             time.sleep(0.1)
             attempts += 1
         
-        # Main streaming loop - Safari optimized
         while STREAM_ACTIVE:
             with frame_lock:
                 frame = current_frame
                 current_count = frame_count
             
-            # Only yield new frames to prevent duplicates in Safari
             if frame and current_count > last_frame_count:
                 yield (b'--frame\r\n'
                        b'Content-Type: image/jpeg\r\n'
@@ -838,14 +3154,10 @@ def stream():
                        b'\r\n' + frame + b'\r\n')
                 
                 last_frame_count = current_count
-                
-                # Safari-friendly delay between frames
-                time.sleep(1/12)  # 12 fps for stability
+                time.sleep(1/12)
             else:
-                # No new frame, wait a bit
                 time.sleep(0.05)
     
-    # Safari-specific headers for better compatibility
     response = Response(
         generate_frames(),
         mimetype='multipart/x-mixed-replace; boundary=frame',
@@ -854,7 +3166,7 @@ def stream():
             'Pragma': 'no-cache',
             'Expires': '0',
             'Connection': 'close',
-            'X-Accel-Buffering': 'no'  # Disable nginx buffering if present
+            'X-Accel-Buffering': 'no'
         }
     )
     return response
@@ -863,19 +3175,15 @@ def stream():
 def latest_photo():
     """Serve the most recently captured photo"""
     try:
-        # Find the most recent photo in the capture directory
         photos = [os.path.join(CAPTURE_DIR, f) for f in os.listdir(CAPTURE_DIR) 
                  if f.startswith("capture_") and f.endswith(".jpg")]
         
         if not photos:
-            # If no photos, return a simple message
             return "No photos available", 404
         
-        # Sort by modification time (newest first)
         photos.sort(key=lambda x: os.path.getmtime(x), reverse=True)
         latest = photos[0]
         
-        # Send the file
         return send_file(latest, mimetype='image/jpeg')
     except Exception as e:
         logger.error(f"Error serving latest photo: {e}")
@@ -898,14 +3206,11 @@ def api_capture():
 
 @app.route('/api/focus/auto')
 def api_focus_auto():
-    """Set camera to auto focus mode"""
     result = control_autofocus("auto")
     return jsonify({"status": "success" if result else "error", "mode": "auto"})
 
 @app.route('/api/focus/manual/<position>')
 def api_focus_manual(position):
-    """Set camera to manual focus with specific position (0-30)"""
-    # Position directly used for libcamera-still --lens-position
     try:
         pos_float = float(position)
         result = control_autofocus("manual", pos_float)
@@ -915,18 +3220,18 @@ def api_focus_manual(position):
 
 @app.route('/api/status')
 def api_status():
-    """API endpoint to get camera status with more detailed info"""
+    """API endpoint to get camera status with calibration info"""
     global STREAM_ACTIVE, streaming_thread
     
-    # Check if streaming thread is actually running
-    thread_alive = streaming_thread is not None and streaming_thread.is_alive()
+    thread_alive = streaming_thread is not None and threading.active_count()
     
-    # If thread is dead but flag is still set, fix the inconsistency
     if STREAM_ACTIVE and not thread_alive:
         STREAM_ACTIVE = False
     
-    # Get current focus mode and position
     focus_info = get_focus_info()
+    
+    with position_lock:
+        current_pos = current_printer_position.copy()
     
     return jsonify({
         "streaming": STREAM_ACTIVE,
@@ -939,11 +3244,20 @@ def api_status():
         "capture_width": CAPTURE_WIDTH,
         "capture_height": CAPTURE_HEIGHT,
         "stream_quality": STREAM_QUALITY,
-        "frame_count": frame_count  # Added for debugging
+        "frame_count": frame_count,
+        "calibration": calibration_data,
+        "printer_position": current_pos
     })
+
+# Initialize tools configuration on startup
+load_tools_config()
+
 
 if __name__ == '__main__':
     try:
+        # Load calibration data on startup
+        load_calibration_data()
+        
         # Setup MQTT client
         setup_mqtt_client()
         
@@ -952,14 +3266,12 @@ if __name__ == '__main__':
         app.run(host='0.0.0.0', port=HTTP_PORT, threaded=True)
     except KeyboardInterrupt:
         logger.info("Application stopping due to keyboard interrupt")
-        # Clean shutdown
         stop_stream()
         if mqtt_client:
             mqtt_client.loop_stop()
             mqtt_client.disconnect()
     except Exception as e:
         logger.error(f"Application error: {e}")
-        # Clean shutdown
         stop_stream()
         if mqtt_client:
             mqtt_client.loop_stop()
