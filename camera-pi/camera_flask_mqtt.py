@@ -975,8 +975,7 @@ function updateCoordinateDisplay(event, imageElement) {
     // Update overlay display
     overlay.innerHTML = `
         Pixel: (${coords.x}, ${coords.y})<br>
-        Offset: (${mmOffsetX > 0 ? '+' : ''}${mmOffsetX.toFixed(2)}mm, ${mmOffsetY > 0 ? '+' : ''}${mmOffsetY.toFixed(2)}mm)<br>
-        Move to: X${targetX.toFixed(1)} Y${targetY.toFixed(1)}
+        Offset: (${mmOffsetX > 0 ? '+' : ''}${mmOffsetX.toFixed(2)}mm, ${mmOffsetY > 0 ? '+' : ''}${mmOffsetY.toFixed(2)}mm)
     `;
 }
 
@@ -1059,12 +1058,35 @@ function debugCrosshairPosition() {
 }
 
 
+// Add this function to load tools from the backend
+function loadToolsFromBackend() {
+    fetch('/api/tools/load')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                tools = data.tools || [];
+                cameraReference = data.camera_reference;
+                updateToolDropdown();
+                console.log('Tools loaded from backend:', tools);
+            } else {
+                console.error('Failed to load tools:', data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error loading tools:', error);
+        });
+}
+
+// Update the existing DOMContentLoaded event listener
 document.addEventListener('DOMContentLoaded', function() {
     // Hide photo container on page load
     document.getElementById('photoContainer').style.display = 'none';
     
     // Apply default flips immediately
     applyImageTransforms();
+    
+    // Load tools from backend instead of just rendering the default list
+    loadToolsFromBackend();
     
     // Initialize crosshair when images load
     const streamImg = document.getElementById('streamImg');
@@ -1073,7 +1095,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (streamImg) {
         streamImg.addEventListener('load', () => {
             if (document.getElementById('streamContainer').style.display !== 'none') {
-                // Ensure flips are applied to newly loaded images
                 applyImageTransforms();
                 setTimeout(() => {
                     addFiducialCrosshair(streamImg);
@@ -1086,7 +1107,6 @@ document.addEventListener('DOMContentLoaded', function() {
     if (photoImg) {
         photoImg.addEventListener('load', () => {
             if (document.getElementById('photoContainer').style.display !== 'none') {
-                // Ensure flips are applied to newly loaded images
                 applyImageTransforms();
                 setTimeout(() => {
                     addFiducialCrosshair(photoImg);
@@ -1096,7 +1116,6 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
-
 
 
 
@@ -1588,60 +1607,14 @@ function toggleToolManagement() {
     }
 }
 
-function renderToolList() {
-    const toolList = document.getElementById('toolList');
-    toolList.innerHTML = '';
-    
-    tools.forEach(tool => {
-        const toolItem = document.createElement('div');
-        toolItem.className = 'tool-item';
-        
-        let offsetDisplay = '';
-        if (tool.type === 'camera') {
-            offsetDisplay = 'Reference Tool (No Offsets)';
-        } else {
-            offsetDisplay = `Offset: X${tool.offsetX} Y${tool.offsetY} Z${tool.offsetZ} | Precise: X${tool.preciseX} Y${tool.preciseY} Z${tool.preciseZ}`;
-        }
-        
-        toolItem.innerHTML = `
-            <div class="tool-info">
-                <div class="tool-name">${tool.name}</div>
-                <div class="tool-details">Type: ${tool.type} | ${offsetDisplay}</div>
-            </div>
-            <div class="tool-actions">
-                <button class="edit-btn" onclick="editTool(${tool.id})">Edit</button>
-                ${tool.type === 'camera' ? '' : '<button class="delete-btn" onclick="deleteTool(' + tool.id + ')">Delete</button>'}
-            </div>
-        `;
-        toolList.appendChild(toolItem);
-    });
-    
-    renderCalibrationButtons();
-}
 
-function renderCalibrationButtons() {
-    const approxDiv = document.getElementById('approximateCalibration');
-    approxDiv.innerHTML = '';
-    
-    tools.filter(t => t.type !== 'camera').forEach(tool => {
-        const btn = document.createElement('button');
-        btn.className = 'workflow-btn';
-        btn.textContent = `Record ${tool.name} Position`;
-        btn.onclick = () => recordApproximatePosition(tool.id);
-        approxDiv.appendChild(btn);
-    });
-    
-    const precisionDiv = document.getElementById('precisionCalibration');
-    precisionDiv.innerHTML = '';
-    
-    tools.filter(t => t.type !== 'camera').forEach(tool => {
-        const btn = document.createElement('button');
-        btn.className = 'workflow-btn';
-        btn.textContent = `Calibrate ${tool.name} Precisely`;
-        btn.onclick = () => startPrecisionCalibration(tool.id);
-        precisionDiv.appendChild(btn);
-    });
-}
+
+
+
+
+
+
+
 
 function selectTool() {
     const toolId = document.getElementById('currentTool').value;
@@ -1682,65 +1655,35 @@ function getCurrentPosition() {
     });
 }
 
-function setCameraReference() {
-    const toolId = document.getElementById('currentTool').value;
-    if (toolId !== '0') {
-        alert('Please select Camera Tool (C0) first');
-        return;
+
+
+
+
+//For testing
+function testModal() {
+    const modal = document.getElementById('toolModal');
+    console.log('Modal element:', modal);
+    if (modal) {
+        modal.style.display = 'block';
+        console.log('Modal should be visible now');
+    } else {
+        console.log('Modal element not found!');
     }
-    
-    fetch('/api/printer/get_position')
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            cameraReference = {x: data.x, y: data.y, z: data.z};
-            document.getElementById('cameraRefStatus').textContent = `Set: X${data.x} Y${data.y} Z${data.z}`;
-            document.getElementById('cameraRefStatus').className = 'status-indicator set';
-            alert('Camera reference position recorded!');
-        }
-    });
 }
 
-function recordApproximatePosition(toolId) {
-    if (!cameraReference) {
-        alert('Please set camera reference position first');
-        return;
-    }
-    
-    fetch('/api/printer/get_position')
-    .then(response => response.json())
-    .then(data => {
-        if (data.status === 'success') {
-            const tool = tools.find(t => t.id === toolId);
-            tool.offsetX = (data.x - cameraReference.x).toFixed(1);
-            tool.offsetY = (data.y - cameraReference.y).toFixed(1);
-            tool.offsetZ = (data.z - cameraReference.z).toFixed(1);
-            renderToolList();
-            alert(`Approximate offset recorded for ${tool.name}`);
-        }
-    });
+//For testing
+function debugTools() {
+    console.log('Tools array:', tools);
+    console.log('Tools length:', tools.length);
+    console.log('Current tool value:', document.getElementById('currentTool').value);
 }
 
-function startPrecisionCalibration(toolId) {
-    const tool = tools.find(t => t.id === toolId);
-    alert(`1. Dispense material with ${tool.name}\\n2. Switch to camera tool (C0)\\n3. Click on dispensed material in image`);
-    window.precisionCalibrationMode = toolId;
-}
 
-function addNewTool() {
-    currentEditingTool = null;
-    document.getElementById('modalTitle').textContent = 'Add New Tool';
-    document.getElementById('toolName').value = '';
-    document.getElementById('toolId').value = tools.length;
-    document.getElementById('toolType').value = 'extruder';
-    document.getElementById('offsetX').value = '0';
-    document.getElementById('offsetY').value = '0';
-    document.getElementById('offsetZ').value = '0';
-    document.getElementById('preciseX').value = '0';
-    document.getElementById('preciseY').value = '0';
-    document.getElementById('preciseZ').value = '0';
-    document.getElementById('toolModal').style.display = 'block';
-}
+
+
+
+
+
 
 function editTool(toolId) {
     const tool = tools.find(t => t.id === toolId);
@@ -1768,6 +1711,8 @@ function editTool(toolId) {
     document.getElementById('toolModal').style.display = 'block';
 }
 
+
+// Fixed saveTool function with proper frontend update
 function saveTool() {
     const toolData = {
         id: parseInt(document.getElementById('toolId').value),
@@ -1781,6 +1726,12 @@ function saveTool() {
         preciseZ: parseFloat(document.getElementById('preciseZ').value) || 0
     };
     
+    // Validate required fields
+    if (!toolData.name || toolData.name.trim() === '') {
+        alert('Please enter a tool name');
+        return;
+    }
+    
     if (toolData.type === 'camera') {
         toolData.offsetX = 0;
         toolData.offsetY = 0;
@@ -1791,27 +1742,146 @@ function saveTool() {
     }
     
     if (currentEditingTool !== null) {
+        // Editing existing tool
         const index = tools.findIndex(t => t.id === currentEditingTool);
-        tools[index] = toolData;
+        if (index !== -1) {
+            tools[index] = toolData;
+            console.log('Updated existing tool:', toolData);
+        }
     } else {
-        tools.push(toolData);
+        // Adding new tool
+        const existingIndex = tools.findIndex(t => t.id === toolData.id);
+        if (existingIndex !== -1) {
+            // Replace existing tool with same ID
+            tools[existingIndex] = toolData;
+            console.log('Replaced tool with ID:', toolData.id);
+        } else {
+            // Add new tool
+            tools.push(toolData);
+            console.log('Added new tool:', toolData);
+        }
     }
     
-    renderToolList();
+    console.log('Current tools array:', tools);
+    
+    // Update the UI immediately
+    updateToolDropdown();
     closeToolModal();
     
+    // Save to backend
     fetch('/api/tools/save', {
         method: 'POST',
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify({tools: tools})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            console.log('Tools saved to backend successfully');
+            // Reload from backend to ensure sync
+            loadToolsFromBackend();
+        } else {
+            alert('Error saving tools: ' + data.message);
+            console.error('Backend save error:', data);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving tools:', error);
+        alert('Error saving tools: ' + error);
     });
 }
+
+
+
+
+// Enhanced loadToolsFromBackend function
+function loadToolsFromBackend() {
+    console.log('Loading tools from backend...');
+    
+    fetch('/api/tools/load')
+        .then(response => {
+            console.log('Backend response status:', response.status);
+            return response.json();
+        })
+        .then(data => {
+            console.log('Backend response data:', data);
+            
+            if (data.status === 'success') {
+                tools = data.tools || [];
+                cameraReference = data.camera_reference;
+                console.log('Tools loaded from backend:', tools);
+                updateToolDropdown();
+                // Update current tool dropdown
+                const currentToolSelect = document.getElementById('currentTool');
+                if (currentToolSelect) {
+                    const currentValue = currentToolSelect.value;
+                    currentToolSelect.innerHTML = '';
+                    
+                    tools.forEach(tool => {
+                        const option = document.createElement('option');
+                        option.value = tool.id;
+                        option.textContent = tool.name;
+                        currentToolSelect.appendChild(option);
+                    });
+                    
+                    // Restore previous selection if still valid
+                    if (Array.from(currentToolSelect.options).some(opt => opt.value === currentValue)) {
+                        currentToolSelect.value = currentValue;
+                    }
+                }
+            } else {
+                console.error('Failed to load tools:', data.message);
+                // Use default tools if backend fails
+                tools = [
+                    {id: 0, name: "Camera Tool (C0)", type: "camera", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                    {id: 1, name: "Extruder 1 (E0)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                    {id: 2, name: "Extruder 2 (E1)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                    {id: 3, name: "Liquid Dispenser (L0)", type: "dispenser", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0}
+                ];
+                updateToolDropdown();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading tools:', error);
+            // Use default tools if request fails
+            tools = [
+                {id: 0, name: "Camera Tool (C0)", type: "camera", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                {id: 1, name: "Extruder 1 (E0)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                {id: 2, name: "Extruder 2 (E1)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                {id: 3, name: "Liquid Dispenser (L0)", type: "dispenser", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0}
+            ];
+            updateToolDropdown();
+        });
+}
+
+
+
+// Test function to debug tool list
+function debugToolList() {
+    console.log('=== TOOL DEBUG INFO ===');
+    console.log('Current tools array:', tools);
+    console.log('Tools array length:', tools.length);
+    console.log('Tools array type:', typeof tools);
+    console.log('Is tools an array?', Array.isArray(tools));
+    
+    const toolListElement = document.getElementById('toolList');
+    console.log('Tool list element exists?', !!toolListElement);
+    console.log('Tool list innerHTML:', toolListElement ? toolListElement.innerHTML : 'N/A');
+    
+    tools.forEach((tool, index) => {
+        console.log(`Tool ${index}:`, tool);
+    });
+    console.log('=== END DEBUG INFO ===');
+}
+
+
+
 
 function deleteTool(toolId) {
     if (confirm('Are you sure you want to delete this tool?')) {
         tools = tools.filter(t => t.id !== toolId);
-        renderToolList();
-        
+        updateToolDropdown();
+
         fetch('/api/tools/save', {
             method: 'POST',
             headers: {'Content-Type': 'application/json'},
@@ -1834,7 +1904,7 @@ function closeToolModal() {
 
 // Initialize tool list when page loads
 document.addEventListener('DOMContentLoaded', function() {
-    renderToolList();
+    updateToolDropdown();
 });
 
 
@@ -2037,163 +2107,46 @@ document.addEventListener('DOMContentLoaded', function() {
 
 <!--Tool management html -->
 <!-- Tool Management Interface -->
-<!-- Tool Management Interface (Dropdown Version) -->
 <div class="tool-management-container">
     <button onclick="toggleToolManagement()" class="tool-management-toggle">
-        🔧 Tool Management & Calibration
+        🔧 Tool Management
         <span id="tool-arrow">▼</span>
     </button>
     
     <div id="tool-management-content" class="tool-management-content" style="display: none;">
-        <!-- Current Active Tool -->
-        <div class="current-tool-section">
-            <h4>Current Active Tool</h4>
-            <select id="currentTool" onchange="selectTool()">
-                <option value="0">Camera Tool (C0)</option>
-                <option value="1">Extruder 1 (E0)</option>
-                <option value="2">Extruder 2 (E1)</option>
-                <option value="3">Liquid Dispenser (L0)</option>
-            </select>
-            <button onclick="getCurrentPosition()" class="get-position-btn">Get Current Position</button>
-        </div>
-
-        <!-- Tool List -->
-        <div class="tool-list-section">
-            <h4>Registered Tools</h4>
-            <div id="toolList" class="tool-list">
-                <!-- Tools will be populated here -->
+        <!-- Tool Selection and Management -->
+        <div class="tool-selection-section">
+            <h4>Tool Management</h4>
+            <div class="tool-controls">
+                <label for="currentTool">Select Tool:</label>
+                <select id="currentTool">
+                    <option value="0">Camera Tool (C0)</option>
+                </select>
+                
+                <div class="tool-action-buttons">
+                    <button onclick="editSelectedTool()" class="edit-tool-btn">Edit</button>
+                    <button onclick="deleteSelectedTool()" class="delete-tool-btn">Delete</button>
+                    <button onclick="addNewTool()" class="add-tool-btn">+ Add New</button>
+                </div>
             </div>
-            <button onclick="addNewTool()" class="add-tool-btn">+ Add New Tool</button>
-        </div>
-
-        <!-- Calibration Workflow -->
-        <div class="calibration-workflow">
-            <h4>📐 Calibration Workflow</h4>
             
-            <div class="workflow-step">
-                <h5>Step 1: Set Camera Reference Point</h5>
-                <p>Center camera (C0) on fiducial target, then click:</p>
-                <button onclick="setCameraReference()" class="workflow-btn">Set Camera Reference</button>
-                <span id="cameraRefStatus" class="status-indicator">Not Set</span>
-                <p><em>Note: Camera tool (C0) has no offsets - it's the reference point for all other tools.</em></p>
-            </div>
-
-            <div class="workflow-step">
-                <h5>Step 2: Record Approximate Tool Positions</h5>
-                <p>For each tool (E0, E1, L0), manually move to reference location:</p>
-                <div id="approximateCalibration">
-                    <!-- Approximate calibration buttons will be populated here -->
-                </div>
-            </div>
-
-            <div class="workflow-step">
-                <h5>Step 3: Precision Calibration</h5>
-                <p>Dispense material with each tool, then use camera to find exact location:</p>
-                <div id="precisionCalibration">
-                    <!-- Precision calibration buttons will be populated here -->
-                </div>
+            <!-- Selected Tool Info Display -->
+            <div id="selectedToolInfo" class="selected-tool-info">
+                <p><strong>Selected:</strong> <span id="selectedToolName">Camera Tool (C0)</span></p>
+                <p><strong>Type:</strong> <span id="selectedToolType">camera</span></p>
+                <p><strong>Offsets:</strong> <span id="selectedToolOffsets">Reference Tool (No Offsets)</span></p>
             </div>
         </div>
     </div>
 </div>
 
-<!-- Tool Details Modal -->
-<div id="toolModal" class="modal" style="display: none;">
-    <div class="modal-content">
-        <span class="close" onclick="closeToolModal()">&times;</span>
-        <h3 id="modalTitle">Tool Configuration</h3>
-        
-        <div class="tool-form">
-            <label>Tool Name:</label>
-            <input type="text" id="toolName" placeholder="e.g., Extruder 1 (E0)">
-            
-            <label>Tool ID:</label>
-            <input type="number" id="toolId" placeholder="1" min="0" max="99">
-            
-            <label>Tool Type:</label>
-            <select id="toolType">
-                <option value="camera">Camera</option>
-                <option value="extruder">Extruder</option>
-                <option value="dispenser">Liquid Dispenser</option>
-                <option value="probe">Probe</option>
-                <option value="other">Other</option>
-            </select>
-            
-            <h4>Approximate Offsets (mm)</h4>
-            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
-                <em>Note: Camera Tool (C0) has no offsets - it's the reference point.</em>
-            </p>
-            <div class="coordinate-inputs">
-                <label>X Offset:</label>
-                <input type="number" id="offsetX" step="0.1" placeholder="0.0">
-                
-                <label>Y Offset:</label>
-                <input type="number" id="offsetY" step="0.1" placeholder="0.0">
-                
-                <label>Z Offset:</label>
-                <input type="number" id="offsetZ" step="0.1" placeholder="0.0">
-            </div>
-            
-            <h4>Precision Offsets (mm)</h4>
-            <p style="font-size: 12px; color: #666; margin-bottom: 10px;">
-                <em>Calculated automatically from camera clicks on dispensed material.</em>
-            </p>
-            <div class="coordinate-inputs">
-                <label>Precise X:</label>
-                <input type="number" id="preciseX" step="0.01" placeholder="0.00">
-                
-                <label>Precise Y:</label>
-                <input type="number" id="preciseY" step="0.01" placeholder="0.00">
-                
-                <label>Precise Z:</label>
-                <input type="number" id="preciseZ" step="0.01" placeholder="0.00">
-            </div>
-            
-            <div class="modal-buttons">
-                <button onclick="saveTool()" class="save-btn">Save Tool</button>
-                <button onclick="closeToolModal()" class="cancel-btn">Cancel</button>
-            </div>
-        </div>
-    </div>
-</div>
+
+
+
+
 
 <style>
-.tool-management-container {
-    margin: 10px 0;
-    border: 1px solid #ddd;
-    border-radius: 5px;
-    background-color: #f9f9f9;
-}
-
-.tool-management-toggle {
-    width: 100%;
-    padding: 12px 15px;
-    background-color: #f1f1f1;
-    border: none;
-    border-radius: 5px;
-    cursor: pointer;
-    font-size: 16px;
-    font-weight: bold;
-    text-align: left;
-    display: flex;
-    justify-content: space-between;
-    align-items: center;
-    color: #2c3e50 !important;
-    text-decoration: none;
-}
-
-.tool-management-toggle:hover {
-    background-color: #e8e8e8;
-    text-decoration: underline;
-}
-
-.tool-management-content {
-    padding: 20px;
-    background-color: white;
-    border-top: 1px solid #ddd;
-}
-
-.current-tool-section {
+.tool-selection-section {
     margin-bottom: 20px;
     padding: 15px;
     background-color: white;
@@ -2201,246 +2154,416 @@ document.addEventListener('DOMContentLoaded', function() {
     border: 1px solid #e0e0e0;
 }
 
-.current-tool-section select {
-    padding: 8px 12px;
-    margin-right: 10px;
-    border: 1px solid #ccc;
-    border-radius: 4px;
-    font-size: 14px;
-}
-
-.get-position-btn {
-    padding: 8px 16px;
-    background-color: #17a2b8;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-}
-
-.get-position-btn:hover {
-    background-color: #138496;
-}
-
-.tool-list {
-    margin: 10px 0;
-    max-height: 200px;
-    overflow-y: auto;
-}
-
-.tool-item {
+.tool-controls {
     display: flex;
-    justify-content: space-between;
-    align-items: center;
-    padding: 10px;
-    margin: 5px 0;
-    background-color: white;
-    border: 1px solid #e0e0e0;
-    border-radius: 4px;
+    flex-direction: column;
+    gap: 15px;
 }
 
-.tool-info {
-    flex-grow: 1;
-}
-
-.tool-name {
+.tool-controls label {
     font-weight: bold;
     color: #2c3e50;
 }
 
-.tool-details {
-    font-size: 12px;
-    color: #666;
-    margin-top: 2px;
+.tool-controls select {
+    padding: 8px 12px;
+    border: 1px solid #ccc;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 200px;
 }
 
-.tool-actions {
+.tool-action-buttons {
     display: flex;
-    gap: 5px;
+    gap: 10px;
+    flex-wrap: wrap;
 }
 
-.tool-actions button {
-    padding: 4px 8px;
+.tool-action-buttons button {
+    padding: 8px 16px;
     border: none;
-    border-radius: 3px;
+    border-radius: 4px;
     cursor: pointer;
-    font-size: 12px;
+    font-size: 14px;
+    font-weight: bold;
 }
 
-.edit-btn {
+.select-tool-btn {
+    background-color: #007bff;
+    color: white;
+}
+
+.select-tool-btn:hover {
+    background-color: #0056b3;
+}
+
+.edit-tool-btn {
     background-color: #ffc107;
     color: black;
 }
 
-.delete-btn {
+.edit-tool-btn:hover {
+    background-color: #e0a800;
+}
+
+.delete-tool-btn {
     background-color: #dc3545;
     color: white;
 }
 
+.delete-tool-btn:hover {
+    background-color: #c82333;
+}
+
 .add-tool-btn {
-    padding: 10px 20px;
     background-color: #28a745;
     color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    font-weight: bold;
 }
 
 .add-tool-btn:hover {
     background-color: #218838;
 }
 
-.workflow-step {
-    margin: 15px 0;
+.selected-tool-info {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.selected-tool-info p {
+    margin: 5px 0;
+}
+
+.selected-tool-info span {
+    font-family: monospace;
+    color: #495057;
+}
+.tool-selection-section {
+    margin-bottom: 20px;
     padding: 15px;
     background-color: white;
     border-radius: 5px;
-    border-left: 4px solid #007bff;
+    border: 1px solid #e0e0e0;
 }
 
-.workflow-step h5 {
-    margin-top: 0;
-    color: #2c3e50;
+.tool-controls {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
 }
 
-.workflow-btn {
-    padding: 8px 16px;
-    background-color: #007bff;
-    color: white;
-    border: none;
-    border-radius: 4px;
-    cursor: pointer;
-    margin-right: 10px;
-}
-
-.workflow-btn:hover {
-    background-color: #0056b3;
-}
-
-.status-indicator {
-    padding: 4px 8px;
-    border-radius: 12px;
-    font-size: 12px;
-    font-weight: bold;
-}
-
-.status-indicator.not-set {
-    background-color: #ffc107;
-    color: black;
-}
-
-.status-indicator.set {
-    background-color: #28a745;
-    color: white;
-}
-
-#tool-arrow {
-    transition: transform 0.3s ease;
-}
-
-.tool-arrow-up {
-    transform: rotate(180deg);
-}
-
-/* Modal Styles */
-.modal {
-    position: fixed;
-    z-index: 1000;
-    left: 0;
-    top: 0;
-    width: 100%;
-    height: 100%;
-    background-color: rgba(0,0,0,0.5);
-}
-
-.modal-content {
-    background-color: white;
-    margin: 5% auto;
-    padding: 20px;
-    border-radius: 8px;
-    width: 90%;
-    max-width: 500px;
-    max-height: 80vh;
-    overflow-y: auto;
-}
-
-.close {
-    color: #aaa;
-    float: right;
-    font-size: 28px;
-    font-weight: bold;
-    cursor: pointer;
-}
-
-.close:hover {
-    color: black;
-}
-
-.tool-form label {
-    display: block;
-    margin-top: 10px;
-    margin-bottom: 5px;
-    font-weight: bold;
-    color: #2c3e50;
-}
-
-.tool-form input, .tool-form select {
-    width: 100%;
-    padding: 8px 12px;
-    border: 1px solid #ddd;
-    border-radius: 4px;
-    font-size: 14px;
-    box-sizing: border-box;
-}
-
-.coordinate-inputs {
-    display: grid;
-    grid-template-columns: 1fr 2fr;
-    gap: 10px;
-    align-items: center;
-    margin: 10px 0;
-}
-
-.coordinate-inputs label {
-    margin: 0;
-}
-
-.coordinate-inputs input {
-    margin: 0;
-}
-
-.modal-buttons {
+.tool-action-buttons {
     display: flex;
     gap: 10px;
-    margin-top: 20px;
-    justify-content: flex-end;
+    flex-wrap: wrap;
 }
 
-.save-btn {
-    padding: 10px 20px;
-    background-color: #28a745;
-    color: white;
+.edit-tool-btn {
+    background-color: #ffc107;
+    color: black;
+    padding: 8px 16px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
 }
 
-.cancel-btn {
-    padding: 10px 20px;
-    background-color: #6c757d;
+.delete-tool-btn {
+    background-color: #dc3545;
     color: white;
+    padding: 8px 16px;
     border: none;
     border-radius: 4px;
     cursor: pointer;
+}
+
+.selected-tool-info {
+    margin-top: 15px;
+    padding: 10px;
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    font-size: 14px;
 }
 </style>
 
+<script>
+// Updated JavaScript functions for simplified tool management
+
+function editSelectedTool() {
+    const selectedId = parseInt(document.getElementById('currentTool').value);
+    const selectedTool = tools.find(t => t.id === selectedId);
+    
+    if (!selectedTool) {
+        alert('No tool selected');
+        return;
+    }
+    
+    currentEditingTool = selectedId;
+    document.getElementById('modalTitle').textContent = 'Edit Tool';
+    document.getElementById('toolName').value = selectedTool.name;
+    document.getElementById('toolId').value = selectedTool.id;
+    document.getElementById('toolType').value = selectedTool.type;
+    
+    const isCamera = selectedTool.type === 'camera';
+    document.getElementById('offsetX').value = isCamera ? '0' : selectedTool.offsetX;
+    document.getElementById('offsetY').value = isCamera ? '0' : selectedTool.offsetY;
+    document.getElementById('offsetZ').value = isCamera ? '0' : selectedTool.offsetZ;
+    document.getElementById('preciseX').value = isCamera ? '0' : selectedTool.preciseX;
+    document.getElementById('preciseY').value = isCamera ? '0' : selectedTool.preciseY;
+    document.getElementById('preciseZ').value = isCamera ? '0' : selectedTool.preciseZ;
+    
+    document.getElementById('offsetX').disabled = isCamera;
+    document.getElementById('offsetY').disabled = isCamera;
+    document.getElementById('offsetZ').disabled = isCamera;
+    document.getElementById('preciseX').disabled = isCamera;
+    document.getElementById('preciseY').disabled = isCamera;
+    document.getElementById('preciseZ').disabled = isCamera;
+    
+    document.getElementById('toolModal').style.display = 'block';
+}
+
+function addNewTool() {
+    currentEditingTool = null;
+    document.getElementById('modalTitle').textContent = 'Add New Tool';
+    document.getElementById('toolName').value = '';
+    
+    // Find next available ID
+    const existingIds = tools.map(t => t.id);
+    let nextId = 0;
+    while (existingIds.includes(nextId)) {
+        nextId++;
+    }
+    
+    document.getElementById('toolId').value = nextId;
+    document.getElementById('toolType').value = 'extruder';
+    document.getElementById('offsetX').value = '0';
+    document.getElementById('offsetY').value = '0';
+    document.getElementById('offsetZ').value = '0';
+    document.getElementById('preciseX').value = '0';
+    document.getElementById('preciseY').value = '0';
+    document.getElementById('preciseZ').value = '0';
+    
+    // Enable all inputs for new tools
+    document.getElementById('offsetX').disabled = false;
+    document.getElementById('offsetY').disabled = false;
+    document.getElementById('offsetZ').disabled = false;
+    document.getElementById('preciseX').disabled = false;
+    document.getElementById('preciseY').disabled = false;
+    document.getElementById('preciseZ').disabled = false;
+    
+    document.getElementById('toolModal').style.display = 'block';
+}
+
+
+function updateSelectedToolInfo() {
+    const currentToolSelect = document.getElementById('currentTool');
+    if (!currentToolSelect) {
+        console.error('currentTool select element not found');
+        return;
+    }
+    
+    const selectedId = parseInt(currentToolSelect.value);
+    const selectedTool = tools.find(t => t.id === selectedId);
+    
+    if (selectedTool) {
+        const nameElement = document.getElementById('selectedToolName');
+        const typeElement = document.getElementById('selectedToolType');
+        const offsetsElement = document.getElementById('selectedToolOffsets');
+        
+        if (nameElement) nameElement.textContent = selectedTool.name;
+        if (typeElement) typeElement.textContent = selectedTool.type;
+        
+        if (offsetsElement) {
+            if (selectedTool.type === 'camera') {
+                offsetsElement.textContent = 'Reference Tool (No Offsets)';
+            } else {
+                offsetsElement.textContent = 
+                    `X${selectedTool.offsetX} Y${selectedTool.offsetY} Z${selectedTool.offsetZ} | Precise: X${selectedTool.preciseX} Y${selectedTool.preciseY} Z${selectedTool.preciseZ}`;
+            }
+        }
+        
+        const deleteBtn = document.querySelector('.delete-tool-btn');
+        if (deleteBtn) {
+            deleteBtn.disabled = selectedTool.type === 'camera';
+            deleteBtn.style.opacity = selectedTool.type === 'camera' ? '0.5' : '1';
+        }
+        
+        // Auto-select tool
+        selectTool();
+    }
+}
+
+
+
+
+function deleteSelectedTool() {
+    const selectedId = parseInt(document.getElementById('currentTool').value);
+    const selectedTool = tools.find(t => t.id === selectedId);
+    
+    if (selectedTool && selectedTool.type === 'camera') {
+        alert('Cannot delete the camera tool - it is the reference tool.');
+        return;
+    }
+    
+    if (confirm(`Are you sure you want to delete "${selectedTool.name}"?`)) {
+        deleteTool(selectedId);
+    }
+}
+
+
+function updateToolDropdown() {
+    const currentToolSelect = document.getElementById('currentTool');
+    if (!currentToolSelect) return;
+    
+    const currentValue = currentToolSelect.value;
+    currentToolSelect.innerHTML = '';
+    
+    tools.forEach(tool => {
+        const option = document.createElement('option');
+        option.value = tool.id;
+        option.textContent = tool.name;
+        currentToolSelect.appendChild(option);
+    });
+    
+    if (Array.from(currentToolSelect.options).some(opt => opt.value === currentValue)) {
+        currentToolSelect.value = currentValue;
+    }
+    
+    updateSelectedToolInfo();
+    
+    currentToolSelect.onchange = function() {
+        updateSelectedToolInfo();
+    };
+}
 
 
 
 
 
+
+// Updated saveTool function
+function saveTool() {
+    const toolData = {
+        id: parseInt(document.getElementById('toolId').value),
+        name: document.getElementById('toolName').value,
+        type: document.getElementById('toolType').value,
+        offsetX: parseFloat(document.getElementById('offsetX').value) || 0,
+        offsetY: parseFloat(document.getElementById('offsetY').value) || 0,
+        offsetZ: parseFloat(document.getElementById('offsetZ').value) || 0,
+        preciseX: parseFloat(document.getElementById('preciseX').value) || 0,
+        preciseY: parseFloat(document.getElementById('preciseY').value) || 0,
+        preciseZ: parseFloat(document.getElementById('preciseZ').value) || 0
+    };
+    
+    // Validate required fields
+    if (!toolData.name || toolData.name.trim() === '') {
+        alert('Please enter a tool name');
+        return;
+    }
+    
+    if (toolData.type === 'camera') {
+        toolData.offsetX = 0;
+        toolData.offsetY = 0;
+        toolData.offsetZ = 0;
+        toolData.preciseX = 0;
+        toolData.preciseY = 0;
+        toolData.preciseZ = 0;
+    }
+    
+    if (currentEditingTool !== null) {
+        // Editing existing tool
+        const index = tools.findIndex(t => t.id === currentEditingTool);
+        if (index !== -1) {
+            tools[index] = toolData;
+        }
+    } else {
+        // Adding new tool
+        const existingIndex = tools.findIndex(t => t.id === toolData.id);
+        if (existingIndex !== -1) {
+            tools[existingIndex] = toolData;
+        } else {
+            tools.push(toolData);
+        }
+    }
+    
+    // Update dropdown and calibration buttons
+    updateToolDropdown();
+    closeToolModal();
+    
+    // Save to backend
+    fetch('/api/tools/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tools: tools})
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status === 'success') {
+            console.log('Tools saved successfully');
+        } else {
+            alert('Error saving tools: ' + data.message);
+        }
+    })
+    .catch(error => {
+        console.error('Error saving tools:', error);
+        alert('Error saving tools: ' + error);
+    });
+}
+
+// Updated deleteTool function
+function deleteTool(toolId) {
+    const tool = tools.find(t => t.id === toolId);
+    if (tool && tool.type === 'camera') {
+        alert('Cannot delete the camera tool - it is the reference tool.');
+        return;
+    }
+    
+    tools = tools.filter(t => t.id !== toolId);
+    updateToolDropdown();
+    
+    // Save to backend
+    fetch('/api/tools/save', {
+        method: 'POST',
+        headers: {'Content-Type': 'application/json'},
+        body: JSON.stringify({tools: tools})
+    });
+}
+
+// Updated loadToolsFromBackend function
+function loadToolsFromBackend() {
+    fetch('/api/tools/load')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                tools = data.tools || [];
+                cameraReference = data.camera_reference;
+                updateToolDropdown();
+            } else {
+                // Use default tools if backend fails
+                tools = [
+                    {id: 0, name: "Camera Tool (C0)", type: "camera", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                    {id: 1, name: "Extruder 1 (E0)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                    {id: 2, name: "Extruder 2 (E1)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                    {id: 3, name: "Liquid Dispenser (L0)", type: "dispenser", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0}
+                ];
+                updateToolDropdown();
+            }
+        })
+        .catch(error => {
+            console.error('Error loading tools:', error);
+            tools = [
+                {id: 0, name: "Camera Tool (C0)", type: "camera", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                {id: 1, name: "Extruder 1 (E0)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                {id: 2, name: "Extruder 2 (E1)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
+                {id: 3, name: "Liquid Dispenser (L0)", type: "dispenser", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0}
+            ];
+            updateToolDropdown();
+        });
+}
+</script>
 
 
 
@@ -2553,7 +2676,66 @@ function toggleTutorial() {
 
 
         </div>
-    </body>
+
+
+<!-- Tool Details Modal - ADD THIS if it's missing -->
+<div id="toolModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeToolModal()">&times;</span>
+        <h3 id="modalTitle">Tool Configuration</h3>
+        
+        <div class="tool-form">
+            <label>Tool Name:</label>
+            <input type="text" id="toolName" placeholder="e.g., Extruder 1 (E0)">
+            
+            <label>Tool ID:</label>
+            <input type="number" id="toolId" placeholder="1" min="0" max="99">
+            
+            <label>Tool Type:</label>
+            <select id="toolType">
+                <option value="camera">Camera</option>
+                <option value="extruder">Extruder</option>
+                <option value="dispenser">Liquid Dispenser</option>
+                <option value="probe">Probe</option>
+                <option value="other">Other</option>
+            </select>
+            
+            <h4>Approximate Offsets (mm)</h4>
+            <div class="coordinate-inputs">
+                <label>X Offset:</label>
+                <input type="number" id="offsetX" step="0.1" placeholder="0.0">
+                
+                <label>Y Offset:</label>
+                <input type="number" id="offsetY" step="0.1" placeholder="0.0">
+                
+                <label>Z Offset:</label>
+                <input type="number" id="offsetZ" step="0.1" placeholder="0.0">
+            </div>
+            
+            <h4>Precision Offsets (mm)</h4>
+            <div class="coordinate-inputs">
+                <label>Precise X:</label>
+                <input type="number" id="preciseX" step="0.01" placeholder="0.00">
+                
+                <label>Precise Y:</label>
+                <input type="number" id="preciseY" step="0.01" placeholder="0.00">
+                
+                <label>Precise Z:</label>
+                <input type="number" id="preciseZ" step="0.01" placeholder="0.00">
+            </div>
+            
+            <div class="modal-buttons">
+                <button onclick="saveTool()" class="save-btn">Save Tool</button>
+                <button onclick="closeToolModal()" class="cancel-btn">Cancel</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+
+
+   </body>
     </html>
     """
     return html
