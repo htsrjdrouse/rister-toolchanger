@@ -530,16 +530,20 @@ def load_tools_config():
             # Default configuration
             tools_config = {
                 "tools": [
-                    {"id": 0, "name": "Camera Tool (C0)", "type": "camera", "offsetX": 0, "offsetY": 0, "offsetZ": 0, "preciseX": 0, "preciseY": 0, "preciseZ": 0},
-                    {"id": 1, "name": "Extruder 1 (E0)", "type": "extruder", "offsetX": 0, "offsetY": 0, "offsetZ": 0, "preciseX": 0, "preciseY": 0, "preciseZ": 0},
-                    {"id": 2, "name": "Extruder 2 (E1)", "type": "extruder", "offsetX": 0, "offsetY": 0, "offsetZ": 0, "preciseX": 0, "preciseY": 0, "preciseZ": 0},
-                    {"id": 3, "name": "Liquid Dispenser (L0)", "type": "dispenser", "offsetX": 0, "offsetY": 0, "offsetZ": 0, "preciseX": 0, "preciseY": 0, "preciseZ": 0}
+                    {"id": 0, "name": "Camera Tool (C0)", "type": "camera", "fiducialX": 0, "fiducialY": 0, "fiducialZ": 0, "isReference": True},
+                    {"id": 1, "name": "Extruder 1 (E0)", "type": "extruder", "fiducialX": 0, "fiducialY": 0, "fiducialZ": 0, "isReference": False},
+                    {"id": 2, "name": "Extruder 2 (E1)", "type": "extruder", "fiducialX": 0, "fiducialY": 0, "fiducialZ": 0, "isReference": False},
+                    {"id": 3, "name": "Liquid Dispenser (L0)", "type": "dispenser", "fiducialX": 0, "fiducialY": 0, "fiducialZ": 0, "isReference": False}
                 ],
-                "camera_reference": None
+                "reference_tool_id": 0
             }
             save_tools_config()
     except Exception as e:
         logger.error(f"Error loading tools config: {e}")
+
+
+
+
 
 def save_tools_config():
     """Save tools configuration to file"""
@@ -549,6 +553,40 @@ def save_tools_config():
         logger.info("Tools configuration saved successfully")
     except Exception as e:
         logger.error(f"Error saving tools config: {e}")
+
+
+def calculate_tool_offsets(tool_id):
+    """Calculate automatic offsets for a tool based on the reference tool"""
+    try:
+        reference_tool = None
+        target_tool = None
+        
+        for tool in tools_config["tools"]:
+            if tool.get("isReference", False):
+                reference_tool = tool
+            if tool["id"] == tool_id:
+                target_tool = tool
+        
+        if not reference_tool or not target_tool:
+            return {"offsetX": 0, "offsetY": 0, "offsetZ": 0}
+        
+        # Calculate offsets: target - reference
+        offset_x = target_tool["fiducialX"] - reference_tool["fiducialX"]
+        offset_y = target_tool["fiducialY"] - reference_tool["fiducialY"]
+        offset_z = target_tool["fiducialZ"] - reference_tool["fiducialZ"]
+        
+        return {
+            "offsetX": round(offset_x, 3),
+            "offsetY": round(offset_y, 3),
+            "offsetZ": round(offset_z, 3)
+        }
+    except Exception as e:
+        logger.error(f"Error calculating tool offsets: {e}")
+        return {"offsetX": 0, "offsetY": 0, "offsetZ": 0}
+
+
+
+
 
 
 
@@ -658,6 +696,142 @@ def index():
                 justify-content: center;
                 flex-wrap: wrap;
             }
+
+
+.reference-checkbox-container {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin: 15px 0;
+    padding: 10px;
+    background-color: #e8f4fd;
+    border: 1px solid #bee5eb;
+    border-radius: 4px;
+}
+
+.reference-checkbox-container input[type="checkbox"] {
+    width: auto;
+    margin: 0;
+}
+
+.reference-checkbox-container label {
+    margin: 0;
+    font-weight: bold;
+    color: #0c5460;
+}
+
+.offset-display {
+    background-color: #f8f9fa;
+    border: 1px solid #dee2e6;
+    border-radius: 4px;
+    padding: 10px;
+    margin: 10px 0;
+    font-family: monospace;
+    font-size: 12px;
+}
+
+
+.coordinate-inputs {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    gap: 20px;
+    margin: 15px 0;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border: 1px solid #e9ecef;
+    border-radius: 8px;
+}
+
+.coordinate-inputs .input-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+}
+
+.coordinate-inputs label {
+    margin: 0;
+    font-weight: 600;
+    color: #495057;
+    font-size: 13px;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.coordinate-inputs input {
+    width: 100%;
+    padding: 10px 12px;
+    border: 2px solid #dee2e6;
+    border-radius: 6px;
+    font-size: 14px;
+    font-family: 'Courier New', monospace;
+    text-align: center;
+    background-color: white;
+    transition: all 0.2s ease;
+    box-sizing: border-box;
+}
+
+.coordinate-inputs input:focus {
+    outline: none;
+    border-color: #4CAF50;
+    box-shadow: 0 0 0 3px rgba(76, 175, 80, 0.1);
+    background-color: #fafafa;
+}
+
+.coordinate-inputs input:hover {
+    border-color: #adb5bd;
+}
+
+.tool-form h4 {
+    margin: 20px 0 10px 0;
+    color: #343a40;
+    font-size: 16px;
+    border-bottom: 2px solid #e9ecef;
+    padding-bottom: 5px;
+}
+
+.offset-display {
+    background: linear-gradient(135deg, #f8f9fa 0%, #e9ecef 100%);
+    border: 1px solid #dee2e6;
+    border-radius: 8px;
+    padding: 15px;
+    margin: 15px 0;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+    box-shadow: inset 0 1px 3px rgba(0,0,0,0.1);
+}
+
+.offset-display div {
+    margin: 5px 0;
+    padding: 3px 0;
+}
+
+.offset-display span {
+    font-weight: bold;
+    color: #28a745;
+}
+
+
+.modal-buttons {
+    margin-top: 20px;
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+}
+
+.save-btn {
+    background-color: #28a745;
+    color: white;
+}
+
+.cancel-btn {
+    background-color: #6c757d;
+    color: white;
+}
+
+
+
+
+
 
 
 .coordinate-overlay {
@@ -831,6 +1005,35 @@ def index():
             }
         </style>
         <script>
+
+
+
+function updateOffsetDisplay() {
+    const fiducialX = parseFloat(document.getElementById('fiducialX').value) || 0;
+    const fiducialY = parseFloat(document.getElementById('fiducialY').value) || 0;
+    const fiducialZ = parseFloat(document.getElementById('fiducialZ').value) || 0;
+    const isReference = document.getElementById('isReference').checked;
+    
+    if (isReference) {
+        document.getElementById('calcOffsetX').textContent = '0.000';
+        document.getElementById('calcOffsetY').textContent = '0.000';
+        document.getElementById('calcOffsetZ').textContent = '0.000';
+    } else {
+        // Find reference tool
+        const referenceTool = tools.find(t => t.isReference);
+        
+        if (referenceTool) {
+            const offsetX = fiducialX - (referenceTool.fiducialX || 0);
+            const offsetY = fiducialY - (referenceTool.fiducialY || 0);
+            const offsetZ = fiducialZ - (referenceTool.fiducialZ || 0);
+            
+            document.getElementById('calcOffsetX').textContent = offsetX.toFixed(3);
+            document.getElementById('calcOffsetY').textContent = offsetY.toFixed(3);
+            document.getElementById('calcOffsetZ').textContent = offsetZ.toFixed(3);
+        }
+    }
+}
+
 
 
 function hideCoordinateDisplay(imageElement) {
@@ -1115,6 +1318,17 @@ document.addEventListener('DOMContentLoaded', function() {
             }
         });
     }
+
+    // Add event listeners for fiducial inputs to update offset display
+    const fiducialInputs = ['fiducialX', 'fiducialY', 'fiducialZ', 'isReference'];
+    fiducialInputs.forEach(id => {
+        const element = document.getElementById(id);
+        if (element) {
+            element.addEventListener('input', updateOffsetDisplay);
+            element.addEventListener('change', updateOffsetDisplay);
+        }
+    });
+
 });
 
 
@@ -1681,35 +1895,28 @@ function debugTools() {
 
 
 
-
-
-
-
 function editTool(toolId) {
     const tool = tools.find(t => t.id === toolId);
+    if (!tool) return;
+    
     currentEditingTool = toolId;
     document.getElementById('modalTitle').textContent = 'Edit Tool';
     document.getElementById('toolName').value = tool.name;
     document.getElementById('toolId').value = tool.id;
     document.getElementById('toolType').value = tool.type;
+    document.getElementById('isReference').checked = tool.isReference || false;
     
-    const isCamera = tool.type === 'camera';
-    document.getElementById('offsetX').value = isCamera ? '0' : tool.offsetX;
-    document.getElementById('offsetY').value = isCamera ? '0' : tool.offsetY;
-    document.getElementById('offsetZ').value = isCamera ? '0' : tool.offsetZ;
-    document.getElementById('preciseX').value = isCamera ? '0' : tool.preciseX;
-    document.getElementById('preciseY').value = isCamera ? '0' : tool.preciseY;
-    document.getElementById('preciseZ').value = isCamera ? '0' : tool.preciseZ;
+    document.getElementById('fiducialX').value = tool.fiducialX || 0;
+    document.getElementById('fiducialY').value = tool.fiducialY || 0;
+    document.getElementById('fiducialZ').value = tool.fiducialZ || 0;
     
-    document.getElementById('offsetX').disabled = isCamera;
-    document.getElementById('offsetY').disabled = isCamera;
-    document.getElementById('offsetZ').disabled = isCamera;
-    document.getElementById('preciseX').disabled = isCamera;
-    document.getElementById('preciseY').disabled = isCamera;
-    document.getElementById('preciseZ').disabled = isCamera;
-    
+    updateOffsetDisplay();
     document.getElementById('toolModal').style.display = 'block';
 }
+
+
+
+
 
 
 // Fixed saveTool function with proper frontend update
@@ -1718,12 +1925,10 @@ function saveTool() {
         id: parseInt(document.getElementById('toolId').value),
         name: document.getElementById('toolName').value,
         type: document.getElementById('toolType').value,
-        offsetX: parseFloat(document.getElementById('offsetX').value) || 0,
-        offsetY: parseFloat(document.getElementById('offsetY').value) || 0,
-        offsetZ: parseFloat(document.getElementById('offsetZ').value) || 0,
-        preciseX: parseFloat(document.getElementById('preciseX').value) || 0,
-        preciseY: parseFloat(document.getElementById('preciseY').value) || 0,
-        preciseZ: parseFloat(document.getElementById('preciseZ').value) || 0
+        fiducialX: parseFloat(document.getElementById('fiducialX').value) || 0,
+        fiducialY: parseFloat(document.getElementById('fiducialY').value) || 0,
+        fiducialZ: parseFloat(document.getElementById('fiducialZ').value) || 0,
+        isReference: document.getElementById('isReference').checked
     };
     
     // Validate required fields
@@ -1732,39 +1937,40 @@ function saveTool() {
         return;
     }
     
-    if (toolData.type === 'camera') {
-        toolData.offsetX = 0;
-        toolData.offsetY = 0;
-        toolData.offsetZ = 0;
-        toolData.preciseX = 0;
-        toolData.preciseY = 0;
-        toolData.preciseZ = 0;
+    // Enforce single reference tool rule
+    if (toolData.isReference) {
+        // Check if another tool is already the reference
+        const existingReference = tools.find(t => t.isReference && t.id !== toolData.id);
+        if (existingReference) {
+            const confirmChange = confirm(`"${existingReference.name}" is currently the reference tool. Do you want to make "${toolData.name}" the new reference tool instead?`);
+            if (!confirmChange) {
+                return; // User cancelled, don't save
+            }
+        }
+        
+        // Unset all other reference tools
+        tools.forEach(tool => {
+            if (tool.id !== toolData.id) {
+                tool.isReference = false;
+            }
+        });
     }
     
+    // Update tools array
     if (currentEditingTool !== null) {
-        // Editing existing tool
         const index = tools.findIndex(t => t.id === currentEditingTool);
         if (index !== -1) {
             tools[index] = toolData;
-            console.log('Updated existing tool:', toolData);
         }
     } else {
-        // Adding new tool
         const existingIndex = tools.findIndex(t => t.id === toolData.id);
         if (existingIndex !== -1) {
-            // Replace existing tool with same ID
             tools[existingIndex] = toolData;
-            console.log('Replaced tool with ID:', toolData.id);
         } else {
-            // Add new tool
             tools.push(toolData);
-            console.log('Added new tool:', toolData);
         }
     }
     
-    console.log('Current tools array:', tools);
-    
-    // Update the UI immediately
     updateToolDropdown();
     closeToolModal();
     
@@ -1777,12 +1983,10 @@ function saveTool() {
     .then(response => response.json())
     .then(data => {
         if (data.status === 'success') {
-            console.log('Tools saved to backend successfully');
-            // Reload from backend to ensure sync
+            console.log('Tools saved successfully');
             loadToolsFromBackend();
         } else {
             alert('Error saving tools: ' + data.message);
-            console.error('Backend save error:', data);
         }
     })
     .catch(error => {
@@ -1790,7 +1994,6 @@ function saveTool() {
         alert('Error saving tools: ' + error);
     });
 }
-
 
 
 
@@ -2294,35 +2497,7 @@ document.addEventListener('DOMContentLoaded', function() {
 
 function editSelectedTool() {
     const selectedId = parseInt(document.getElementById('currentTool').value);
-    const selectedTool = tools.find(t => t.id === selectedId);
-    
-    if (!selectedTool) {
-        alert('No tool selected');
-        return;
-    }
-    
-    currentEditingTool = selectedId;
-    document.getElementById('modalTitle').textContent = 'Edit Tool';
-    document.getElementById('toolName').value = selectedTool.name;
-    document.getElementById('toolId').value = selectedTool.id;
-    document.getElementById('toolType').value = selectedTool.type;
-    
-    const isCamera = selectedTool.type === 'camera';
-    document.getElementById('offsetX').value = isCamera ? '0' : selectedTool.offsetX;
-    document.getElementById('offsetY').value = isCamera ? '0' : selectedTool.offsetY;
-    document.getElementById('offsetZ').value = isCamera ? '0' : selectedTool.offsetZ;
-    document.getElementById('preciseX').value = isCamera ? '0' : selectedTool.preciseX;
-    document.getElementById('preciseY').value = isCamera ? '0' : selectedTool.preciseY;
-    document.getElementById('preciseZ').value = isCamera ? '0' : selectedTool.preciseZ;
-    
-    document.getElementById('offsetX').disabled = isCamera;
-    document.getElementById('offsetY').disabled = isCamera;
-    document.getElementById('offsetZ').disabled = isCamera;
-    document.getElementById('preciseX').disabled = isCamera;
-    document.getElementById('preciseY').disabled = isCamera;
-    document.getElementById('preciseZ').disabled = isCamera;
-    
-    document.getElementById('toolModal').style.display = 'block';
+    editTool(selectedId);
 }
 
 function addNewTool() {
@@ -2339,21 +2514,12 @@ function addNewTool() {
     
     document.getElementById('toolId').value = nextId;
     document.getElementById('toolType').value = 'extruder';
-    document.getElementById('offsetX').value = '0';
-    document.getElementById('offsetY').value = '0';
-    document.getElementById('offsetZ').value = '0';
-    document.getElementById('preciseX').value = '0';
-    document.getElementById('preciseY').value = '0';
-    document.getElementById('preciseZ').value = '0';
+    document.getElementById('isReference').checked = false;
+    document.getElementById('fiducialX').value = '0';
+    document.getElementById('fiducialY').value = '0';
+    document.getElementById('fiducialZ').value = '0';
     
-    // Enable all inputs for new tools
-    document.getElementById('offsetX').disabled = false;
-    document.getElementById('offsetY').disabled = false;
-    document.getElementById('offsetZ').disabled = false;
-    document.getElementById('preciseX').disabled = false;
-    document.getElementById('preciseY').disabled = false;
-    document.getElementById('preciseZ').disabled = false;
-    
+    updateOffsetDisplay();
     document.getElementById('toolModal').style.display = 'block';
 }
 
@@ -2440,22 +2606,15 @@ function updateToolDropdown() {
 }
 
 
-
-
-
-
-// Updated saveTool function
 function saveTool() {
     const toolData = {
         id: parseInt(document.getElementById('toolId').value),
         name: document.getElementById('toolName').value,
         type: document.getElementById('toolType').value,
-        offsetX: parseFloat(document.getElementById('offsetX').value) || 0,
-        offsetY: parseFloat(document.getElementById('offsetY').value) || 0,
-        offsetZ: parseFloat(document.getElementById('offsetZ').value) || 0,
-        preciseX: parseFloat(document.getElementById('preciseX').value) || 0,
-        preciseY: parseFloat(document.getElementById('preciseY').value) || 0,
-        preciseZ: parseFloat(document.getElementById('preciseZ').value) || 0
+        fiducialX: parseFloat(document.getElementById('fiducialX').value) || 0,
+        fiducialY: parseFloat(document.getElementById('fiducialY').value) || 0,
+        fiducialZ: parseFloat(document.getElementById('fiducialZ').value) || 0,
+        isReference: document.getElementById('isReference').checked
     };
     
     // Validate required fields
@@ -2464,23 +2623,13 @@ function saveTool() {
         return;
     }
     
-    if (toolData.type === 'camera') {
-        toolData.offsetX = 0;
-        toolData.offsetY = 0;
-        toolData.offsetZ = 0;
-        toolData.preciseX = 0;
-        toolData.preciseY = 0;
-        toolData.preciseZ = 0;
-    }
-    
+    // Update tools array
     if (currentEditingTool !== null) {
-        // Editing existing tool
         const index = tools.findIndex(t => t.id === currentEditingTool);
         if (index !== -1) {
             tools[index] = toolData;
         }
     } else {
-        // Adding new tool
         const existingIndex = tools.findIndex(t => t.id === toolData.id);
         if (existingIndex !== -1) {
             tools[existingIndex] = toolData;
@@ -2489,7 +2638,15 @@ function saveTool() {
         }
     }
     
-    // Update dropdown and calibration buttons
+    // If this tool is set as reference, unset all others
+    if (toolData.isReference) {
+        tools.forEach(tool => {
+            if (tool.id !== toolData.id) {
+                tool.isReference = false;
+            }
+        });
+    }
+    
     updateToolDropdown();
     closeToolModal();
     
@@ -2503,6 +2660,7 @@ function saveTool() {
     .then(data => {
         if (data.status === 'success') {
             console.log('Tools saved successfully');
+            loadToolsFromBackend(); // Reload to get calculated offsets
         } else {
             alert('Error saving tools: ' + data.message);
         }
@@ -2512,6 +2670,11 @@ function saveTool() {
         alert('Error saving tools: ' + error);
     });
 }
+
+
+
+
+
 
 // Updated deleteTool function
 function deleteTool(toolId) {
@@ -2679,6 +2842,7 @@ function toggleTutorial() {
 
 
 <!-- Tool Details Modal - ADD THIS if it's missing -->
+<!-- Tool Details Modal -->
 <div id="toolModal" class="modal" style="display: none;">
     <div class="modal-content">
         <span class="close" onclick="closeToolModal()">&times;</span>
@@ -2700,28 +2864,39 @@ function toggleTutorial() {
                 <option value="other">Other</option>
             </select>
             
-            <h4>Approximate Offsets (mm)</h4>
-            <div class="coordinate-inputs">
-                <label>X Offset:</label>
-                <input type="number" id="offsetX" step="0.1" placeholder="0.0">
-                
-                <label>Y Offset:</label>
-                <input type="number" id="offsetY" step="0.1" placeholder="0.0">
-                
-                <label>Z Offset:</label>
-                <input type="number" id="offsetZ" step="0.1" placeholder="0.0">
+            <div class="reference-checkbox-container">
+                <input type="checkbox" id="isReference">
+                <label for="isReference">Set as Reference Tool</label>
             </div>
             
-            <h4>Precision Offsets (mm)</h4>
-            <div class="coordinate-inputs">
-                <label>Precise X:</label>
-                <input type="number" id="preciseX" step="0.01" placeholder="0.00">
-                
-                <label>Precise Y:</label>
-                <input type="number" id="preciseY" step="0.01" placeholder="0.00">
-                
-                <label>Precise Z:</label>
-                <input type="number" id="preciseZ" step="0.01" placeholder="0.00">
+<h4>Fiducial Position (mm)</h4>
+<p style="font-size: 12px; color: #666; margin: 5px 0 15px 0;">Enter the exact position where this tool should be positioned for calibration/alignment.</p>
+
+<div class="coordinate-inputs">
+    <div class="input-group">
+        <label>Fiducial X</label>
+        <input type="number" id="fiducialX" step="0.001" placeholder="0.000">
+    </div>
+    
+    <div class="input-group">
+        <label>Fiducial Y</label>
+        <input type="number" id="fiducialY" step="0.001" placeholder="0.000">
+    </div>
+    
+    <div class="input-group">
+        <label>Fiducial Z</label>
+        <input type="number" id="fiducialZ" step="0.001" placeholder="0.000">
+    </div>
+</div>
+
+
+
+
+            <h4>Calculated Offsets</h4>
+            <div id="offsetDisplay" class="offset-display">
+                <div>X Offset: <span id="calcOffsetX">0.000</span>mm</div>
+                <div>Y Offset: <span id="calcOffsetY">0.000</span>mm</div>
+                <div>Z Offset: <span id="calcOffsetZ">0.000</span>mm</div>
             </div>
             
             <div class="modal-buttons">
@@ -2731,7 +2906,6 @@ function toggleTutorial() {
         </div>
     </div>
 </div>
-
 
 
 
