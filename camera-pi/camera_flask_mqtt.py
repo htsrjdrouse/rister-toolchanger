@@ -1007,7 +1007,6 @@ def index():
         <script>
 
 
-
 function updateOffsetDisplay() {
     const fiducialX = parseFloat(document.getElementById('fiducialX').value) || 0;
     const fiducialY = parseFloat(document.getElementById('fiducialY').value) || 0;
@@ -1019,8 +1018,8 @@ function updateOffsetDisplay() {
         document.getElementById('calcOffsetY').textContent = '0.000';
         document.getElementById('calcOffsetZ').textContent = '0.000';
     } else {
-        // Find reference tool
-        const referenceTool = tools.find(t => t.isReference);
+        // Find reference tool from the current tools array
+        const referenceTool = tools.find(t => t.isReference === true);
         
         if (referenceTool) {
             const offsetX = fiducialX - (referenceTool.fiducialX || 0);
@@ -1030,9 +1029,15 @@ function updateOffsetDisplay() {
             document.getElementById('calcOffsetX').textContent = offsetX.toFixed(3);
             document.getElementById('calcOffsetY').textContent = offsetY.toFixed(3);
             document.getElementById('calcOffsetZ').textContent = offsetZ.toFixed(3);
+        } else {
+            document.getElementById('calcOffsetX').textContent = 'No Reference';
+            document.getElementById('calcOffsetY').textContent = 'No Reference';
+            document.getElementById('calcOffsetZ').textContent = 'No Reference';
         }
     }
 }
+
+
 
 
 
@@ -2523,7 +2528,6 @@ function addNewTool() {
     document.getElementById('toolModal').style.display = 'block';
 }
 
-
 function updateSelectedToolInfo() {
     const currentToolSelect = document.getElementById('currentTool');
     if (!currentToolSelect) {
@@ -2543,25 +2547,31 @@ function updateSelectedToolInfo() {
         if (typeElement) typeElement.textContent = selectedTool.type;
         
         if (offsetsElement) {
-            if (selectedTool.type === 'camera') {
+            if (selectedTool.isReference) {
                 offsetsElement.textContent = 'Reference Tool (No Offsets)';
             } else {
-                offsetsElement.textContent = 
-                    `X${selectedTool.offsetX} Y${selectedTool.offsetY} Z${selectedTool.offsetZ} | Precise: X${selectedTool.preciseX} Y${selectedTool.preciseY} Z${selectedTool.preciseZ}`;
+                // Calculate offsets for display
+                const referenceTool = tools.find(t => t.isReference === true);
+                if (referenceTool) {
+                    const offsetX = (selectedTool.fiducialX || 0) - (referenceTool.fiducialX || 0);
+                    const offsetY = (selectedTool.fiducialY || 0) - (referenceTool.fiducialY || 0);
+                    const offsetZ = (selectedTool.fiducialZ || 0) - (referenceTool.fiducialZ || 0);
+                    
+                    offsetsElement.textContent = 
+                        `X${offsetX.toFixed(3)} Y${offsetY.toFixed(3)} Z${offsetZ.toFixed(3)}`;
+                } else {
+                    offsetsElement.textContent = 'No Reference Tool Set';
+                }
             }
         }
         
         const deleteBtn = document.querySelector('.delete-tool-btn');
         if (deleteBtn) {
-            deleteBtn.disabled = selectedTool.type === 'camera';
-            deleteBtn.style.opacity = selectedTool.type === 'camera' ? '0.5' : '1';
+            deleteBtn.disabled = selectedTool.isReference;
+            deleteBtn.style.opacity = selectedTool.isReference ? '0.5' : '1';
         }
-        
-        // Auto-select tool
-        selectTool();
     }
 }
-
 
 
 
@@ -2696,36 +2706,42 @@ function deleteTool(toolId) {
 }
 
 // Updated loadToolsFromBackend function
+
+
 function loadToolsFromBackend() {
     fetch('/api/tools/load')
         .then(response => response.json())
         .then(data => {
             if (data.status === 'success') {
                 tools = data.tools || [];
-                cameraReference = data.camera_reference;
                 updateToolDropdown();
             } else {
-                // Use default tools if backend fails
+                // Use default tools with fiducial structure if backend fails
                 tools = [
-                    {id: 0, name: "Camera Tool (C0)", type: "camera", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
-                    {id: 1, name: "Extruder 1 (E0)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
-                    {id: 2, name: "Extruder 2 (E1)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
-                    {id: 3, name: "Liquid Dispenser (L0)", type: "dispenser", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0}
+                    {id: 0, name: "Camera Tool (C0)", type: "camera", fiducialX: 0, fiducialY: 0, fiducialZ: 0, isReference: true},
+                    {id: 1, name: "Extruder 1 (E0)", type: "extruder", fiducialX: 0, fiducialY: 0, fiducialZ: 0, isReference: false},
+                    {id: 2, name: "Extruder 2 (E1)", type: "extruder", fiducialX: 0, fiducialY: 0, fiducialZ: 0, isReference: false},
+                    {id: 3, name: "Liquid Dispenser (L0)", type: "dispenser", fiducialX: 0, fiducialY: 0, fiducialZ: 0, isReference: false}
                 ];
                 updateToolDropdown();
             }
         })
         .catch(error => {
             console.error('Error loading tools:', error);
+            // Use default tools with fiducial structure if request fails
             tools = [
-                {id: 0, name: "Camera Tool (C0)", type: "camera", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
-                {id: 1, name: "Extruder 1 (E0)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
-                {id: 2, name: "Extruder 2 (E1)", type: "extruder", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0},
-                {id: 3, name: "Liquid Dispenser (L0)", type: "dispenser", offsetX: 0, offsetY: 0, offsetZ: 0, preciseX: 0, preciseY: 0, preciseZ: 0}
+                {id: 0, name: "Camera Tool (C0)", type: "camera", fiducialX: 0, fiducialY: 0, fiducialZ: 0, isReference: true},
+                {id: 1, name: "Extruder 1 (E0)", type: "extruder", fiducialX: 0, fiducialY: 0, fiducialZ: 0, isReference: false},
+                {id: 2, name: "Extruder 2 (E1)", type: "extruder", fiducialX: 0, fiducialY: 0, fiducialZ: 0, isReference: false},
+                {id: 3, name: "Liquid Dispenser (L0)", type: "dispenser", fiducialX: 0, fiducialY: 0, fiducialZ: 0, isReference: false}
             ];
             updateToolDropdown();
         });
 }
+
+
+
+
 </script>
 
 
