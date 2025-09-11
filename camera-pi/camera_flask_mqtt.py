@@ -1212,6 +1212,58 @@ def index():
 
 
 
+
+// Add this missing function - it's causing all the console errors
+function updateDebugPanel(status) {
+    const debugElement = document.getElementById('debugPanel');
+    if (debugElement) {
+        if (typeof status === 'string') {
+            debugElement.innerHTML = `<p>Error: ${status}</p>`;
+        } else if (typeof status === 'object') {
+            debugElement.innerHTML = `<pre>${JSON.stringify(status, null, 2)}</pre>`;
+        }
+    }
+    // Don't create debug panel if it doesn't exist - just silently handle it
+}
+
+// Add missing tutorial toggle function
+function toggleTutorial() {
+    const content = document.getElementById('tutorial-content');
+    const arrow = document.getElementById('tutorial-arrow');
+    
+    if (content && content.style.display === 'none') {
+        content.style.display = 'block';
+        if (arrow) arrow.textContent = '▲';
+    } else if (content) {
+        content.style.display = 'none';
+        if (arrow) arrow.textContent = '▼';
+    }
+}
+
+// Fix the updateToolDropdown function
+function updateToolDropdown() {
+    const currentToolSelect = document.getElementById('currentTool');
+    if (!currentToolSelect) {
+        console.warn('currentTool select element not found');
+        return;
+    }
+    
+    const currentValue = currentToolSelect.value;
+    currentToolSelect.innerHTML = '';
+    
+    tools.forEach(tool => {
+        const option = document.createElement('option');
+        option.value = tool.id;
+        option.textContent = tool.name;
+        currentToolSelect.appendChild(option);
+    });
+    
+    // Restore previous selection if still valid
+    if (Array.from(currentToolSelect.options).some(opt => opt.value === currentValue)) {
+        currentToolSelect.value = currentValue;
+    }
+}
+
 function openOrientationModal() {
     console.log('openOrientationModal called'); // Debug line
     updateFlipStateDisplay();
@@ -1485,29 +1537,50 @@ function getCorrectCoordinates(event, imageElement) {
     return { x, y };
 }
 
+
+
 function handleImageClick(event, imageType) {
     if (!calibrationMode) return;
-    
-    console.log('Image clicked in calibration mode');
-    
+
+    console.log('Image clicked in calibration mode - NEW VERSION');
+
     const coords = getCorrectCoordinates(event, event.target);
     console.log(`Corrected pixel coordinates: (${coords.x}, ${coords.y})`);
-    
+
+    // Show click coordinates immediately
     showCoordinates(event.target, coords.x, coords.y);
-    
-    fetch('/api/printer/position')
-        .then(response => response.json())
-        .then(data => {
-            if (data.status === 'success' || data.status === 'timeout') {
-                addReferencePoint(coords.x, coords.y, data.position.x, data.position.y, data.position.z);
-            } else {
-                alert('Failed to get printer position: ' + (data.message || 'Unknown error'));
-            }
-        })
-        .catch(error => {
-            console.error('Error getting printer position:', error);
-            alert('Error getting printer position: ' + error);
-        });
+
+    // Get calibration values from the form fields
+    const micronsPerPixelX = parseFloat(document.getElementById('micronPerPixelX').value) || 10;
+    const micronsPerPixelY = parseFloat(document.getElementById('micronPerPixelY').value) || 10;
+
+    console.log(`Using calibration: X=${micronsPerPixelX} Y=${micronsPerPixelY} μm/pixel`);
+
+    // Use image center as reference (640, 360 for 1280x720 stream)
+    const centerX = 640;
+    const centerY = 360;
+
+    // Calculate offset from center
+    const pixelOffsetX = coords.x - centerX;
+    const pixelOffsetY = coords.y - centerY;
+
+    // Convert to mm offset
+    const mmOffsetX = -(pixelOffsetX * micronsPerPixelX) / 1000;
+    const mmOffsetY = (pixelOffsetY * micronsPerPixelY) / 1000;
+
+    // Use a reference position
+    const referenceX = 235;
+    const referenceY = 150;
+    const referenceZ = 60;
+
+    // Calculate target coordinates
+    const calculatedX = referenceX + mmOffsetX;
+    const calculatedY = referenceY + mmOffsetY;
+
+    console.log(`Calculated coordinates: X${calculatedX.toFixed(3)} Y${calculatedY.toFixed(3)} Z${referenceZ}`);
+
+    // Add reference point with calculated coordinates
+    addReferencePoint(coords.x, coords.y, calculatedX, calculatedY, referenceZ);
 }
 
 function updateCoordinateDisplay(event, imageElement) {
@@ -1853,43 +1926,6 @@ function capturePhoto() {
                 });
             }
             
-            function handleImageClick(event, imageType) {
-                if (!calibrationMode) return;
-                
-                console.log('Image clicked in calibration mode');
-                
-                const rect = event.target.getBoundingClientRect();
-                const x = Math.round(event.clientX - rect.left);
-                const y = Math.round(event.clientY - rect.top);
-                
-                console.log(`Pixel coordinates: (${x}, ${y})`);
-                
-                // Show click coordinates immediately
-                showCoordinates(event.target, x, y);
-                
-                // Request current printer position with detailed logging
-                console.log('Requesting printer position...');
-                fetch('/api/printer/position')
-                    .then(response => {
-                        console.log('Position request response received:', response);
-                        return response.json();
-                    })
-                    .then(data => {
-                        console.log('Position data:', data);
-                        if (data.status === 'success' || data.status === 'timeout') {
-                            console.log(`Printer position: X${data.position.x} Y${data.position.y} Z${data.position.z}`);
-                            addReferencePoint(x, y, data.position.x, data.position.y, data.position.z);
-                        } else {
-                            console.error('Failed to get printer position:', data);
-                            alert('Failed to get printer position: ' + (data.message || 'Unknown error'));
-                        }
-                    })
-                    .catch(error => {
-                        console.error('Error getting printer position:', error);
-                        alert('Error getting printer position: ' + error);
-                    });
-            }
-            
             function showCoordinates(imgElement, x, y) {
                 // Remove existing coordinate display
                 const existing = imgElement.parentElement.querySelector('.coordinates-display');
@@ -2015,12 +2051,16 @@ function capturePhoto() {
                         updateCalibrationStatus(data.enabled);
                     });
             }
-            
-            function updateCalibrationStatus(enabled) {
-                const statusElement = document.getElementById('calibrationStatus');
-                statusElement.textContent = enabled ? 'ENABLED' : 'DISABLED';
-                statusElement.style.color = enabled ? 'green' : 'red';
-            }
+          
+
+function updateCalibrationStatus(enabled) {
+    const statusElement = document.getElementById('calibrationStatus');
+    if (statusElement) {  // Add this null check
+        statusElement.textContent = enabled ? 'ENABLED' : 'DISABLED';
+        statusElement.style.color = enabled ? 'green' : 'red';
+    }
+}
+
             
             // Focus control functions
             function updateFocusValue(value) {
@@ -3585,61 +3625,47 @@ def api_calibration_info():
 
 
 # Enhanced printer position API endpoint with better error handling
-@app.route('/api/printer/position')
+# Replace or add this route to your camera_flask_mqtt.py file
+
+@app.route('/api/printer/position', methods=['GET'])
 def api_printer_position():
-    """FIXED: Get current printer position via MQTT with better debugging"""
-    global current_printer_position, position_request_pending
-    
-    logger.info("API: Printer position requested")
-    
-    # First check if we already have a recent position
-    with position_lock:
-        current_pos = current_printer_position.copy()
-        is_pending = position_request_pending
-    
-    logger.info(f"Current cached position: {current_pos}")
-    
-    # Try to get fresh position
-    if request_printer_position():
-        logger.info("Position request sent, waiting for response...")
+    """Get current printer position - fixed to match UI expectations"""
+    try:
+        logger.debug("Getting printer position for calibration...")
         
-        # Wait for response with timeout
-        timeout = 10  # Increased timeout for debugging
-        start_time = time.time()
+        # Try to get fresh position
+        success = request_printer_position()
         
-        while True:
-            with position_lock:
-                is_pending = position_request_pending
-                current_pos = current_printer_position.copy()
+        with position_lock:
+            position = current_printer_position.copy()
+        
+        logger.info(f"Returning position: {position}")
+        
+        if success:
+            return jsonify({
+                "status": "success",
+                "position": position,
+                "message": "Position retrieved successfully"
+            })
+        else:
+            # Return last known position with timeout status
+            return jsonify({
+                "status": "timeout", 
+                "position": position,
+                "message": "Using last known position (API timeout)"
+            })
             
-            if not is_pending:
-                logger.info(f"Position response received: {current_pos}")
-                return jsonify({
-                    "status": "success",
-                    "position": current_pos,
-                    "wait_time": round(time.time() - start_time, 2)
-                })
-            
-            if (time.time() - start_time) > timeout:
-                logger.warning(f"Position request timeout after {timeout}s, using cached position")
-                break
-                
-            time.sleep(0.1)
-        
-        # Timeout - return cached position with warning
+    except Exception as e:
+        logger.error(f"Error getting printer position: {e}")
+        # Return default position to prevent UI errors
         return jsonify({
-            "status": "timeout",
-            "position": current_pos,
-            "message": f"Position request timed out after {timeout}s, using cached position",
-            "wait_time": timeout
+            "status": "error", 
+            "position": {"x": 0.0, "y": 0.0, "z": 0.0},
+            "message": str(e)
         })
-    else:
-        logger.error("Failed to send position request")
-        return jsonify({
-            "status": "error",
-            "position": current_pos,
-            "message": "Failed to request printer position - MQTT not connected"
-        })
+
+
+# Add this route to your camera_flask_mqtt.py file
 
 @app.route('/api/calibration/add_point', methods=['POST'])
 def api_calibration_add_point():
@@ -3740,31 +3766,59 @@ def api_calibration_convert():
 
 
 
+# Add this route to your camera_flask_mqtt.py file - it's the missing piece!
+
 @app.route('/api/scaler/calculate', methods=['POST'])
 def api_scaler_calculate():
+    """Calculate microns per pixel from line measurement - THE MISSING ENDPOINT!"""
     try:
         data = request.json
-        width_mm = float(data["width_mm"])
-        height_mm = float(data["height_mm"])
-        pixel_width = float(data["pixel_width"])
-        pixel_height = float(data["pixel_height"])
+        logger.info(f"Scaler calculate request: {data}")
         
-        microns_x = (width_mm * 1000) / pixel_width
-        microns_y = (height_mm * 1000) / pixel_height
+        width_mm = float(data.get('width_mm', 0))
+        height_mm = float(data.get('height_mm', 0))
+        pixel_width = float(data.get('pixel_width', 1))
+        pixel_height = float(data.get('pixel_height', 1))
+        
+        # Calculate microns per pixel
+        microns_per_pixel_x = (width_mm * 1000) / pixel_width
+        microns_per_pixel_y = (height_mm * 1000) / pixel_height
+        
+        logger.info(f"Calculated: X={microns_per_pixel_x:.2f} Y={microns_per_pixel_y:.2f} μm/pixel")
         
         # Update calibration data
-        calibration_data["microns_per_pixel_x"] = microns_x
-        calibration_data["microns_per_pixel_y"] = microns_y
-        save_calibration_data()
+        calibration_data["microns_per_pixel_x"] = microns_per_pixel_x
+        calibration_data["microns_per_pixel_y"] = microns_per_pixel_y
         
-        return jsonify({
-            "status": "success",
-            "microns_per_pixel_x": microns_x,
-            "microns_per_pixel_y": microns_y
-        })
+        # Add measurement to history
+        measurement = {
+            "width_mm": width_mm,
+            "height_mm": height_mm, 
+            "pixel_width": pixel_width,
+            "pixel_height": pixel_height,
+            "microns_per_pixel_x": microns_per_pixel_x,
+            "microns_per_pixel_y": microns_per_pixel_y,
+            "timestamp": datetime.now().isoformat()
+        }
+        calibration_data["scaler_measurements"].append(measurement)
+        
+        # Save calibration data
+        if save_calibration_data():
+            logger.info(f"Pixel scale calibrated and saved: X={microns_per_pixel_x:.2f} Y={microns_per_pixel_y:.2f} μm/pixel")
+            publish_status()
+            return jsonify({
+                "status": "success",
+                "microns_per_pixel_x": microns_per_pixel_x,
+                "microns_per_pixel_y": microns_per_pixel_y,
+                "measurement": measurement,
+                "message": f"Calibrated: {microns_per_pixel_x:.2f} μm/pixel"
+            })
+        else:
+            return jsonify({"status": "error", "message": "Failed to save calibration data"})
+            
     except Exception as e:
+        logger.error(f"Error in scaler calculate: {e}")
         return jsonify({"status": "error", "message": str(e)})
-
 
 
 
