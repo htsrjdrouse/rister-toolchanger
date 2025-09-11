@@ -43,7 +43,7 @@ STREAM_QUALITY = "medium"
 
 # Focus settings
 FOCUS_MODE = "auto"
-FOCUS_POSITION = 10
+FOCUS_POSITION = 13.5
 
 # MQTT Settings
 MQTT_BROKER = "192.168.1.89"
@@ -753,6 +753,33 @@ def index():
                 justify-content: center;
                 flex-wrap: wrap;
             }
+
+
+.focus-container {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    align-items: center;
+}
+
+.focus-input-group {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.focus-input-group input[type="number"] {
+    width: 80px;
+    padding: 5px;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+}
+
+.slider {
+    width: 300px;
+}
+
+
 
 
 
@@ -2080,38 +2107,36 @@ function updateCalibrationStatus(enabled) {
     }
 }
 
+           function updateFocusValue(value) {
+            document.getElementById('focusValue').textContent = value;
+            document.getElementById('focusInput').value = value;
+           } 
             
-            // Focus control functions
-            function updateFocusValue(value) {
-                document.getElementById('focusValue').textContent = value;
-            }
             
-            function setFocusAuto() {
-                fetch('/api/focus/auto')
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            document.getElementById('focusSlider').value = 10;
-                            document.getElementById('focusValue').textContent = 10;
-                            alert('Auto focus enabled');
-                        }
-                    });
-            }
             
-            function setFocusManual(position) {
-                fetch('/api/focus/manual/' + position)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.status === 'success') {
-                            const focusValue = document.getElementById('focusValue');
-                            const originalColor = focusValue.style.color;
-                            focusValue.style.color = '#4CAF50';
-                            setTimeout(() => {
-                                focusValue.style.color = originalColor;
-                            }, 500);
-                        }
-                    });
+           // Update the setFocusManual function to sync both controls
+function setFocusManual(position) {
+    fetch('/api/focus/manual/' + position)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Update both the slider and input to match
+                document.getElementById('focusSlider').value = position;
+                document.getElementById('focusInput').value = position;
+                document.getElementById('focusValue').textContent = position;
+                
+                // Visual feedback
+                const focusValue = document.getElementById('focusValue');
+                const originalColor = focusValue.style.color;
+                focusValue.style.color = '#4CAF50';
+                setTimeout(() => {
+                    focusValue.style.color = originalColor;
+                }, 500);
             }
+        });
+} 
+
+
 
 
 let measuringLine = false;
@@ -3395,20 +3420,26 @@ function toggleTutorial() {
 
 
 
+<div id="focusControls" class="controls" style="display: none;">
+    <div class="focus-container">
+        <label for="focusSlider">Manual Focus: <span id="focusValue">13.5</span></label>
+        <input type="range" min="0" max="30" value="13.5" step="0.1" class="slider" id="focusSlider" 
+               oninput="updateFocusValue(this.value)" onchange="setFocusManual(this.value)">
+        
+        <div class="focus-input-group">
+            <label for="focusInput">Focus Value:</label>
+            <input type="number" id="focusInput" min="0" max="30" step="0.1" value="13.5" 
+                   onchange="setFocusFromInput(this.value)">
+            <button onclick="setFocusFromInput(document.getElementById('focusInput').value)" class="focus">Set Focus</button>
+        </div>
+    </div>
+</div>
 
 
 
 
 
-            <div id="focusControls" class="controls" style="display: none;">
-                <button onclick="setFocusAuto()" class="focus">Auto Focus</button>
-                <div class="slider-container">
-                    <label for="focusSlider">Manual Focus: <span id="focusValue">10</span></label>
-                    <input type="range" min="0" max="30" value="10" step="0.5" class="slider" id="focusSlider" 
-                           oninput="updateFocusValue(this.value)" onchange="setFocusManual(this.value)">
-                </div>
-            </div>
-            
+
             <div id="calibrationPanel" class="calibration-panel" style="display: none;">
                 <h2>Image Mapper - Pixel-to-Printer Coordinate Mapping</h2>
                 <p><strong>Click on image features to record reference points for coordinate mapping.</strong></p>
