@@ -2444,23 +2444,48 @@ function deleteTool(toolId) {
     }
 }
 
+
 function closeToolModal() {
     document.getElementById('toolModal').style.display = 'none';
     currentEditingTool = null;
     
-    // Clear form fields
-    document.getElementById('toolName').value = '';
-    document.getElementById('toolId').value = '';
-    document.getElementById('toolType').value = 'extruder';
-    document.getElementById('isReference').checked = false;
-    document.getElementById('fiducialX').value = '0';
-    document.getElementById('fiducialY').value = '0';
-    document.getElementById('fiducialZ').value = '0';
+    // Clear basic form fields - check if they exist first
+    const basicFields = [
+        { id: 'toolName', value: '' },
+        { id: 'toolId', value: '' },
+        { id: 'toolType', value: 'extruder' }
+    ];
     
-    // Reset offset display
-    document.getElementById('calcOffsetX').textContent = '0.000';
-    document.getElementById('calcOffsetY').textContent = '0.000';
-    document.getElementById('calcOffsetZ').textContent = '0.000';
+    basicFields.forEach(field => {
+        const element = document.getElementById(field.id);
+        if (element) {
+            element.value = field.value;
+        }
+    });
+    
+    // Clear checkbox
+    const isReferenceElement = document.getElementById('isReference');
+    if (isReferenceElement) {
+        isReferenceElement.checked = false;
+    }
+    
+    // Clear position fields if they exist
+    const positionFields = ['programmedX', 'programmedY', 'programmedZ', 'actualX', 'actualY', 'zOffset', 'linearActuator'];
+    positionFields.forEach(fieldId => {
+        const element = document.getElementById(fieldId);
+        if (element) {
+            element.value = '0';
+        }
+    });
+    
+    // Reset offset display if elements exist
+    const offsetElements = ['calcOffsetX', 'calcOffsetY', 'calcOffsetZ'];
+    offsetElements.forEach(elementId => {
+        const element = document.getElementById(elementId);
+        if (element) {
+            element.textContent = '0.000';
+        }
+    });
 }
 
 
