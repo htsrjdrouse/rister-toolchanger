@@ -12,9 +12,11 @@ This repository contains the camera system for the Rister toolchanger, supportin
 
 ## Video Targeting Techniques
 
+The Rister camera system supports two fundamentally different approaches to achieving precision tool positioning. **Technique 1** treats the camera as a measuring instrument rather than a reference point - you designate one of your physical tools (like an extruder or probe) as the coordinate reference, then use the camera to measure where each tool actually ends up compared to where you programmed it to go, with the system calculating offsets as the difference between actual and programmed positions. **Technique 2** flips this paradigm by making the camera itself the coordinate reference through the use of printed fiducial markers - you place a calibration target on your print bed, position the camera over specific fiducial points to establish an absolute coordinate system, then simply program where each tool should be positioned relative to those fiducial markers, with the system automatically calculating how far each tool needs to move from the camera's established reference points. The first technique excels when you want to maintain traditional tool-based coordinate systems while adding camera-based verification, while the second technique creates a more absolute positioning system where the printed fiducial markers become your universal coordinate reference that all tools relate to through the camera's measurements.
+
 ### Technique 1: Non-Camera Reference Tool
 
-In this technique, a physical tool (typically an extruder or dispenser) serves as the reference point.
+In this technique, a physical tool (typically an extruder or probe) serves as the reference point.
 
 **How it works:**
 1. Set any non-camera tool as the reference tool
@@ -32,7 +34,7 @@ In this technique, the camera tool itself becomes the reference point using fidu
 
 **How it works:**
 1. Set the camera tool (C0) as the reference tool
-2. Print and place the calibration target on your print bed [calibration_target.pdf](calibration_target.pdf)
+2. Print and place the calibration target on your print bed
 3. For the camera tool, enter:
    - **Fiducial X, Y, Z**: Position of the fiducial marker when camera is centered on it
 4. For other tools, enter only:
@@ -50,7 +52,17 @@ Use either `calibration_target.pdf` or `calibration_target.svg`:
 - Verify the 50mm scale bar measures exactly 50mm with a ruler
 - Place the printed target on your print bed within camera view
 
-### 2. Access the Web Interface
+### 2. Start the Camera System
+
+```bash
+python3 start_dakash_service.py
+```
+
+This will launch:
+- The main camera controller (`camera_flask_mqtt.py`)
+- MQTT communication handler (`mqtt_unified_subscriber_fixed.py`)
+
+### 3. Access the Web Interface
 
 Navigate to `http://[your-pi-ip]:8080` to access the camera control interface.
 
@@ -85,5 +97,13 @@ The system automatically calculates tool offsets based on the selected technique
 - Raspberry Pi with camera module
 - Python 3 with Flask, MQTT, and camera libraries
 - MQTT broker for system communication
-- Printed calibration target for Technique 2, or a small device with small visable features
+- Printed calibration target for Technique 2
 
+## Network Configuration
+
+The system expects:
+- MQTT broker at `192.168.1.89:1883`
+- Klipper API at `192.168.1.89`
+- Camera system accessible via web interface on port 8080
+
+Update IP addresses in `camera_flask_mqtt.py` to match your network configuration.
