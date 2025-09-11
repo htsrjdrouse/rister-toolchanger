@@ -1627,7 +1627,6 @@ const positionInputs = ['programmedX', 'programmedY', 'programmedZ', 'actualX', 
             };
             
 
-
 let consecutiveErrors = 0;
 
 function checkStatus() {
@@ -1664,12 +1663,11 @@ function checkStatus() {
             consecutiveErrors++;
             // Only log every 10th error to reduce console spam
             if (consecutiveErrors % 10 === 1) {
-                console.error('Connection error (logging every 10th occurrence):', error);
+                console.error('Server connection lost (logging every 10th error)');
             }
             updateDebugPanel('Server connection lost');
         });
 }
-
 
 
             
