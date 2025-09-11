@@ -1162,38 +1162,62 @@ def index():
         <script>
 
 
-
 function updateFormFields() {
-    console.log('updateFormFields called');
-    
     const toolType = document.getElementById('toolType').value;
     const isReference = document.getElementById('isReference').checked;
-    
-    console.log('Tool type:', toolType, 'Is reference:', isReference);
     
     const programmedSection = document.getElementById('programmedSection');
     const actualSection = document.getElementById('actualSection');
     const dispenserSection = document.getElementById('dispenserSection');
     
-    console.log('Sections found:', {
-        programmed: !!programmedSection,
-        actual: !!actualSection,
-        dispenser: !!dispenserSection
-    });
-    
     // Show/hide sections based on tool type and reference status
-    if (toolType === 'camera') {
-        if (programmedSection) programmedSection.style.display = 'none';
-        if (actualSection) actualSection.style.display = 'none';
-        if (dispenserSection) dispenserSection.style.display = 'none';
+    if (toolType === 'camera' && !isReference) {
+        // Camera tools (not reference) don't need position inputs
+        programmedSection.style.display = 'none';
+        actualSection.style.display = 'none';
+        dispenserSection.style.display = 'none';
+    } else if (toolType === 'camera' && isReference) {
+        // Camera reference tools need fiducial positions (rename labels)
+        programmedSection.style.display = 'block';
+        actualSection.style.display = 'none';
+        dispenserSection.style.display = 'none';
+        
+        // Update labels for camera reference
+        const labels = programmedSection.querySelectorAll('label');
+        if (labels[0]) labels[0].textContent = 'Fiducial X';
+        if (labels[1]) labels[1].textContent = 'Fiducial Y';
+        if (labels[2]) labels[2].textContent = 'Fiducial Z';
     } else if (isReference) {
-        if (programmedSection) programmedSection.style.display = 'block';
-        if (actualSection) actualSection.style.display = 'none';
-        if (dispenserSection) dispenserSection.style.display = toolType === 'dispenser' ? 'block' : 'none';
+        // Non-camera reference tools only need programmed position
+        programmedSection.style.display = 'block';
+        actualSection.style.display = 'none';
+        dispenserSection.style.display = toolType === 'dispenser' ? 'block' : 'none';
+        
+        // Reset labels for non-camera tools
+        const labels = programmedSection.querySelectorAll('label');
+        if (labels[0]) labels[0].textContent = 'Programmed X';
+        if (labels[1]) labels[1].textContent = 'Programmed Y';
+        if (labels[2]) labels[2].textContent = 'Programmed Z';
     } else {
-        if (programmedSection) programmedSection.style.display = 'block';
-        if (actualSection) actualSection.style.display = 'block';
-        if (dispenserSection) dispenserSection.style.display = toolType === 'dispenser' ? 'block' : 'none';
+        // Non-reference tools need both programmed positions
+        programmedSection.style.display = 'block';
+        dispenserSection.style.display = toolType === 'dispenser' ? 'block' : 'none';
+        
+        // Check if camera is reference tool to determine if we show actual positions
+        const cameraReference = tools.find(t => t.type === 'camera' && t.isReference);
+        if (cameraReference) {
+            // Technique 2: Camera is reference, hide actual positions
+            actualSection.style.display = 'none';
+        } else {
+            // Technique 1: Show actual positions for offset measurement
+            actualSection.style.display = 'block';
+        }
+        
+        // Reset labels
+        const labels = programmedSection.querySelectorAll('label');
+        if (labels[0]) labels[0].textContent = 'Programmed X';
+        if (labels[1]) labels[1].textContent = 'Programmed Y';
+        if (labels[2]) labels[2].textContent = 'Programmed Z';
     }
     
     updateOffsetDisplay();
@@ -1201,53 +1225,17 @@ function updateFormFields() {
 
 
 function updateOffsetDisplay() {
-    // Check if we're using the new modal structure
     const toolTypeElement = document.getElementById('toolType');
     const isReferenceElement = document.getElementById('isReference');
     
     if (!toolTypeElement || !isReferenceElement) {
-        // Fall back to old fiducial system (keep existing logic)
-        const fiducialX = parseFloat(document.getElementById('fiducialX')?.value) || 0;
-        const fiducialY = parseFloat(document.getElementById('fiducialY')?.value) || 0;
-        const fiducialZ = parseFloat(document.getElementById('fiducialZ')?.value) || 0;
-        const isReference = document.getElementById('isReference')?.checked || false;
-        
-        if (isReference) {
-            document.getElementById('calcOffsetX').textContent = '0.000';
-            document.getElementById('calcOffsetY').textContent = '0.000';
-            document.getElementById('calcOffsetZ').textContent = '0.000';
-        } else {
-            const referenceTool = tools.find(t => t.isReference === true);
-            let offsetX, offsetY, offsetZ;
-            
-            if (referenceTool) {
-                offsetX = fiducialX - (referenceTool.fiducialX || 0);
-                offsetY = fiducialY - (referenceTool.fiducialY || 0);
-                offsetZ = fiducialZ - (referenceTool.fiducialZ || 0);
-            } else {
-                offsetX = fiducialX;
-                offsetY = fiducialY;
-                offsetZ = fiducialZ;
-            }
-            
-            document.getElementById('calcOffsetX').textContent = offsetX.toFixed(3);
-            document.getElementById('calcOffsetY').textContent = offsetY.toFixed(3);
-            document.getElementById('calcOffsetZ').textContent = offsetZ.toFixed(3);
-        }
+        // Fall back to old system logic
+        // (keep existing fallback code)
         return;
     }
     
-    // New system logic
     const toolType = toolTypeElement.value;
     const isReference = isReferenceElement.checked;
-    
-    // Camera tools have no offsets
-    if (toolType === 'camera') {
-        document.getElementById('calcOffsetX').textContent = 'N/A';
-        document.getElementById('calcOffsetY').textContent = 'N/A';
-        document.getElementById('calcOffsetZ').textContent = 'N/A';
-        return;
-    }
     
     // Reference tools have no offsets
     if (isReference) {
@@ -1257,47 +1245,65 @@ function updateOffsetDisplay() {
         return;
     }
     
-    // For other tools, calculate X/Y offsets = actual - programmed
-    // Z offset = reference_tool_programmed_Z - current_tool_programmed_Z + zOffset_input
-    const programmedXElement = document.getElementById('programmedX');
-    const programmedYElement = document.getElementById('programmedY');
-    const programmedZElement = document.getElementById('programmedZ');
-    const actualXElement = document.getElementById('actualX');
-    const actualYElement = document.getElementById('actualY');
-    const zOffsetElement = document.getElementById('zOffset');
+    // Check if camera is the reference tool (Technique 2)
+    const cameraReference = tools.find(t => t.type === 'camera' && t.isReference);
     
-    // Check if elements exist before accessing their values
-    if (!programmedXElement || !actualXElement) {
-        console.error('Required form elements not found');
-        return;
+    if (cameraReference) {
+        // Technique 2: Offsets = camera_fiducial - tool_programmed
+        const programmedXElement = document.getElementById('programmedX');
+        const programmedYElement = document.getElementById('programmedY');
+        const programmedZElement = document.getElementById('programmedZ');
+        
+        if (!programmedXElement) return;
+        
+        const programmedX = parseFloat(programmedXElement.value) || 0;
+        const programmedY = parseFloat(programmedYElement.value) || 0;
+        const programmedZ = parseFloat(programmedZElement.value) || 0;
+        
+        const cameraFiducialX = cameraReference.programmedX || cameraReference.fiducialX || 0;
+        const cameraFiducialY = cameraReference.programmedY || cameraReference.fiducialY || 0;
+        const cameraFiducialZ = cameraReference.programmedZ || cameraReference.fiducialZ || 0;
+        
+        const offsetX = programmedX - cameraFiducialX;
+        const offsetY = programmedY - cameraFiducialY;
+        const offsetZ = programmedZ - cameraFiducialZ;
+
+
+
+        document.getElementById('calcOffsetX').textContent = offsetX.toFixed(3);
+        document.getElementById('calcOffsetY').textContent = offsetY.toFixed(3);
+        document.getElementById('calcOffsetZ').textContent = offsetZ.toFixed(3);
+    } else {
+        // Technique 1: Use existing actual - programmed logic
+        const programmedXElement = document.getElementById('programmedX');
+        const actualXElement = document.getElementById('actualX');
+        
+        if (!programmedXElement || !actualXElement) return;
+        
+        const programmedX = parseFloat(programmedXElement.value) || 0;
+        const programmedY = parseFloat(document.getElementById('programmedY').value) || 0;
+        const programmedZ = parseFloat(document.getElementById('programmedZ').value) || 0;
+        
+        const actualX = parseFloat(actualXElement.value) || 0;
+        const actualY = parseFloat(document.getElementById('actualY').value) || 0;
+        const zOffsetInput = parseFloat(document.getElementById('zOffset')?.value) || 0;
+        
+        const offsetX = actualX - programmedX;
+        const offsetY = actualY - programmedY;
+        
+        const referenceTool = tools.find(t => t.isReference === true);
+        let offsetZ = zOffsetInput;
+        
+        if (referenceTool && (referenceTool.programmedZ !== undefined || referenceTool.fiducialZ !== undefined)) {
+            const referenceZ = referenceTool.programmedZ || referenceTool.fiducialZ || 0;
+            offsetZ += (referenceZ - programmedZ);
+        }
+        
+        document.getElementById('calcOffsetX').textContent = offsetX.toFixed(3);
+        document.getElementById('calcOffsetY').textContent = offsetY.toFixed(3);
+        document.getElementById('calcOffsetZ').textContent = offsetZ.toFixed(3);
     }
-    
-    const programmedX = parseFloat(programmedXElement.value) || 0;
-    const programmedY = parseFloat(programmedYElement.value) || 0;
-    const programmedZ = parseFloat(programmedZElement.value) || 0;
-    
-    const actualX = parseFloat(actualXElement.value) || 0;
-    const actualY = parseFloat(actualYElement.value) || 0;
-    const zOffsetInput = parseFloat(zOffsetElement?.value) || 0;
-    
-    // X and Y offsets are actual - programmed
-    const offsetX = actualX - programmedX;
-    const offsetY = actualY - programmedY;
-    
-    // Z offset calculation: reference_tool_Z - current_tool_Z + manual_Z_offset
-    const referenceTool = tools.find(t => t.isReference === true);
-    let offsetZ = zOffsetInput; // Start with manual Z offset
-    
-    if (referenceTool && referenceTool.programmedZ !== undefined) {
-        offsetZ += (referenceTool.programmedZ - programmedZ);
-    }
-    
-    document.getElementById('calcOffsetX').textContent = offsetX.toFixed(3);
-    document.getElementById('calcOffsetY').textContent = offsetY.toFixed(3);
-    document.getElementById('calcOffsetZ').textContent = offsetZ.toFixed(3);
 }
-
-
 
 
 
@@ -2232,8 +2238,20 @@ function editTool(toolId) {
 }
 
 
-
 function saveTool() {
+    console.log('saveTool called');
+    
+    // Check if required elements exist first
+    const requiredElements = ['toolId', 'toolName', 'toolType', 'isReference'];
+    for (let elementId of requiredElements) {
+        const element = document.getElementById(elementId);
+        if (!element) {
+            console.error(`Required element missing: ${elementId}`);
+            alert(`Form error: ${elementId} element not found`);
+            return;
+        }
+    }
+    
     const toolData = {
         id: parseInt(document.getElementById('toolId').value),
         name: document.getElementById('toolName').value,
@@ -2241,7 +2259,7 @@ function saveTool() {
         isReference: document.getElementById('isReference').checked
     };
     
-    console.log('Saving tool data:', toolData); // Debug
+    console.log('Basic tool data:', toolData);
     
     // Validate required fields
     if (!toolData.name || toolData.name.trim() === '') {
@@ -2249,47 +2267,79 @@ function saveTool() {
         return;
     }
     
-    // Add position data for non-camera tools
-    if (toolData.type !== 'camera') {
-        const programmedX = document.getElementById('programmedX');
-        const programmedY = document.getElementById('programmedY');
-        const programmedZ = document.getElementById('programmedZ');
+    // Handle camera tools differently
+    if (toolData.type === 'camera') {
+        if (toolData.isReference) {
+            // Camera reference tool - save fiducial positions
+            const programmedElements = ['programmedX', 'programmedY', 'programmedZ'];
+            for (let elementId of programmedElements) {
+                const element = document.getElementById(elementId);
+                if (element) {
+                    // For camera reference tools, save as both programmed and fiducial
+                    const value = parseFloat(element.value) || 0;
+                    toolData[elementId] = value;
+                    toolData[elementId.replace('programmed', 'fiducial')] = value;
+                    console.log(`Set camera ${elementId} and fiducial to:`, value);
+                } else {
+                    console.warn(`Element ${elementId} not found`);
+                }
+            }
+        }
+        // Non-reference camera tools don't need position data
+    } else {
+        // Non-camera tools
+        // Add programmed position data
+        const programmedElements = ['programmedX', 'programmedY', 'programmedZ'];
+        for (let elementId of programmedElements) {
+            const element = document.getElementById(elementId);
+            if (element) {
+                toolData[elementId] = parseFloat(element.value) || 0;
+                console.log(`Set ${elementId} to:`, toolData[elementId]);
+            } else {
+                console.warn(`Element ${elementId} not found`);
+            }
+        }
         
-        if (programmedX) toolData.programmedX = parseFloat(programmedX.value) || 0;
-        if (programmedY) toolData.programmedY = parseFloat(programmedY.value) || 0;
-        if (programmedZ) toolData.programmedZ = parseFloat(programmedZ.value) || 0;
-
-// Add actual position data for non-reference tools
-if (!toolData.isReference) {
-    const actualElements = ['actualX', 'actualY'];
-    for (let elementId of actualElements) {
-        const element = document.getElementById(elementId);
-        if (element) {
-            toolData[elementId] = parseFloat(element.value) || 0;
-            console.log(`Set ${elementId} to:`, toolData[elementId]);
-        } else {
-            console.warn(`Element ${elementId} not found`);
+        // Add actual position data for non-reference tools (Technique 1)
+        if (!toolData.isReference) {
+            // Check if camera is reference (Technique 2 vs Technique 1)
+            const cameraReference = tools.find(t => t.type === 'camera' && t.isReference);
+            
+            if (!cameraReference) {
+                // Technique 1: Save actual positions
+                const actualElements = ['actualX', 'actualY'];
+                for (let elementId of actualElements) {
+                    const element = document.getElementById(elementId);
+                    if (element) {
+                        toolData[elementId] = parseFloat(element.value) || 0;
+                        console.log(`Set ${elementId} to:`, toolData[elementId]);
+                    } else {
+                        console.warn(`Element ${elementId} not found`);
+                    }
+                }
+                
+                // Handle Z offset separately
+                const zOffsetElement = document.getElementById('zOffset');
+                if (zOffsetElement) {
+                    toolData.zOffset = parseFloat(zOffsetElement.value) || 0;
+                    console.log('Set zOffset to:', toolData.zOffset);
+                }
+            }
+            // If camera is reference (Technique 2), we don't save actual positions
+        }
+        
+        // Add dispenser-specific data
+        if (toolData.type === 'dispenser') {
+            const linearActuator = document.getElementById('linearActuator');
+            
+            if (linearActuator) {
+                toolData.linearActuator = parseFloat(linearActuator.value) || 0;
+                console.log('Set linearActuator to:', toolData.linearActuator);
+            }
         }
     }
     
-    // Handle Z offset separately
-    const zOffsetElement = document.getElementById('zOffset');
-    if (zOffsetElement) {
-        toolData.zOffset = parseFloat(zOffsetElement.value) || 0;
-        console.log('Set zOffset to:', toolData.zOffset);
-    }
-}
-
-    }
-    
-    // Add dispenser-specific data
-    if (toolData.type === 'dispenser') {
-        const linearActuator = document.getElementById('linearActuator');
-        if (linearActuator) {
-          toolData.linearActuator = parseFloat(linearActuator.value) || 0;
-          console.log('Set linearActuator to:', toolData.linearActuator);
-      }    
-    }
+    console.log('Final tool data before saving:', toolData);
     
     // If this tool is set as reference, unset all others
     if (toolData.isReference) {
@@ -2305,17 +2355,20 @@ if (!toolData.isReference) {
         const index = tools.findIndex(t => t.id === currentEditingTool);
         if (index !== -1) {
             tools[index] = toolData;
+            console.log('Updated existing tool at index:', index);
         }
     } else {
         const existingIndex = tools.findIndex(t => t.id === toolData.id);
         if (existingIndex !== -1) {
             tools[existingIndex] = toolData;
+            console.log('Replaced tool at index:', existingIndex);
         } else {
             tools.push(toolData);
+            console.log('Added new tool');
         }
     }
     
-    console.log('Updated tools array:', tools); // Debug
+    console.log('Updated tools array:', tools);
     
     updateToolDropdown();
     closeToolModal();
@@ -2341,7 +2394,6 @@ if (!toolData.isReference) {
         alert('Error saving tools: ' + error);
     });
 }
-
 
 
 
@@ -2918,53 +2970,74 @@ function updateSelectedToolInfo() {
         if (typeElement) typeElement.textContent = selectedTool.type;
         
         if (offsetsElement) {
-            if (selectedTool.type === 'camera') {
+            if (selectedTool.type === 'camera' && !selectedTool.isReference) {
                 offsetsElement.textContent = 'Imaging Tool (No Positions)';
             } else if (selectedTool.isReference) {
                 offsetsElement.textContent = 'Reference Tool (No Offsets)';
             } else {
-                // Calculate offsets using the new logic
-                const programmedX = selectedTool.programmedX || selectedTool.fiducialX || 0;
-                const programmedY = selectedTool.programmedY || selectedTool.fiducialY || 0;
-                const programmedZ = selectedTool.programmedZ || selectedTool.fiducialZ || 0;
+                // Check which technique we're using
+                const cameraReference = tools.find(t => t.type === 'camera' && t.isReference);
                 
-                const actualX = selectedTool.actualX || 0;
-                const actualY = selectedTool.actualY || 0;
-                const zOffsetInput = selectedTool.zOffset || 0;
-                
-                // X and Y offsets = actual - programmed
-                const offsetX = actualX - programmedX;
-                const offsetY = actualY - programmedY;
-                
-                // Z offset = reference_tool_Z - current_tool_Z + manual_Z_offset
-                const referenceTool = tools.find(t => t.isReference === true);
-                let offsetZ = zOffsetInput; // Start with manual Z offset
-                
-                if (referenceTool && (referenceTool.programmedZ !== undefined || referenceTool.fiducialZ !== undefined)) {
-                    const referenceZ = referenceTool.programmedZ || referenceTool.fiducialZ || 0;
-                    offsetZ += (referenceZ - programmedZ);
+                if (cameraReference) {
+                    // Technique 2: Camera is reference - offsets = tool_programmed - camera_fiducial
+                    const toolProgrammedX = selectedTool.programmedX || selectedTool.fiducialX || 0;
+                    const toolProgrammedY = selectedTool.programmedY || selectedTool.fiducialY || 0;
+                    const toolProgrammedZ = selectedTool.programmedZ || selectedTool.fiducialZ || 0;
+                    
+                    const cameraFiducialX = cameraReference.programmedX || cameraReference.fiducialX || 0;
+                    const cameraFiducialY = cameraReference.programmedY || cameraReference.fiducialY || 0;
+                    const cameraFiducialZ = cameraReference.programmedZ || cameraReference.fiducialZ || 0;
+                    
+                    // Corrected calculation: tool_programmed - camera_fiducial
+                    const offsetX = toolProgrammedX - cameraFiducialX;
+                    const offsetY = toolProgrammedY - cameraFiducialY;
+                    const offsetZ = toolProgrammedZ - cameraFiducialZ;
+                    
+                    offsetsElement.textContent = 
+                        `X${offsetX.toFixed(3)} Y${offsetY.toFixed(3)} Z${offsetZ.toFixed(3)}`;
+                } else {
+                    // Technique 1: Use actual - programmed logic
+                    const programmedX = selectedTool.programmedX || selectedTool.fiducialX || 0;
+                    const programmedY = selectedTool.programmedY || selectedTool.fiducialY || 0;
+                    const programmedZ = selectedTool.programmedZ || selectedTool.fiducialZ || 0;
+                    
+                    const actualX = selectedTool.actualX || 0;
+                    const actualY = selectedTool.actualY || 0;
+                    const zOffsetInput = selectedTool.zOffset || 0;
+                    
+                    const offsetX = actualX - programmedX;
+                    const offsetY = actualY - programmedY;
+                    
+                    const referenceTool = tools.find(t => t.isReference === true);
+                    let offsetZ = zOffsetInput;
+                    
+                    if (referenceTool && (referenceTool.programmedZ !== undefined || referenceTool.fiducialZ !== undefined)) {
+                        const referenceZ = referenceTool.programmedZ || referenceTool.fiducialZ || 0;
+                        offsetZ += (referenceZ - programmedZ);
+                    }
+                    
+                    offsetsElement.textContent = 
+                        `X${offsetX.toFixed(3)} Y${offsetY.toFixed(3)} Z${offsetZ.toFixed(3)}`;
                 }
-                
-                offsetsElement.textContent = 
-                    `X${offsetX.toFixed(3)} Y${offsetY.toFixed(3)} Z${offsetZ.toFixed(3)}`;
             }
         }
         
-        // Disable edit and delete buttons for camera tools
+        // Enable edit button for all tools
         const editBtn = document.querySelector('.edit-tool-btn');
         const deleteBtn = document.querySelector('.delete-tool-btn');
         
         if (editBtn) {
-            editBtn.disabled = selectedTool.type === 'camera';
-            editBtn.style.opacity = selectedTool.type === 'camera' ? '0.5' : '1';
+            editBtn.disabled = false;
+            editBtn.style.opacity = '1';
         }
         
         if (deleteBtn) {
-            deleteBtn.disabled = selectedTool.type === 'camera' || selectedTool.isReference;
-            deleteBtn.style.opacity = (selectedTool.type === 'camera' || selectedTool.isReference) ? '0.5' : '1';
+            deleteBtn.disabled = selectedTool.isReference;
+            deleteBtn.style.opacity = selectedTool.isReference ? '0.5' : '1';
         }
     }
 }
+
 
 
 function deleteSelectedTool() {
@@ -3009,18 +3082,7 @@ function updateToolDropdown() {
 
 
 function saveTool() {
-    console.log('saveTool called');
-    
-    // Check if required elements exist first
-    const requiredElements = ['toolId', 'toolName', 'toolType', 'isReference'];
-    for (let elementId of requiredElements) {
-        const element = document.getElementById(elementId);
-        if (!element) {
-            console.error(`Required element missing: ${elementId}`);
-            alert(`Form error: ${elementId} element not found`);
-            return;
-        }
-    }
+    console.log('=== SAVE TOOL DEBUG START ===');
     
     const toolData = {
         id: parseInt(document.getElementById('toolId').value),
@@ -3029,60 +3091,45 @@ function saveTool() {
         isReference: document.getElementById('isReference').checked
     };
     
-    console.log('Basic tool data:', toolData);
+    console.log('Tool type:', toolData.type);
+    console.log('Is reference:', toolData.isReference);
     
-    // Validate required fields
-    if (!toolData.name || toolData.name.trim() === '') {
-        alert('Please enter a tool name');
-        return;
-    }
-    
-    // Add position data for non-camera tools
-    if (toolData.type !== 'camera') {
-        // Check for programmed position elements
-        const programmedElements = ['programmedX', 'programmedY', 'programmedZ'];
-        for (let elementId of programmedElements) {
-            const element = document.getElementById(elementId);
-            if (element) {
-                toolData[elementId] = parseFloat(element.value) || 0;
-                console.log(`Set ${elementId} to:`, toolData[elementId]);
-            } else {
-                console.warn(`Element ${elementId} not found`);
-            }
+    if (toolData.type === 'camera' && toolData.isReference) {
+        console.log('Processing camera reference tool');
+        
+        // Check if form elements exist
+        const progX = document.getElementById('programmedX');
+        const progY = document.getElementById('programmedY');
+        const progZ = document.getElementById('programmedZ');
+        
+        console.log('Form elements found:', {
+            programmedX: !!progX,
+            programmedY: !!progY,
+            programmedZ: !!progZ
+        });
+        
+        if (progX) {
+            console.log('programmedX value:', progX.value);
+            toolData.programmedX = parseFloat(progX.value) || 0;
+            toolData.fiducialX = parseFloat(progX.value) || 0;
         }
         
-        // Add actual position data for non-reference tools
-        if (!toolData.isReference) {
-            const actualElements = ['actualX', 'actualY', 'actualZ'];
-            for (let elementId of actualElements) {
-                const element = document.getElementById(elementId);
-                if (element) {
-                    toolData[elementId] = parseFloat(element.value) || 0;
-                    console.log(`Set ${elementId} to:`, toolData[elementId]);
-                } else {
-                    console.warn(`Element ${elementId} not found`);
-                }
-            }
-        }
-    }
-    
-    // Add dispenser-specific data
-    if (toolData.type === 'dispenser') {
-        const linearActuator = document.getElementById('linearActuator');
-        const pipetteHeight = document.getElementById('pipetteHeight');
-        
-        if (linearActuator) {
-            toolData.linearActuator = parseFloat(linearActuator.value) || 0;
-            console.log('Set linearActuator to:', toolData.linearActuator);
+        if (progY) {
+            console.log('programmedY value:', progY.value);
+            toolData.programmedY = parseFloat(progY.value) || 0;
+            toolData.fiducialY = parseFloat(progY.value) || 0;
         }
         
-        if (pipetteHeight) {
-            toolData.pipetteHeight = parseInt(pipetteHeight.value) || 90;
-            console.log('Set pipetteHeight to:', toolData.pipetteHeight);
+        if (progZ) {
+            console.log('programmedZ value:', progZ.value);
+            toolData.programmedZ = parseFloat(progZ.value) || 0;
+            toolData.fiducialZ = parseFloat(progZ.value) || 0;
         }
     }
     
-    console.log('Final tool data before saving:', toolData);
+    console.log('Final toolData for camera:', toolData);
+    
+    // Continue with rest of save logic...
     
     // If this tool is set as reference, unset all others
     if (toolData.isReference) {
@@ -3098,20 +3145,11 @@ function saveTool() {
         const index = tools.findIndex(t => t.id === currentEditingTool);
         if (index !== -1) {
             tools[index] = toolData;
-            console.log('Updated existing tool at index:', index);
-        }
-    } else {
-        const existingIndex = tools.findIndex(t => t.id === toolData.id);
-        if (existingIndex !== -1) {
-            tools[existingIndex] = toolData;
-            console.log('Replaced tool at index:', existingIndex);
-        } else {
-            tools.push(toolData);
-            console.log('Added new tool');
+            console.log('Updated tool in array:', tools[index]);
         }
     }
     
-    console.log('Updated tools array:', tools);
+    console.log('=== SAVE TOOL DEBUG END ===');
     
     updateToolDropdown();
     closeToolModal();
@@ -3124,19 +3162,10 @@ function saveTool() {
     })
     .then(response => response.json())
     .then(data => {
-        console.log('Backend save response:', data);
-        if (data.status === 'success') {
-            console.log('Tools saved successfully');
-            loadToolsFromBackend();
-        } else {
-            alert('Error saving tools: ' + data.message);
-        }
-    })
-    .catch(error => {
-        console.error('Error saving tools:', error);
-        alert('Error saving tools: ' + error);
+        console.log('Backend response:', data);
     });
 }
+
 
 
 // Updated deleteTool function
