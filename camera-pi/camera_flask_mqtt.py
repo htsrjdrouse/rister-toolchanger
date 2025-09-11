@@ -743,6 +743,55 @@ def index():
 
 
 
+.orientation-controls {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.orientation-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+    margin: 20px 0;
+}
+
+.orientation-btn {
+    padding: 12px 20px;
+    font-size: 14px;
+    border-radius: 5px;
+    border: none;
+    background-color: #4CAF50;
+    color: white;
+    cursor: pointer;
+    transition: background-color 0.3s;
+}
+
+.orientation-btn:hover {
+    background-color: #3e8e41;
+}
+
+.orientation-btn.reset {
+    background-color: #ff9800;
+}
+
+.orientation-btn.reset:hover {
+    background-color: #f57c00;
+}
+
+.current-state {
+    margin-top: 20px;
+    padding: 15px;
+    background-color: #f8f9fa;
+    border-radius: 5px;
+    text-align: left;
+}
+
+.current-state p {
+    margin: 5px 0;
+    font-size: 14px;
+}
+
+
 
 /* Consistent header styling */
 .tool-management-container .tool-management-toggle {
@@ -1160,6 +1209,53 @@ def index():
             }
         </style>
         <script>
+
+
+
+function openOrientationModal() {
+    console.log('openOrientationModal called'); // Debug line
+    updateFlipStateDisplay();
+    const modal = document.getElementById('orientationModal');
+    console.log('Modal element found:', modal); // Debug line
+    if (modal) {
+        modal.style.display = 'block';
+        console.log('Modal display set to block'); // Debug line
+    } else {
+        console.error('orientationModal element not found!');
+    }
+}
+
+
+function closeOrientationModal() {
+    document.getElementById('orientationModal').style.display = 'none';
+}
+
+function updateFlipStateDisplay() {
+    document.getElementById('flipStateH').textContent = imageFlipH ? 'Flipped' : 'Normal';
+    document.getElementById('flipStateV').textContent = imageFlipV ? 'Flipped' : 'Normal';
+}
+
+// Update the existing flip functions to also update the display
+function flipImageHorizontal() {
+    imageFlipH = !imageFlipH;
+    applyImageTransforms();
+    updateFlipStateDisplay();
+}
+
+function flipImageVertical() {
+    imageFlipV = !imageFlipV;
+    applyImageTransforms();
+    updateFlipStateDisplay();
+}
+
+function resetImageFlip() {
+    imageFlipH = false;
+    imageFlipV = false;
+    applyImageTransforms();
+    updateFlipStateDisplay();
+}
+
+
 
 
 function updateFormFields() {
@@ -2558,9 +2654,7 @@ function closeToolModal() {
                 <button onclick="startLineMeasurement()" class="calibration pixel-calibrate">Calibrate Pixel Size</button>
                 <!--<button onclick="startCameraCentering()" class="calibration camera-center">Center Camera</button>-->
                 <button id="calibrationToggle" onclick="toggleCalibrationMode()" class="calibration">Image Mapper</button>
-                <button onclick="flipImageHorizontal()" class="calibration">Flip Horizontal</button>
-                <button onclick="flipImageVertical()" class="calibration">Flip Vertical</button>
-                <button onclick="resetImageFlip()" class="calibration">Reset Flip</button>
+                <button onclick="openOrientationModal()" class="calibration">Camera Orientation</button>
             </div>
            
 
@@ -3392,6 +3486,7 @@ function toggleTutorial() {
 
 
 
+
 <!-- Actual Position Section (hidden for camera and reference tools) -->
 <div id="actualSection">
     <h4>Actual Position (mm)</h4>
@@ -3450,6 +3545,30 @@ function toggleTutorial() {
 
 
 
+
+<!-- Camera Orientation Modal -->
+<div id="orientationModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <span class="close" onclick="closeOrientationModal()">&times;</span>
+        <h3>Camera Orientation Settings</h3>
+        
+        <div class="orientation-controls">
+            <p style="margin-bottom: 20px; color: #666;">Adjust camera orientation if the image appears flipped or rotated incorrectly.</p>
+            
+            <div class="orientation-buttons">
+                <button onclick="flipImageHorizontal()" class="orientation-btn">Flip Horizontal</button>
+                <button onclick="flipImageVertical()" class="orientation-btn">Flip Vertical</button>
+                <button onclick="resetImageFlip()" class="orientation-btn reset">Reset to Normal</button>
+            </div>
+            
+            <div class="current-state">
+                <p><strong>Current State:</strong></p>
+                <p>Horizontal: <span id="flipStateH">Normal</span></p>
+                <p>Vertical: <span id="flipStateV">Normal</span></p>
+            </div>
+        </div>
+    </div>
+</div>
 
 
 
