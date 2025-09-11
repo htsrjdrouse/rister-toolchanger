@@ -60,7 +60,7 @@ calibration_data = {
     "microns_per_pixel_x": 10.0,
     "microns_per_pixel_y": 10.0,
     "reference_points": [],
-    "enabled": False,
+    "enabled": True,
     "scaler_measurements": []
 }
 
@@ -85,6 +85,7 @@ position_lock = threading.Lock()
 position_request_pending = False
 position_request_timestamp = 0
 
+
 def load_calibration_data():
     """Load calibration data from file"""
     global calibration_data
@@ -92,10 +93,22 @@ def load_calibration_data():
         cal_file = os.path.join(CALIBRATION_DIR, "calibration.json")
         if os.path.exists(cal_file):
             with open(cal_file, 'r') as f:
-                calibration_data = json.load(f)
-                logger.info("Calibration data loaded")
+                loaded_data = json.load(f)
+                
+                # FORCE enabled to True - ignore saved value
+                loaded_data["enabled"] = True
+                
+                calibration_data = loaded_data
+                logger.info("Calibration data loaded with enabled forced to True")
+        else:
+            # Ensure default is enabled when no file exists
+            calibration_data["enabled"] = True
+            
     except Exception as e:
         logger.error(f"Failed to load calibration data: {e}")
+        # Ensure enabled even on error
+        calibration_data["enabled"] = True
+
 
 def save_calibration_data():
     """Save calibration data to file"""
@@ -165,7 +178,7 @@ def pixel_to_printer_coordinates(pixel_x, pixel_y, reference_printer_x, referenc
     printer_offset_y = pixel_offset_y * calibration_data["microns_per_pixel_y"] / 1000.0
     
     # Calculate absolute printer coordinates
-    printer_x = ref_point["printer_x"] + printer_offset_x
+    printer_x = ref_point["printer_x"] - printer_offset_x
     printer_y = ref_point["printer_y"] - printer_offset_y  # Y axis is typically inverted
     
     return {
@@ -1542,46 +1555,52 @@ function getCorrectCoordinates(event, imageElement) {
 function handleImageClick(event, imageType) {
     if (!calibrationMode) return;
 
-    console.log('Image clicked in calibration mode - NEW VERSION');
+    console.log('Image clicked in calibration mode - OFFSET VERSION');
 
     const coords = getCorrectCoordinates(event, event.target);
-    console.log(`Corrected pixel coordinates: (${coords.x}, ${coords.y})`);
+    console.log(`Pixel coordinates: (${coords.x}, ${coords.y})`);
 
-    // Show click coordinates immediately
-    showCoordinates(event.target, coords.x, coords.y);
+    // Get current printer position
+    fetch('/api/printer/position')
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success' || data.status === 'timeout') {
+                const currentX = data.position.x;
+                const currentY = data.position.y;
+                const currentZ = data.position.z;
 
-    // Get calibration values from the form fields
-    const micronsPerPixelX = parseFloat(document.getElementById('micronPerPixelX').value) || 10;
-    const micronsPerPixelY = parseFloat(document.getElementById('micronPerPixelY').value) || 10;
+                // Get calibration values
+                const micronsPerPixelX = parseFloat(document.getElementById('micronPerPixelX').value) || 58.98;
+                const micronsPerPixelY = parseFloat(document.getElementById('micronPerPixelY').value) || 58.98;
 
-    console.log(`Using calibration: X=${micronsPerPixelX} Y=${micronsPerPixelY} μm/pixel`);
+                // Calculate offset from image center
+                const imageElement = event.target;
+                const centerX = imageElement.clientWidth / 2;
+                const centerY = imageElement.clientHeight / 2;
 
-    // Use image center as reference (640, 360 for 1280x720 stream)
-    const centerX = 640;
-    const centerY = 360;
+                const pixelOffsetX = coords.x - centerX;
+                const pixelOffsetY = coords.y - centerY;
 
-    // Calculate offset from center
-    const pixelOffsetX = coords.x - centerX;
-    const pixelOffsetY = coords.y - centerY;
+                // Convert to mm offset (fix X direction)
+                const mmOffsetX = -(pixelOffsetX * micronsPerPixelX) / 1000;  // Left = negative, Right = positive
+                const mmOffsetY = (pixelOffsetY * micronsPerPixelY) / 1000;   // Down = positive
 
-    // Convert to mm offset
-    const mmOffsetX = -(pixelOffsetX * micronsPerPixelX) / 1000;
-    const mmOffsetY = (pixelOffsetY * micronsPerPixelY) / 1000;
+                // Calculate target coordinates
+                const targetX = currentX + mmOffsetX;
+                const targetY = currentY + mmOffsetY;
 
-    // Use a reference position
-    const referenceX = 235;
-    const referenceY = 150;
-    const referenceZ = 60;
+                console.log(`Current position: X${currentX} Y${currentY}`);
+                console.log(`Offset: X${mmOffsetX.toFixed(3)} Y${mmOffsetY.toFixed(3)}`);
+                console.log(`Target coordinates: X${targetX.toFixed(3)} Y${targetY.toFixed(3)}`);
 
-    // Calculate target coordinates
-    const calculatedX = referenceX + mmOffsetX;
-    const calculatedY = referenceY + mmOffsetY;
-
-    console.log(`Calculated coordinates: X${calculatedX.toFixed(3)} Y${calculatedY.toFixed(3)} Z${referenceZ}`);
-
-    // Add reference point with calculated coordinates
-    addReferencePoint(coords.x, coords.y, calculatedX, calculatedY, referenceZ);
+                // Save the reference point with calculated coordinates
+                addReferencePoint(coords.x, coords.y, targetX, targetY, currentZ);
+            }
+        });
 }
+
+
+
 
 function updateCoordinateDisplay(event, imageElement) {
     let overlay = imageElement.parentElement.querySelector('.coordinate-overlay');
@@ -3963,6 +3982,8 @@ if __name__ == '__main__':
     try:
         # Load calibration data on startup
         load_calibration_data()
+        calibration_data["enabled"] = True
+        save_calibration_data()  # Save it back with enabled=True
         
         # Setup MQTT client
         setup_mqtt_client()
