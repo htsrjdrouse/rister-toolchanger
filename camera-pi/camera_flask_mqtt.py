@@ -3363,7 +3363,7 @@ function toggleTutorial() {
             
             <div id="calibrationPanel" class="calibration-panel" style="display: none;">
                 <h2>Image Mapper - Pixel-to-Printer Coordinate Mapping</h2>
-                <p><strong>Status:</strong> <span id="calibrationStatus">DISABLED</span></p>
+                <p><strong>Click on image features to record reference points for coordinate mapping.</strong></p>
                 
                 <div class="input-group">
                     <label>Microns per pixel X:</label>
@@ -3374,8 +3374,6 @@ function toggleTutorial() {
                 </div>
                 
                 <div class="controls">
-                    <button onclick="enableCalibration()" class="calibration">Enable Calibration</button>
-                    <button onclick="disableCalibration()" class="stop">Disable Calibration</button>
                     <button onclick="clearCalibration()" class="stop">Clear All Points</button>
                 </div>
                 
