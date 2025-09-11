@@ -14,7 +14,7 @@ This repository contains the camera system for the Rister toolchanger, supportin
 
 ### Technique 1: Non-Camera Reference Tool
 
-In this technique, a physical tool (typically an extruder or probe) serves as the reference point.
+In this technique, a physical tool (typically an extruder or dispenser) serves as the reference point.
 
 **How it works:**
 1. Set any non-camera tool as the reference tool
@@ -32,7 +32,7 @@ In this technique, the camera tool itself becomes the reference point using fidu
 
 **How it works:**
 1. Set the camera tool (C0) as the reference tool
-2. Print and place the calibration target on your print bed
+2. Print and place the calibration target on your print bed [calibration_target.pdf](calibration_target.pdf)
 3. For the camera tool, enter:
    - **Fiducial X, Y, Z**: Position of the fiducial marker when camera is centered on it
 4. For other tools, enter only:
@@ -50,17 +50,7 @@ Use either `calibration_target.pdf` or `calibration_target.svg`:
 - Verify the 50mm scale bar measures exactly 50mm with a ruler
 - Place the printed target on your print bed within camera view
 
-### 2. Start the Camera System
-
-```bash
-python3 start_dakash_service.py
-```
-
-This will launch:
-- The main camera controller (`camera_flask_mqtt.py`)
-- MQTT communication handler (`mqtt_unified_subscriber_fixed.py`)
-
-### 3. Access the Web Interface
+### 2. Access the Web Interface
 
 Navigate to `http://[your-pi-ip]:8080` to access the camera control interface.
 
@@ -95,13 +85,5 @@ The system automatically calculates tool offsets based on the selected technique
 - Raspberry Pi with camera module
 - Python 3 with Flask, MQTT, and camera libraries
 - MQTT broker for system communication
-- Printed calibration target for Technique 2
+- Printed calibration target for Technique 2, or a small device with small visable features
 
-## Network Configuration
-
-The system expects:
-- MQTT broker at `192.168.1.89:1883`
-- Klipper API at `192.168.1.89`
-- Camera system accessible via web interface on port 8080
-
-Update IP addresses in `camera_flask_mqtt.py` to match your network configuration.
