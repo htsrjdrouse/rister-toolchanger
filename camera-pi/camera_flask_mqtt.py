@@ -1733,7 +1733,12 @@ let consecutiveErrors = 0;
 
 function checkStatus() {
     fetch('/api/status')
-        .then(response => response.json())
+        .then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        })
         .then(data => {
             consecutiveErrors = 0; // Reset error counter on success
             debugInfo = data;
@@ -1758,36 +1763,24 @@ function checkStatus() {
             if (data.calibration) {
                 document.getElementById('micronPerPixelX').value = data.calibration.microns_per_pixel_x || 10;
                 document.getElementById('micronPerPixelY').value = data.calibration.microns_per_pixel_y || 10;
-                updateCalibrationStatus(data.calibration.enabled);
+                //updateCalibrationStatus(data.calibration.enabled);
             }
         })
         .catch(error => {
             consecutiveErrors++;
-            // Only log every 10th error to reduce console spam
+            // Only log every 10th error to reduce console spam, but with more detail
             if (consecutiveErrors % 10 === 1) {
-                console.error('Server connection lost (logging every 10th error)');
+                console.error('Server connection error details:', {
+                    error: error.message,
+                    consecutiveErrors: consecutiveErrors,
+                    timestamp: new Date().toLocaleTimeString()
+                });
             }
             updateDebugPanel('Server connection lost');
         });
 }
 
-
             
-            function updateDebugPanel(error = null) {
-                const panel = document.getElementById('debugPanel');
-                if (error) {
-                    panel.innerHTML = '<strong>Error:</strong> ' + error;
-                } else {
-                    panel.innerHTML = `
-                        <strong>Debug Info:</strong><br>
-                        Current Position: X${debugInfo.printer_position?.x || 0} Y${debugInfo.printer_position?.y || 0} Z${debugInfo.printer_position?.z || 0}<br>
-                        Streaming: ${debugInfo.streaming || false}<br>
-                        Calibration Enabled: ${debugInfo.calibration?.enabled || false}<br>
-                        Reference Points: ${debugInfo.calibration?.reference_points?.length || 0}<br>
-                        Last Update: ${new Date().toLocaleTimeString()}
-                    `;
-                }
-            }
             
             function refreshStreamImage() {
                 const img = document.getElementById('streamImg');
@@ -2642,10 +2635,6 @@ function closeToolModal() {
         <div class="container">
             <h1>Rister Camera Controller with Calibration</h1>
             
-            <!-- Debug Panel -->
-            <div id="debugPanel" class="debug-panel">
-                Loading debug info...
-            </div>
             
             <div class="controls">
                 <button onclick="startStream()">Start Stream</button>
