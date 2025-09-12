@@ -1251,6 +1251,41 @@ def index():
         <script>
 
 
+function setFocusFromInput(inputValue) {
+    const position = parseFloat(inputValue);
+    if (isNaN(position) || position < 0 || position > 30) {
+        alert('Please enter a valid focus position between 0 and 30');
+        return;
+    }
+    
+    // Update both slider and input to match
+    document.getElementById('focusSlider').value = position;
+    document.getElementById('focusInput').value = position;
+    document.getElementById('focusValue').textContent = position;
+    
+    // Call the API to actually set the focus
+    fetch('/api/focus/manual/' + position)
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                // Visual feedback
+                const focusValue = document.getElementById('focusValue');
+                const originalColor = focusValue.style.color;
+                focusValue.style.color = '#4CAF50';
+                setTimeout(() => {
+                    focusValue.style.color = originalColor;
+                }, 500);
+            } else {
+                alert('Failed to set focus: ' + (data.message || 'Unknown error'));
+            }
+        })
+        .catch(error => {
+            console.error('Error setting focus:', error);
+            alert('Error setting focus: ' + error);
+        });
+}
+
+
 
 
 // Add this missing function - it's causing all the console errors
