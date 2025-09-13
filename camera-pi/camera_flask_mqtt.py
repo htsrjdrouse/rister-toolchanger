@@ -940,7 +940,21 @@ def index():
     margin: 0 0 15px 0;
 }
 
-
+.reference-label {
+    position: fixed;
+    background-color: rgba(255, 255, 0, 0.3);
+    color: black;
+    padding: 3px 8px;
+    border-radius: 3px;
+    font-family: Arial, sans-serif;
+    font-size: 12px;
+    font-weight: bold;
+    border: 1px solid rgba(0, 0, 0, 0.3);
+    pointer-events: none;
+    z-index: 1001;
+    white-space: nowrap;
+    transform: translate(-50%, -100%);
+}
 
 .reference-checkbox-container {
     display: flex;
@@ -1249,6 +1263,118 @@ def index():
             }
         </style>
         <script>
+
+
+
+// Global variable to store reference points
+
+let lastKnownPosition = {x: 0, y: 0};
+
+function showReferenceLabels() {
+    // Remove existing labels
+    document.querySelectorAll('.reference-label').forEach(label => label.remove());
+    
+    if (!calibrationMode || !referencePointsData || referencePointsData.length === 0) {
+        return;
+    }
+    
+    const streamImg = document.getElementById('streamImg');
+    const photoImg = document.getElementById('photoImg');
+    let activeImage = null;
+    
+    if (streamImg && streamImg.offsetParent && document.getElementById('streamContainer').style.display !== 'none') {
+        activeImage = streamImg;
+    } else if (photoImg && photoImg.offsetParent && document.getElementById('photoContainer').style.display !== 'none') {
+        activeImage = photoImg;
+    }
+    
+    if (!activeImage) return;
+    
+    const rect = activeImage.getBoundingClientRect();
+    
+    // Simple static labels only - no API calls, no dynamic positioning
+    referencePointsData.forEach((point, index) => {
+        let displayX = point.pixel_x;
+        let displayY = point.pixel_y;
+        
+        if (imageFlipH) {
+            displayX = rect.width - displayX;
+        }
+        if (imageFlipV) {
+            displayY = rect.height - displayY;
+        }
+        
+        const label = document.createElement('div');
+        label.className = 'reference-label';
+        label.textContent = `P${index + 1}`;
+        label.title = `Point ${index + 1}: X${point.printer_x} Y${point.printer_y}`;
+        
+        label.style.left = (rect.left + displayX) + 'px';
+        label.style.top = (rect.top + displayY) + 'px';
+        
+        document.body.appendChild(label);
+    });
+}
+
+function updateLabelsWithPosition(printerPos) {
+    // Remove existing labels
+    document.querySelectorAll('.reference-label').forEach(label => label.remove());
+    
+    const streamImg = document.getElementById('streamImg');
+    const photoImg = document.getElementById('photoImg');
+    let activeImage = null;
+    
+    if (streamImg && streamImg.offsetParent && document.getElementById('streamContainer').style.display !== 'none') {
+        activeImage = streamImg;
+    } else if (photoImg && photoImg.offsetParent && document.getElementById('photoContainer').style.display !== 'none') {
+        activeImage = photoImg;
+    }
+    
+    if (!activeImage) return;
+    
+    const rect = activeImage.getBoundingClientRect();
+    const currentPrinterX = printerPos.x || 0;
+    const currentPrinterY = printerPos.y || 0;
+    
+    const micronsPerPixelX = parseFloat(document.getElementById('micronPerPixelX')?.value) || 58.98;
+    const micronsPerPixelY = parseFloat(document.getElementById('micronPerPixelY')?.value) || 58.98;
+    
+    referencePointsData.forEach((point, index) => {
+        const deltaX = point.printer_x - currentPrinterX;
+        const deltaY = point.printer_y - currentPrinterY;
+        
+        const pixelOffsetX = (deltaX * 1000) / micronsPerPixelX;
+        const pixelOffsetY = (deltaY * 1000) / micronsPerPixelY;
+        
+        const imageCenterX = rect.width / 2;
+        const imageCenterY = rect.height / 2;
+        
+        let displayX = imageCenterX - pixelOffsetX;
+        let displayY = imageCenterY + pixelOffsetY;
+        
+        if (imageFlipH) {
+            displayX = rect.width - displayX;
+        }
+        if (imageFlipV) {
+            displayY = rect.height - displayY;
+        }
+        
+        if (displayX >= 0 && displayX <= rect.width && displayY >= 0 && displayY <= rect.height) {
+            const label = document.createElement('div');
+            label.className = 'reference-label';
+            label.textContent = `P${index + 1}`;
+            label.title = `Point ${index + 1}: X${point.printer_x} Y${point.printer_y} Z${point.printer_z}`;
+            
+            label.style.left = (rect.left + displayX) + 'px';
+            label.style.top = (rect.top + displayY) + 'px';
+            
+            document.body.appendChild(label);
+        }
+    });
+}
+
+
+
 
 
 function setFocusFromInput(inputValue) {
@@ -1589,11 +1715,9 @@ function applyImageTransforms() {
         img.style.transformOrigin = 'center';
     });
     
-    // Update crosshair position after transform
+    // Only update crosshair, not labels
     setTimeout(updateCrosshairPosition, 50);
 }
-
-
 
 
 function getCorrectCoordinates(event, imageElement) {
@@ -1710,35 +1834,31 @@ function updateCoordinateDisplay(event, imageElement) {
 
 // Camera centering functionality
 let centeringMode = false;
+
 function addFiducialCrosshair(imageElement) {
     // Remove existing crosshair
     const existing = document.querySelector('.fiducial-crosshair-fixed');
     if (existing) existing.remove();
     
-    // Get the image container position
     const rect = imageElement.getBoundingClientRect();
     
-    // Create crosshair positioned absolutely to the viewport
     const crosshair = document.createElement('div');
     crosshair.className = 'fiducial-crosshair-fixed';
+    crosshair.innerHTML = '+';
     crosshair.style.cssText = `
         position: fixed;
         left: ${rect.left + rect.width / 2}px;
         top: ${rect.top + rect.height / 2}px;
         transform: translate(-50%, -50%);
         pointer-events: none;
-        z-index: 1000;
+        z-index: 999;
         color: #00ff00;
         font-size: 20px;
         font-weight: bold;
         text-shadow: 1px 1px 2px rgba(0,0,0,0.8);
     `;
-    crosshair.innerHTML = '+';
     
-    // Append to body (outside any transform context)
     document.body.appendChild(crosshair);
-    
-    return crosshair;
 }
 
 
@@ -1758,9 +1878,6 @@ function updateCrosshairPosition() {
     }
 }
 
-// Add event listeners
-window.addEventListener('resize', updateCrosshairPosition);
-window.addEventListener('scroll', updateCrosshairPosition);
 
 
 
@@ -1812,33 +1929,60 @@ document.addEventListener('DOMContentLoaded', function() {
     // Load tools from backend instead of just rendering the default list
     loadToolsFromBackend();
     
-    // Initialize crosshair when images load
-    const streamImg = document.getElementById('streamImg');
-    const photoImg = document.getElementById('photoImg');
+// Initialize crosshair when images load
+const streamImg = document.getElementById('streamImg');
+const photoImg = document.getElementById('photoImg');
+
+if (streamImg) {
+    // Handle both load event and already-loaded images
+    streamImg.addEventListener('load', () => {
+        if (document.getElementById('streamContainer').style.display !== 'none') {
+            applyImageTransforms();
+            setTimeout(() => {
+                addFiducialCrosshair(streamImg);
+                updateCrosshairPosition();
+            }, 100);
+        }
+    });
     
-    if (streamImg) {
-        streamImg.addEventListener('load', () => {
+    // If image is already loaded, trigger immediately
+    if (streamImg.complete && streamImg.naturalWidth > 0) {
+        setTimeout(() => {
             if (document.getElementById('streamContainer').style.display !== 'none') {
                 applyImageTransforms();
-                setTimeout(() => {
-                    addFiducialCrosshair(streamImg);
-                    updateCrosshairPosition();
-                }, 100);
+                addFiducialCrosshair(streamImg);
+                updateCrosshairPosition();
             }
-        });
+        }, 100);
     }
+}
+
+if (photoImg) {
+    photoImg.addEventListener('load', () => {
+        if (document.getElementById('photoContainer').style.display !== 'none') {
+            applyImageTransforms();
+            setTimeout(() => {
+                addFiducialCrosshair(photoImg);
+                updateCrosshairPosition();
+            }, 100);
+        }
+    });
     
-    if (photoImg) {
-        photoImg.addEventListener('load', () => {
+    // If image is already loaded, trigger immediately
+    if (photoImg.complete && photoImg.naturalWidth > 0) {
+        setTimeout(() => {
             if (document.getElementById('photoContainer').style.display !== 'none') {
                 applyImageTransforms();
-                setTimeout(() => {
-                    addFiducialCrosshair(photoImg);
-                    updateCrosshairPosition();
-                }, 100);
+                addFiducialCrosshair(photoImg);
+                updateCrosshairPosition();
             }
-        });
+        }, 100);
     }
+}
+
+
+
+
 
     // Add event listeners for fiducial inputs to update offset display
     const fiducialInputs = ['fiducialX', 'fiducialY', 'fiducialZ', 'isReference'];
@@ -1861,7 +2005,8 @@ const positionInputs = ['programmedX', 'programmedY', 'programmedZ', 'actualX', 
         }
     });
 
-
+    window.addEventListener('resize', showReferenceLabels);
+    window.addEventListener('scroll', showReferenceLabels);
 
 });
 
@@ -1942,6 +2087,7 @@ function checkStatus() {
             }
             
 
+
 function startStream() {
     fetch('/api/stream/start')
         .then(response => response.json())
@@ -1949,12 +2095,23 @@ function startStream() {
             if (data.streaming) {
                 document.getElementById('streamContainer').style.display = 'block';
                 document.getElementById('focusControls').style.display = 'flex';
-                // Make sure photo container is hidden when starting stream
                 document.getElementById('photoContainer').style.display = 'none';
-                setTimeout(refreshStreamImage, 1000);
+                setTimeout(() => {
+                    refreshStreamImage();
+                    // Add crosshair after stream starts
+                    const streamImg = document.getElementById('streamImg');
+                    if (streamImg) {
+                        addFiducialCrosshair(streamImg);
+                        updateCrosshairPosition();
+                    }
+                }, 1000);
             }
         });
 }
+
+
+
+
 
 
             function stopStream() {
@@ -1993,19 +2150,54 @@ function capturePhoto() {
 
 
 
-            function toggleCalibrationMode() {
-                calibrationMode = !calibrationMode;
-                document.getElementById('calibrationToggle').textContent = 
-                    calibrationMode ? 'Disable Image Mapper' : 'Enable Image Mapper';
-                document.getElementById('calibrationPanel').style.display = 
-                    calibrationMode ? 'block' : 'none';
-                    
-                // Update cursor style
-                const images = document.querySelectorAll('.clickable-image');
-                images.forEach(img => {
-                    img.style.cursor = calibrationMode ? 'crosshair' : 'default';
-                });
-            }
+let labelUpdateInterval = null;
+
+function toggleCalibrationMode() {
+    calibrationMode = !calibrationMode;
+    document.getElementById('calibrationToggle').textContent = 
+        calibrationMode ? 'Disable Image Mapper' : 'Enable Image Mapper';
+    document.getElementById('calibrationPanel').style.display = 
+        calibrationMode ? 'block' : 'none';
+        
+    // Update cursor style
+    const images = document.querySelectorAll('.clickable-image');
+    images.forEach(img => {
+        img.style.cursor = calibrationMode ? 'crosshair' : 'default';
+    });
+    
+    // Stop any existing intervals
+    if (labelUpdateInterval) {
+        clearInterval(labelUpdateInterval);
+        labelUpdateInterval = null;
+    }
+    
+    if (calibrationMode) {
+        // Show crosshair immediately
+        const streamImg = document.getElementById('streamImg');
+        const photoImg = document.getElementById('photoImg');
+        
+        if (streamImg && document.getElementById('streamContainer').style.display !== 'none') {
+            addFiducialCrosshair(streamImg);
+        } else if (photoImg && document.getElementById('photoContainer').style.display !== 'none') {
+            addFiducialCrosshair(photoImg);
+        }
+        
+        // Show labels if we have data
+        if (referencePointsData && referencePointsData.length > 0) {
+            showReferenceLabels();
+        }
+    } else {
+        // Remove everything when disabled
+        document.querySelectorAll('.reference-label').forEach(label => label.remove());
+        document.querySelectorAll('.fiducial-crosshair-fixed').forEach(crosshair => crosshair.remove());
+    }
+}
+
+
+
+
+
+
             
             function showCoordinates(imgElement, x, y) {
                 // Remove existing coordinate display
@@ -2107,32 +2299,40 @@ function capturePhoto() {
                 }
             }
             
-            function loadCalibrationData() {
-                fetch('/api/calibration/data')
-                    .then(response => response.json())
-                    .then(data => {
-                        const container = document.getElementById('referencePoints');
-                        container.innerHTML = '';
-                        
-                        if (data.reference_points && data.reference_points.length > 0) {
-                            data.reference_points.forEach((point, index) => {
-                                const div = document.createElement('div');
-                                div.className = 'reference-point';
-                                div.innerHTML = `
-                                    <strong>Point ${index + 1}:</strong><br>
-                                    Pixel: (${point.pixel_x}, ${point.pixel_y})<br>
-                                    Printer: X${point.printer_x} Y${point.printer_y} Z${point.printer_z}
-                                `;
-                                container.appendChild(div);
-                            });
-                        } else {
-                            container.innerHTML = '<div class="reference-point">No reference points set</div>';
-                        }
-                        
-                        updateCalibrationStatus(data.enabled);
-                    });
+         
+
+function loadCalibrationData() {
+    fetch('/api/calibration/data')
+        .then(response => response.json())
+        .then(data => {
+            const container = document.getElementById('referencePoints');
+            container.innerHTML = '';
+            
+            if (data.reference_points && data.reference_points.length > 0) {
+                data.reference_points.forEach((point, index) => {
+                    const div = document.createElement('div');
+                    div.className = 'reference-point';
+                    div.innerHTML = `
+                        <strong>Point ${index + 1}:</strong><br>
+                        Pixel: (${point.pixel_x}, ${point.pixel_y})<br>
+                        Printer: X${point.printer_x} Y${point.printer_y} Z${point.printer_z}
+                    `;
+                    container.appendChild(div);
+                });
+            } else {
+                container.innerHTML = '<div class="reference-point">No reference points set</div>';
             }
-          
+            
+            updateCalibrationStatus(data.enabled);
+            referencePointsData = data.reference_points || []; // ADD THIS LINE
+            if (calibrationMode) {
+                setTimeout(showReferenceLabels, 100); // ADD THIS LINE
+            }
+        });
+}
+
+
+
 
 function updateCalibrationStatus(enabled) {
     const statusElement = document.getElementById('calibrationStatus');
@@ -3472,39 +3672,41 @@ function toggleTutorial() {
 
 
 
+<div id="calibrationPanel" class="calibration-panel" style="display: none;">
+    <h2>Image Mapper - Pixel-to-Printer Coordinate Mapping</h2>
+    <p><strong>Click on image features to record reference points for coordinate mapping.</strong></p>
+    
+    <div class="input-group">
+        <label>Microns per pixel X:</label>
+        <input type="number" id="micronPerPixelX" value="10" step="0.1" min="0.1" max="1000">
+        <label>Microns per pixel Y:</label>
+        <input type="number" id="micronPerPixelY" value="10" step="0.1" min="0.1" max="1000">
+        <button onclick="updateMicronsPerPixel()">Update</button>
+    </div>
+    
+    <div class="controls">
+        <button onclick="clearCalibration()" class="stop">Clear All Points</button>
+        <button onclick="showReferenceLabels()" class="calibration">Refresh Labels</button>
+    </div>
+    
+    <h3>Reference Points</h3>
+    <div id="referencePoints" class="reference-points">
+        <div class="reference-point">No reference points set</div>
+    </div>
+    
+    <p><strong>Instructions:</strong></p>
+    <ul style="text-align: left;">
+        <li>1. Use "Image Mapper" to click on features in the image</li>
+        <li>2. Each click records pixel coordinates and current printer position</li>
+        <li>3. Use the coordinate information to manually position your camera/printer</li>
+        <li>4. Use flip buttons if your camera image is inverted</li>
+        <li>5. Build reference points for accurate coordinate mapping</li>
+        <li>6. Click "Refresh Labels" after moving the printer to update label positions</li>
+    </ul>
+</div>
 
 
 
-            <div id="calibrationPanel" class="calibration-panel" style="display: none;">
-                <h2>Image Mapper - Pixel-to-Printer Coordinate Mapping</h2>
-                <p><strong>Click on image features to record reference points for coordinate mapping.</strong></p>
-                
-                <div class="input-group">
-                    <label>Microns per pixel X:</label>
-                    <input type="number" id="micronPerPixelX" value="10" step="0.1" min="0.1" max="1000">
-                    <label>Microns per pixel Y:</label>
-                    <input type="number" id="micronPerPixelY" value="10" step="0.1" min="0.1" max="1000">
-                    <button onclick="updateMicronsPerPixel()">Update</button>
-                </div>
-                
-                <div class="controls">
-                    <button onclick="clearCalibration()" class="stop">Clear All Points</button>
-                </div>
-                
-                <h3>Reference Points</h3>
-                <div id="referencePoints" class="reference-points">
-                    <div class="reference-point">No reference points set</div>
-                </div>
-                
-                <p><strong>Instructions:</strong></p>
-                <ul style="text-align: left;">
-                    <li>1. Use "Image Mapper" to click on features in the image</li>
-                    <li>2. Each click records pixel coordinates and current printer position</li>
-                    <li>3. Use the coordinate information to manually position your camera/printer</li>
-                    <li>4. Use flip buttons if your camera image is inverted</li>
-                    <li>5. Build reference points for accurate coordinate mapping</li>
-                </ul>
-            </div>
             
             <div id="streamContainer" class="media-container" style="display: none;">
                 <h3>Live Stream</h3>
