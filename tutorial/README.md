@@ -56,7 +56,7 @@ Each tutorial includes:
 
 ### 🚀 **Advanced Techniques**
 
-#### 5. Camera-Based Extruder Offset Calibration
+#### 5. [Camera-Based Extruder Offset Calibration](05-camera-offset-calibration.md)
 - Computer vision setup and operation
 - Integration with Klipper configuration
 - Automated offset measurement
