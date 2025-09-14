@@ -24,7 +24,7 @@ This tutorial covers the linear actuator pipette tool (L0) with your Rister Tool
 
 The linear actuator driven pipetting system provides precise liquid handling capabilities through an integrated fluid management system. The tool combines pressure-controlled dispensing with automated cleaning for reliable, repeatable liquid operations and a control interface that works with Mainsail that includes expanded user inteface for controlling fluidics.
 
-[Fluidics control](images/tampermonkey_fluidics_control_expanded.png)
+![Fluidics control](images/tampermonkey_fluidics_control_expanded.png)
 
 ## System Architecture
 
