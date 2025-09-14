@@ -33,7 +33,6 @@ The linear actuator driven pipetting system provides precise liquid handling cap
 
 ### Fluid Management System
 
-![Fluidic Path Diagram](images/fluidic_path.png)
 The pipette system maintains precise liquid control through several integrated components:
 
 **Pressure Compensation Reservoir:**

@@ -20,8 +20,8 @@ This tutorial covers the complete workflow for setting up and using the video ta
 
 - Assembled Rister Toolchanger with camera tool (C0)
 - Camera Pi with Arducam IMX519 programmable focus camera
-- Network connectivity between Klipper Pi and Camera Pi
 - MQTT broker running on Klipper Pi
+- Network connectivity between Klipper Pi and Camera Pi
 - Basic familiarity with previous toolchanger tutorials
 
 ## System Architecture
@@ -124,7 +124,7 @@ Navigate to the enhanced camera interface:
 - **URL**: `http://<CAMERA_PI_IP>:8080`
 - **Features**: Real-time streaming, focus control, calibration mode
 
-[Web interface](images/05_video_calibration/video_calibration_start.png)
+![Web interface](images/05_video_calibration/video_calibration_start.png)
 
 
 **Interface Elements:**
@@ -166,7 +166,7 @@ Establish the relationship between pixels and real-world measurements:
    - Calculate: `microns_per_pixel = known_distance_microns / pixel_distance`
 
 
-[Calibrate mm/pixel](images/05_video_calibration/video_calibration_pixel_to_mm.png)
+![Calibrate mm/pixel](images/05_video_calibration/video_calibration_pixel_to_mm.png)
 
 
 
@@ -178,14 +178,14 @@ Create coordinate transformation anchors:
 
 2. **Capture Reference Points**
 
-[Map reference positions](images/05_video_calibration/video_targeting_click_on_reference_points.png)
+![Map reference positions](images/05_video_calibration/video_targeting_click_on_reference_points.png)
 
 
 ## Extruder Offset Calibration
 
-[Tool parameters select tool](images/05_video_calibration/video_targeting_tool_management.png)
+![Tool parameters select tool](images/05_video_calibration/video_targeting_tool_management.png)
 
-[Adjust tool parameters(images/05_video_calibration/video_alignment_tool_parameters.png)
+![Adjust tool parameters(images/05_video_calibration/video_alignment_tool_parameters.png)
 
 
 **Process Overview:**
