@@ -124,6 +124,9 @@ Navigate to the enhanced camera interface:
 - **URL**: `http://<CAMERA_PI_IP>:8080`
 - **Features**: Real-time streaming, focus control, calibration mode
 
+[Web interface](images/05_video_calibration/video_calibration_start.png)
+
+
 **Interface Elements:**
 - Live video stream with click interaction
 - Focus slider (0=near, 30=far)
@@ -162,55 +165,28 @@ Establish the relationship between pixels and real-world measurements:
    - Note the pixel coordinates difference
    - Calculate: `microns_per_pixel = known_distance_microns / pixel_distance`
 
-3. **Set Pixel Scale**
-   ```gcode
-   # Example: 10mm = 658 pixels → 15.2 microns/pixel
-   SET_PIXEL_SCALE MICRONS_PER_PIXEL_X=15.2 MICRONS_PER_PIXEL_Y=15.2
-   ```
+
+[Calibrate mm/pixel](images/05_video_calibration/video_calibration_pixel_to_mm.png)
+
+
 
 ### Phase 2: Reference Point Setup
 
 Create coordinate transformation anchors:
 
 1. **Move to Known Position**
-   ```gcode
-   G0 X200 Y150 Z5 F6000
-   REPORT_PRINTER_POSITION
-   ```
 
-2. **Capture Reference Point**
-   - Click on the nozzle tip in the web interface
-   - System automatically stores the pixel-to-printer mapping
-   - Repeat for multiple positions across the work area
+2. **Capture Reference Points**
 
-3. **Verify Calibration**
-   ```gcode
-   # Test calibration accuracy
-   CAMERA_CALIBRATION_WIZARD STEP=4
-   ```
+[Map reference positions](images/05_video_calibration/video_targeting_click_on_reference_points.png)
 
-### Phase 3: Automated Workflow
-
-Use the integrated calibration wizard for streamlined setup:
-
-```gcode
-# Complete calibration workflow
-CAMERA_CALIBRATION_WIZARD STEP=1  # Home and prepare
-CAMERA_CALIBRATION_WIZARD STEP=2  # Pixel scale measurement
-CAMERA_CALIBRATION_WIZARD STEP=3  # Reference point setup
-CAMERA_CALIBRATION_WIZARD STEP=4  # Accuracy verification
-```
 
 ## Extruder Offset Calibration
 
-### Automated Visual Measurement
+[Tool parameters select tool](images/05_video_calibration/video_targeting_tool_management.png)
 
-The system can automatically calculate extruder offsets using printed test patterns:
+[Adjust tool parameters(images/05_video_calibration/video_alignment_tool_parameters.png)
 
-```gcode
-# Automated offset calibration
-CALIBRATE_EXTRUDER_OFFSETS
-```
 
 **Process Overview:**
 1. System prints test patterns with each extruder
@@ -267,22 +243,6 @@ The web interface provides real-time feedback:
 - **Click Coordinates**: Instant conversion to printer coordinates
 - **Position History**: Track of recent calibration points
 
-### Focus Optimization
-
-Use programmable focus for different Z-heights:
-
-```gcode
-# Automatic focus for current Z-height
-CAMERA_FOCUS_AUTO
-
-# Manual focus setting
-CAMERA_FOCUS_POSITION POSITION=15.5
-
-# Focus presets for common heights
-CAMERA_PRESET_HIGH_RES    # Best for detailed work
-CAMERA_PRESET_MEDIUM_RES  # Balanced performance
-CAMERA_PRESET_LOW_RES     # Fast streaming
-```
 
 ## Integration with Print Workflows
 
@@ -600,7 +560,7 @@ The enhanced `camera_flask_mqtt.py` script transforms the Rister Toolchanger's c
 
 **Core Capabilities**
 - **Interactive Coordinate Mapping**: Click anywhere for instant printer coordinates
-- **Automated Camera Centering**: Click objects to auto-center them
+- **Camera Centering**: Click objects to auto-center them
 - **Visual Scale Calibration**: Draw lines to measure pixel scale
 - **Multi-Tool Offset Measurement**: Visual tool calibration workflow
 - **Real-Time Position Integration**: Live coordinate display and conversion
