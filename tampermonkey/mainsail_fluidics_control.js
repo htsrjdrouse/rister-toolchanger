@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Mainsail Fluidics Control Enhanced
+// @name         Mainsail Fluidics Control Enhanced - 4 Valves
 // @namespace    http://tampermonkey.net/
-// @version      1.4
-// @description  Add fluidics control panel with pump speed control
-// @author       Rister
+// @version      2.1
+// @description  Add fluidics control panel with shared syringe pump and 4 independent valves
+// @author       Rister (Modified for 4 valves)
 // @match        http://192.168.1.89:81/*
 // @match        http://mainsailos.local/*
 // @match        http://your-printer-ip/*
@@ -48,23 +48,23 @@
             <div id="fluidics-main-panel" style="
                 position: fixed; top: 100px; left: 10px; background: white;
                 border: 1px solid #ccc; border-radius: 8px; padding: 15px;
-                box-shadow: 0 4px 8px rgba(0,0,0,0.1); z-index: 1000; min-width: 360px;
-                font-family: Arial, sans-serif; cursor: move;">
+                box-shadow: 0 4px 8px rgba(0,0,0,0.1); z-index: 1000; min-width: 400px;
+                font-family: Arial, sans-serif; cursor: move; max-height: 90vh; overflow-y: auto;">
 
                 <div id="fluidics-header" style="display: flex; justify-content: space-between;
                     align-items: center; margin-bottom: 15px; cursor: grab;">
-                    <h3 style="margin: 0;">Fluidics Control</h3>
+                    <h3 style="margin: 0;">Fluidics Control - 4 Valves</h3>
                     <button id="toggle-fluidics" style="background: #f0f0f0; border: none;
                         border-radius: 4px; padding: 5px 8px; cursor: pointer;">+</button>
                 </div>
 
                 <div id="fluidics-content" style="display: none;">
 
-                    <!-- Syringe Pump Control -->
-                    <div style="margin-bottom: 15px; padding: 10px; background: #f3e5f5;
-                        border-radius: 4px; border-left: 4px solid #9c27b0;">
-                        <label style="display: block; margin-bottom: 8px; font-weight: bold;">
-                            Syringe Pump:</label>
+                    <!-- Shared Syringe Pump Control -->
+                    <div style="margin-bottom: 15px; padding: 10px; background: #e3f2fd;
+                        border-radius: 4px; border-left: 4px solid #2196F3;">
+                        <label style="display: block; margin-bottom: 8px; font-weight: bold; color: #1976d2;">
+                            Syringe Pump (All Valves)</label>
 
                         <div style="display: flex; gap: 8px; align-items: center; margin-bottom: 8px;">
                             <div style="display: flex; flex-direction: column; flex: 1;">
@@ -88,20 +88,70 @@
                             <button onclick="dispenseSyringe()" style="background: #4CAF50; color: white;
                                 border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer;
                                 font-size: 12px; flex: 1;">Dispense</button>
-                            <button onclick="zeroSyringeCount()" style="background: #f44336; color: white;
+                            <button onclick="zeroSyringe()" style="background: #f44336; color: white;
                                 border: none; padding: 6px 12px; border-radius: 3px; cursor: pointer;
                                 font-size: 12px;">Zero</button>
                         </div>
 
-                        <div id="syringe-count-display" style="padding: 4px; background: rgba(156, 39, 176, 0.1);
-                            border-radius: 3px; font-size: 11px; color: #7b1fa2; text-align: center;">
+                        <div id="syringe-count-display" style="padding: 4px; background: rgba(33, 150, 243, 0.1);
+                            border-radius: 3px; font-size: 11px; color: #1565c0; text-align: center;">
                             Position: 0 steps
                         </div>
                     </div>
 
+                    <!-- Valve Control Section -->
+                    <div style="margin-bottom: 15px; padding: 10px; background: #f5f5f5;
+                        border-radius: 4px; border-left: 4px solid #757575;">
+                        <label style="display: block; margin-bottom: 12px; font-weight: bold;">
+                            Valve Control</label>
+
+                        <!-- Valve Selector Checkboxes -->
+                        <div style="background: white; padding: 10px; border-radius: 4px; margin-bottom: 12px;">
+                            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
+                                <div style="display: flex; align-items: center;">
+                                    <input type="checkbox" id="valve-a-check" value="1" style="margin-right: 8px; cursor: pointer;">
+                                    <label for="valve-a-check" style="cursor: pointer; font-weight: bold; color: #2196F3;">Valve A</label>
+                                </div>
+                                <div style="display: flex; align-items: center;">
+                                    <input type="checkbox" id="valve-b-check" value="1" style="margin-right: 8px; cursor: pointer;">
+                                    <label for="valve-b-check" style="cursor: pointer; font-weight: bold; color: #9c27b0;">Valve B</label>
+                                </div>
+                                <div style="display: flex; align-items: center;">
+                                    <input type="checkbox" id="valve-c-check" value="1" style="margin-right: 8px; cursor: pointer;">
+                                    <label for="valve-c-check" style="cursor: pointer; font-weight: bold; color: #4CAF50;">Valve C</label>
+                                </div>
+                                <div style="display: flex; align-items: center;">
+                                    <input type="checkbox" id="valve-d-check" value="1" style="margin-right: 8px; cursor: pointer;">
+                                    <label for="valve-d-check" style="cursor: pointer; font-weight: bold; color: #ff9800;">Valve D</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Valve State Buttons -->
+                        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 8px;">
+                            <button onclick="setSelectedValveState('INPUT')" style="background: #2196F3; color: white;
+                                border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px;
+                                font-weight: bold;">
+                                INPUT</button>
+                            <button onclick="setSelectedValveState('OUTPUT')" style="background: #4CAF50; color: white;
+                                border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px;
+                                font-weight: bold;">
+                                OUTPUT</button>
+                            <button onclick="setSelectedValveState('BYPASS')" style="background: #ff9800; color: white;
+                                border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px;
+                                font-weight: bold;">
+                                BYPASS</button>
+                        </div>
+
+                        <div id="valve-status" style="margin-top: 8px; padding: 6px; background: rgba(117, 117, 117, 0.1);
+                            border-radius: 3px; font-size: 11px; color: #424242; text-align: center;">
+                            Select valves and choose state
+                        </div>
+                    </div>
+
                     <!-- Pump Speed Control -->
-                    <div style="margin-bottom: 15px; padding: 10px; background: #fff3e0;
-                        border-radius: 4px; border-left: 4px solid #ff9800;">
+                    <div style="margin-bottom: 15px; padding: 10px; background: #f5f5f5;
+                        border-radius: 4px; border-left: 4px solid #757575;">
                         <label style="display: block; margin-bottom: 8px; font-weight: bold;">
                             Pump Speed (0-255):</label>
 
@@ -187,15 +237,6 @@
                         <button onclick="sendCommand('WASTE_OFF')" style="background: #f44336; color: white;
                             border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">
                             Waste Off</button>
-                        <button onclick="sendCommand('VALVE_INPUT')" style="background: #2196F3; color: white;
-                            border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                            Valve Input</button>
-                        <button onclick="sendCommand('VALVE_OUTPUT')" style="background: #2196F3; color: white;
-                            border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                            Valve Output</button>
-                        <button onclick="sendCommand('VALVE_BYPASS')" style="background: #2196F3; color: white;
-                            border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">
-                            Valve Bypass</button>
                         <button onclick="sendCommand('WASH_POSITION')" style="background: #2196F3; color: white;
                             border: none; padding: 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">
                             Wash Position</button>
@@ -239,6 +280,110 @@
         };
     }
 
+    // Get selected valves as mask
+    function getSelectedValveMask() {
+        const valves = [
+            document.getElementById('valve-a-check').checked ? '1' : '0',
+            document.getElementById('valve-b-check').checked ? '1' : '0',
+            document.getElementById('valve-c-check').checked ? '1' : '0',
+            document.getElementById('valve-d-check').checked ? '1' : '0'
+        ];
+        return valves.join('');
+    }
+
+    // Get selected valve names for display
+    function getSelectedValveNames() {
+        const names = [];
+        if (document.getElementById('valve-a-check').checked) names.push('A');
+        if (document.getElementById('valve-b-check').checked) names.push('B');
+        if (document.getElementById('valve-c-check').checked) names.push('C');
+        if (document.getElementById('valve-d-check').checked) names.push('D');
+        return names.join(', ') || 'None';
+    }
+
+    // Set valve state for selected valves
+    window.setSelectedValveState = function(state) {
+        const mask = getSelectedValveMask();
+        const valveNames = getSelectedValveNames();
+
+        if (mask === '0000') {
+            showStatus('Please select at least one valve');
+            return;
+        }
+
+        const stateMap = {
+            'INPUT': 'VALVE_INPUT',
+            'OUTPUT': 'VALVE_OUTPUT',
+            'BYPASS': 'VALVE_BYPASS'
+        };
+
+        const command = `${stateMap[state]} MASK=${mask}`;
+        sendGcode(command);
+
+        const stateSymbols = {
+            'INPUT': '←',
+            'OUTPUT': '→',
+            'BYPASS': '⊥'
+        };
+
+        showStatus(`Valves [${valveNames}] set to ${state} ${stateSymbols[state]}`);
+        document.getElementById('valve-status').textContent = `Valves [${valveNames}]: ${state}`;
+    };
+
+    // Syringe pump functions
+    window.aspirateSyringe = function() {
+        const steps = document.getElementById('syringe-steps').value;
+        const feedrate = document.getElementById('syringe-feedrate').value;
+        const command = `G91\nG1 E-${steps} F${feedrate}\nG90`;
+
+        sendGcode(command);
+
+        let currentCount = parseInt(localStorage.getItem('syringe-count') || '0');
+        currentCount -= parseInt(steps);
+        localStorage.setItem('syringe-count', currentCount);
+        updateSyringeDisplay(currentCount);
+
+        showStatus(`Aspirated ${steps} steps (F${feedrate})`);
+    };
+
+    window.dispenseSyringe = function() {
+        const steps = document.getElementById('syringe-steps').value;
+        const feedrate = document.getElementById('syringe-feedrate').value;
+        const command = `G91\nG1 E${steps} F${feedrate}\nG90`;
+
+        sendGcode(command);
+
+        let currentCount = parseInt(localStorage.getItem('syringe-count') || '0');
+        currentCount += parseInt(steps);
+        localStorage.setItem('syringe-count', currentCount);
+        updateSyringeDisplay(currentCount);
+
+        showStatus(`Dispensed ${steps} steps (F${feedrate})`);
+    };
+
+    window.zeroSyringe = function() {
+        sendGcode('G92 E0');
+        localStorage.setItem('syringe-count', '0');
+        updateSyringeDisplay(0);
+        showStatus('Syringe position reset to zero (G92 E0)');
+    };
+
+    function updateSyringeDisplay(count) {
+        const display = document.getElementById('syringe-count-display');
+        const direction = count > 0 ? 'dispensed' : count < 0 ? 'aspirated' : 'zero';
+
+        if (count === 0) {
+            display.textContent = 'Position: 0 steps';
+            display.style.background = 'rgba(33, 150, 243, 0.1)';
+        } else if (count > 0) {
+            display.textContent = `Position: +${count} steps (${direction})`;
+            display.style.background = 'rgba(76, 175, 80, 0.1)';
+        } else {
+            display.textContent = `Position: ${count} steps (${direction})`;
+            display.style.background = 'rgba(33, 150, 243, 0.15)';
+        }
+    }
+
     // Pump speed functions
     window.updatePumpSpeed = function(value) {
         document.getElementById('pump-speed-slider').value = value;
@@ -260,63 +405,6 @@
         showStatus(`Waste pump speed set to ${speed}`);
         localStorage.setItem('pump-speed', speed);
     };
-
-    // Syringe pump functions
-    window.aspirateSyringe = function() {
-        const steps = document.getElementById('syringe-steps').value;
-        const feedrate = document.getElementById('syringe-feedrate').value;
-        const command = `G91\nG1 E-${steps} F${feedrate}\nG90`;
-
-        sendGcode(command);
-
-        // Update step count (aspirate = negative)
-        let currentCount = parseInt(localStorage.getItem('syringe-count') || '0');
-        currentCount -= parseInt(steps);
-        localStorage.setItem('syringe-count', currentCount);
-        updateSyringeDisplay(currentCount);
-
-        showStatus(`Aspirated ${steps} steps (F${feedrate})`);
-    };
-
-    window.dispenseSyringe = function() {
-        const steps = document.getElementById('syringe-steps').value;
-        const feedrate = document.getElementById('syringe-feedrate').value;
-        const command = `G91\nG1 E${steps} F${feedrate}\nG90`;
-
-        sendGcode(command);
-
-        // Update step count (dispense = positive)
-        let currentCount = parseInt(localStorage.getItem('syringe-count') || '0');
-        currentCount += parseInt(steps);
-        localStorage.setItem('syringe-count', currentCount);
-        updateSyringeDisplay(currentCount);
-
-        showStatus(`Dispensed ${steps} steps (F${feedrate})`);
-    };
-
-    window.zeroSyringeCount = function() {
-        sendGcode('G92 E0');
-        localStorage.setItem('syringe-count', '0');
-        updateSyringeDisplay(0);
-        showStatus('Syringe position reset to zero (G92 E0)');
-    };
-
-    function updateSyringeDisplay(count) {
-        const display = document.getElementById('syringe-count-display');
-        const direction = count > 0 ? 'dispensed' : count < 0 ? 'aspirated' : 'zero';
-        const absCount = Math.abs(count);
-
-        if (count === 0) {
-            display.textContent = 'Position: 0 steps';
-            display.style.background = 'rgba(156, 39, 176, 0.1)';
-        } else if (count > 0) {
-            display.textContent = `Position: +${count} steps (${direction})`;
-            display.style.background = 'rgba(76, 175, 80, 0.1)';
-        } else {
-            display.textContent = `Position: ${count} steps (${direction})`;
-            display.style.background = 'rgba(33, 150, 243, 0.1)';
-        }
-    }
 
     // Servo functions
     window.setPipetteHeight = function() {
@@ -382,11 +470,9 @@
         const header = document.getElementById('fluidics-header');
         let isDragging = false, currentX, currentY, initialX, initialY;
 
-        // Get saved position or use defaults
         let xOffset = parseInt(localStorage.getItem('fluidics-panel-x')) || 10;
         let yOffset = parseInt(localStorage.getItem('fluidics-panel-y')) || 100;
 
-        // Set initial position
         panel.style.left = xOffset + "px";
         panel.style.top = yOffset + "px";
 
@@ -419,7 +505,6 @@
             initialY = currentY;
             isDragging = false;
 
-            // Save position
             localStorage.setItem('fluidics-panel-x', xOffset);
             localStorage.setItem('fluidics-panel-y', yOffset);
         }
