@@ -1,9 +1,9 @@
 // ==UserScript==
-// @name         Mainsail Fluidics Control Enhanced - 4 Valves
+// @name         Mainsail Fluidics Control Enhanced - 4 Valves (Fixed Logging)
 // @namespace    http://tampermonkey.net/
-// @version      2.1
-// @description  Add fluidics control panel with shared syringe pump and 4 independent valves
-// @author       Rister (Modified for 4 valves)
+// @version      2.3
+// @description  Add fluidics control panel with shared syringe pump and 4 independent valves - Fixed Console Logging
+// @author       Rister (Modified for 4 valves + Fixed Console Logging)
 // @match        http://192.168.1.89:81/*
 // @match        http://mainsailos.local/*
 // @match        http://your-printer-ip/*
@@ -13,19 +13,57 @@
 (function() {
     'use strict';
 
+    // Enhanced console logging function with fallback
+    function logGcodeToConsole(command, description = '') {
+        try {
+            // Simple, reliable logging format
+            console.log('═══════════════════════════════════════');
+            console.log('🔧 FLUIDICS G-CODE COMMAND');
+            if (description) {
+                console.log('📝 Action: ' + description);
+            }
+            console.log('━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━');
+            console.log(command);
+            console.log('═══════════════════════════════════════');
+            console.log(''); // Empty line for spacing
+
+            // Also log with styling (if browser supports it)
+            console.log('%c═══════════════════════════════════════', 'color: #2196F3; font-weight: bold;');
+            console.log('%c🔧 FLUIDICS G-CODE COMMAND', 'color: #4CAF50; font-weight: bold; font-size: 14px;');
+            if (description) {
+                console.log('%c📝 Action: ' + description, 'color: #FF9800; font-weight: bold;');
+            }
+            console.log('%c━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━', 'color: #2196F3;');
+            console.log('%c' + command, 'color: #000; background: #FFEB3B; padding: 5px; font-family: monospace; font-size: 13px;');
+            console.log('%c═══════════════════════════════════════', 'color: #2196F3; font-weight: bold;');
+            console.log(''); // Empty line for spacing
+        } catch (e) {
+            // Fallback to basic logging if styled logging fails
+            console.log('=== FLUIDICS G-CODE COMMAND ===');
+            if (description) console.log('Action:', description);
+            console.log(command);
+            console.log('================================');
+        }
+    }
+
     // Send G-code command to Klipper
-    function sendGcode(command) {
-        console.log('Sending command:', command);
+    function sendGcode(command, description = '') {
+        // ALWAYS log first
+        console.log('>>> Sending G-code:', command); // Basic log as backup
+        logGcodeToConsole(command, description);
 
         if (window.$nuxt && window.$nuxt.$socket) {
+            console.log('>>> Using Nuxt socket');
             window.$nuxt.$socket.emit('printer.gcode.script', { script: command });
             return;
         }
 
         const wsUrl = `ws://${window.location.hostname}:7125/websocket`;
+        console.log('>>> Using WebSocket:', wsUrl);
         try {
             const ws = new WebSocket(wsUrl);
             ws.onopen = function() {
+                console.log('>>> WebSocket connected');
                 const message = {
                     jsonrpc: "2.0",
                     method: "printer.gcode.script",
@@ -35,8 +73,11 @@
                 ws.send(JSON.stringify(message));
                 setTimeout(() => ws.close(), 1000);
             };
+            ws.onerror = function(error) {
+                console.error('WebSocket error:', error);
+            };
         } catch (error) {
-            console.log('WebSocket failed:', error);
+            console.error('WebSocket failed:', error);
         }
     }
 
@@ -59,6 +100,12 @@
                 </div>
 
                 <div id="fluidics-content" style="display: none;">
+
+                    <!-- Console Info Banner -->
+                    <div style="margin-bottom: 15px; padding: 8px; background: #FFEB3B;
+                        border-radius: 4px; border-left: 4px solid #FBC02D; font-size: 11px;">
+                        <strong>💡 Tip:</strong> All G-code commands are logged to the browser console (F12) for easy copying!
+                    </div>
 
                     <!-- Shared Syringe Pump Control -->
                     <div style="margin-bottom: 15px; padding: 10px; background: #e3f2fd;
@@ -263,6 +310,24 @@
         makeDraggable();
         setupEventHandlers();
         loadSavedSettings();
+
+        // Log initialization message
+        console.log('╔═══════════════════════════════════════════════════════╗');
+        console.log('║  FLUIDICS CONTROL PANEL - CONSOLE LOGGING ENABLED   ║');
+        console.log('╚═══════════════════════════════════════════════════════╝');
+        console.log('All G-code commands will be logged here for easy copying to your macro editor.');
+        console.log('');
+
+        // Also log styled version
+        try {
+            console.log('%c╔═══════════════════════════════════════════════════════╗', 'color: #4CAF50; font-weight: bold;');
+            console.log('%c║  FLUIDICS CONTROL PANEL - CONSOLE LOGGING ENABLED   ║', 'color: #4CAF50; font-weight: bold; font-size: 16px;');
+            console.log('%c╚═══════════════════════════════════════════════════════╝', 'color: #4CAF50; font-weight: bold;');
+            console.log('%cAll G-code commands will be logged here for easy copying to your macro editor.', 'color: #FF9800; font-style: italic;');
+        } catch (e) {
+            // Styled logging not supported, plain version already logged above
+        }
+        console.log('');
     }
 
     // Event handlers and functions
@@ -318,7 +383,8 @@
         };
 
         const command = `${stateMap[state]} MASK=${mask}`;
-        sendGcode(command);
+        const description = `Set Valves [${valveNames}] to ${state}`;
+        sendGcode(command, description);
 
         const stateSymbols = {
             'INPUT': '←',
@@ -335,8 +401,9 @@
         const steps = document.getElementById('syringe-steps').value;
         const feedrate = document.getElementById('syringe-feedrate').value;
         const command = `G91\nG1 E-${steps} F${feedrate}\nG90`;
+        const description = `Aspirate ${steps} steps at feedrate ${feedrate}`;
 
-        sendGcode(command);
+        sendGcode(command, description);
 
         let currentCount = parseInt(localStorage.getItem('syringe-count') || '0');
         currentCount -= parseInt(steps);
@@ -350,8 +417,9 @@
         const steps = document.getElementById('syringe-steps').value;
         const feedrate = document.getElementById('syringe-feedrate').value;
         const command = `G91\nG1 E${steps} F${feedrate}\nG90`;
+        const description = `Dispense ${steps} steps at feedrate ${feedrate}`;
 
-        sendGcode(command);
+        sendGcode(command, description);
 
         let currentCount = parseInt(localStorage.getItem('syringe-count') || '0');
         currentCount += parseInt(steps);
@@ -362,7 +430,8 @@
     };
 
     window.zeroSyringe = function() {
-        sendGcode('G92 E0');
+        const description = 'Reset syringe position to zero';
+        sendGcode('G92 E0', description);
         localStorage.setItem('syringe-count', '0');
         updateSyringeDisplay(0);
         showStatus('Syringe position reset to zero (G92 E0)');
@@ -394,14 +463,16 @@
 
     window.setWashSpeed = function() {
         const speed = document.getElementById('pump-speed-input').value;
-        sendGcode(`SET_WASH_SPEED SPEED=${speed}`);
+        const description = `Set wash pump speed to ${speed}`;
+        sendGcode(`SET_WASH_SPEED SPEED=${speed}`, description);
         showStatus(`Wash pump speed set to ${speed}`);
         localStorage.setItem('pump-speed', speed);
     };
 
     window.setDrySpeed = function() {
         const speed = document.getElementById('pump-speed-input').value;
-        sendGcode(`SET_DRY_SPEED SPEED=${speed}`);
+        const description = `Set waste pump speed to ${speed}`;
+        sendGcode(`SET_DRY_SPEED SPEED=${speed}`, description);
         showStatus(`Waste pump speed set to ${speed}`);
         localStorage.setItem('pump-speed', speed);
     };
@@ -409,7 +480,8 @@
     // Servo functions
     window.setPipetteHeight = function() {
         const angle = document.getElementById('servo-angle').value;
-        sendGcode(`SET_SERVO_ANGLE_L0 ANGLE=${angle}`);
+        const description = `Set pipette height to ${angle} degrees`;
+        sendGcode(`SET_SERVO_ANGLE_L0 ANGLE=${angle}`, description);
         showStatus(`Pipette height set to ${angle} degrees`);
         localStorage.setItem('servo-angle', angle);
     };
@@ -420,7 +492,8 @@
     };
 
     window.disableServo = function() {
-        sendGcode('DISABLE_LINEARACTUATOR_SERVO_L0');
+        const description = 'Disable linear actuator servo';
+        sendGcode('DISABLE_LINEARACTUATOR_SERVO_L0', description);
         showStatus('Servo disabled');
     };
 
@@ -428,14 +501,16 @@
     window.selectTip = function() {
         const tip = document.getElementById('tip-selector').value;
         const command = tip === 'P100' ? 'SETP100' : 'SETP300';
-        sendGcode(command);
+        const description = `Select ${tip} pipette tip`;
+        sendGcode(command, description);
         showStatus(`Selected ${tip} tip`);
         localStorage.setItem('selected-tip', tip);
     };
 
     // Send command function
     window.sendCommand = function(command) {
-        sendGcode(command);
+        const description = `Execute command: ${command}`;
+        sendGcode(command, description);
         showStatus(`Sent: ${command}`);
     };
 
