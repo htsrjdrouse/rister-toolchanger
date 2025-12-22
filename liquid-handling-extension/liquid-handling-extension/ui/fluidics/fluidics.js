@@ -265,7 +265,7 @@ export class FluidicsControl {
     // Pipette controls
     container.querySelector('#set-height')?.addEventListener('click', () => {
       const angle = document.getElementById('servo-angle').value;
-      this.api.sendGcode(`SET_SERVO SERVO=linearactuator_servo_l0 ANGLE=${angle}`);
+      this.api.sendGcode(`LINEARACTSERVOMOVE ANGLE=${angle} HOLD=1000`);
       this.showNotification(`Pipette height set to ${angle}°`);
     });
     
@@ -273,7 +273,7 @@ export class FluidicsControl {
     container.querySelector('#preset-90')?.addEventListener('click', () => this.setPresetAngle(90));
     container.querySelector('#preset-180')?.addEventListener('click', () => this.setPresetAngle(180));
     container.querySelector('#servo-off')?.addEventListener('click', () => {
-      this.api.sendGcode('SET_SERVO SERVO=linearactuator_servo_l0 WIDTH=0');
+      this.api.sendGcode('LINEARACTSERVOOFF');
       this.showNotification('Servo turned OFF');
     });
 
@@ -435,7 +435,7 @@ export class FluidicsControl {
 
   setPresetAngle(angle) {
     document.getElementById('servo-angle').value = angle;
-    this.api.sendGcode(`SET_SERVO SERVO=linearactuator_servo_l0 ANGLE=${angle}`);
+    this.api.sendGcode(`LINEARACTSERVOMOVE ANGLE=${angle} HOLD=1000`);
     this.showNotification(`Pipette set to ${angle}°`);
   }
 
