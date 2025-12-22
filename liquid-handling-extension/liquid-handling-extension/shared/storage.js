@@ -1,0 +1,215 @@
+// Unified storage manager for all extension data
+export class StorageManager {
+  constructor() {
+    this.config = {
+      printerArea: { width: 380, height: 480 },
+      objects: [],
+      tips: [],
+      activeTipIndex: 0,
+      savedMacros: [],
+      version: '1.0.0'
+    };
+  }
+
+  // Initialize storage with default values if needed
+  async initialize() {
+    const stored = await chrome.storage.local.get('liquidHandlingConfig');
+    if (stored.liquidHandlingConfig) {
+      this.config = { ...this.config, ...stored.liquidHandlingConfig };
+    } else {
+      // Create default Tip0 if no tips exist
+      if (this.config.tips.length === 0) {
+        this.config.tips.push(this.createDefaultTip());
+      }
+      await this.save();
+    }
+    return this.config;
+  }
+
+  createDefaultTip() {
+    return {
+      name: "Tip0",
+      drypad_z: 70.0,
+      drypad_servo: 115,
+      drypad_time: 3000,
+      wash_x: 134.0,
+      wash_y: 374.5,
+      wash_z: 70.0,
+      wash_servo: 120,
+      waste_x: 170.0,
+      waste_y: 373.0,
+      waste_z: 92.0,
+      waste_servo: 170,
+      eject_x: 65.0,
+      eject_y: 340.0,
+      eject_z: 40.0,
+      eject_servo: 150
+    };
+  }
+
+  // Save entire configuration
+  async save() {
+    await chrome.storage.local.set({ 
+      liquidHandlingConfig: this.config 
+    });
+  }
+
+  // Get all configuration
+  getAll() {
+    return this.config;
+  }
+
+  // Printer Area methods
+  getPrinterArea() {
+    return this.config.printerArea;
+  }
+
+  async setPrinterArea(width, height) {
+    this.config.printerArea = { width, height };
+    await this.save();
+  }
+
+  // Object methods
+  getObjects() {
+    return this.config.objects;
+  }
+
+  getObject(name) {
+    return this.config.objects.find(obj => obj.name === name);
+  }
+
+  async addObject(object) {
+    this.config.objects.push(object);
+    await this.save();
+  }
+
+  async updateObject(index, object) {
+    this.config.objects[index] = object;
+    await this.save();
+  }
+
+  async deleteObject(index) {
+    this.config.objects.splice(index, 1);
+    await this.save();
+  }
+
+  async setObjects(objects) {
+    this.config.objects = objects;
+    await this.save();
+  }
+
+  // Tip methods
+  getTips() {
+    return this.config.tips;
+  }
+
+  getTip(index) {
+    return this.config.tips[index];
+  }
+
+  getActiveTipIndex() {
+    return this.config.activeTipIndex;
+  }
+
+  async addTip(tip) {
+    this.config.tips.push(tip);
+    await this.save();
+  }
+
+  async updateTip(index, tip) {
+    this.config.tips[index] = tip;
+    await this.save();
+  }
+
+  async deleteTip(index) {
+    this.config.tips.splice(index, 1);
+    await this.save();
+  }
+
+  async setTips(tips) {
+    this.config.tips = tips;
+    await this.save();
+  }
+
+  async setActiveTipIndex(index) {
+    this.config.activeTipIndex = index;
+    await this.save();
+  }
+
+  // Macro methods
+  getMacros() {
+    return this.config.savedMacros;
+  }
+
+  async addMacro(macro) {
+    this.config.savedMacros.push(macro);
+    await this.save();
+  }
+
+  async updateMacro(index, macro) {
+    this.config.savedMacros[index] = macro;
+    await this.save();
+  }
+
+  async deleteMacro(index) {
+    this.config.savedMacros.splice(index, 1);
+    await this.save();
+  }
+
+  async setMacros(macros) {
+    this.config.savedMacros = macros;
+    await this.save();
+  }
+
+  // Export/Import
+  exportConfig() {
+    return JSON.stringify(this.config, null, 2);
+  }
+
+  async importConfig(jsonString) {
+    try {
+      const imported = JSON.parse(jsonString);
+      this.config = { ...this.config, ...imported };
+      await this.save();
+      return true;
+    } catch (error) {
+      console.error('Import failed:', error);
+      return false;
+    }
+  }
+
+  // Array coordinate calculation
+  getArrayCoordinates(objectName) {
+    const obj = this.getObject(objectName);
+    if (!obj) return [];
+
+    const coords = [];
+    const rows = parseInt(obj.arrayrow);
+    const cols = parseInt(obj.arraycolumn);
+    const rowSpacing = parseFloat(obj.arrayrowsp);
+    const colSpacing = parseFloat(obj.arraycolumnsp);
+    const marginX = parseFloat(obj.marginx);
+    const marginY = parseFloat(obj.marginy);
+    const baseX = parseFloat(obj.posx);
+    const baseY = parseFloat(obj.posy);
+
+    for (let row = 0; row < rows; row++) {
+      for (let col = 0; col < cols; col++) {
+        const arrayX = baseX + marginX + col * colSpacing;
+        const arrayY = baseY + marginY + row * rowSpacing;
+        const arrayName = String.fromCharCode(65 + row) + (col + 1);
+        coords.push({
+          name: arrayName,
+          x: arrayX,
+          y: arrayY,
+          row: row,
+          col: col
+        });
+      }
+    }
+    return coords;
+  }
+}
+
+// Create singleton instance
+export const storage = new StorageManager();

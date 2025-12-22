@@ -23,12 +23,65 @@ Each tool type uses optimized communication protocols and provides comprehensive
 - **Advanced Sensor System**: Dock/carriage detection with LED status feedback
 - **Tool State Validation**: Real-time monitoring and error detection
 - **Web-Based Camera Control**: Flask interface with programmable focus
-- **NEW: Pixel-to-Printer Calibration**: Click-to-coordinate mapping for visual calibration
-- **NEW: Extruder Offset Calibration**: Automated visual offset measurement and correction
+- **Pixel-to-Printer Calibration**: Click-to-coordinate mapping for visual calibration
+- **Extruder Offset Calibration**: Automated visual offset measurement and correction
 - **Precision Liquid Handling**: Syringe pump with valve control and wash station
 - **Configuration Files**: 20+ Klipper .cfg files for comprehensive system integration
 - **Python Modules**: Custom Klipper extras and integrated services
 - **G-code Macros**: Unified command interface with 50+ custom macros
+- **Browser Extension Control**: Professional web-based control panel for fluidics and G-code generation
+- **Dynamic Configuration System**: No hardcoded values - all tip positions in `variables.cfg`
+- **Unified Tip Management**: Browser-to-Klipper synchronization for all 4 dispensers
+- **JSON-Based Storage**: Structured tip configuration with export/import capabilities
+
+
+## 🆕 Liquid Handling Browser Extension
+
+A professional browser extension provides unified control for liquid handling operations, replacing Tampermonkey scripts with native browser integration.
+
+### Features
+
+- **Object Editor**: Visual printer bed with live canvas, array positioning for well plates and fixtures
+- **Fluidics Control**: Multi-tip management (4 dispensers), syringe pump operations, valve control
+- **G-code Builder**: Automated sequence generation, macro management, direct printer execution
+- **Resizable Window**: Drag and resize interface, works on multiple monitors
+- **Configuration Management**: Export/import entire setups, sync tips to Klipper's `variables.cfg`
+
+### Why Use the Extension?
+
+- ✅ **No Tampermonkey required** - Standalone Chrome/Edge/Firefox extension
+- ✅ **No licensing concerns** - MIT licensed, free for commercial use
+- ✅ **Eliminates hardcoded values** - All tip positions dynamically loaded from `variables.cfg`
+- ✅ **Browser-to-Klipper sync** - Changes in browser automatically update Klipper configuration
+- ✅ **Professional interface** - Resizable window, tabbed layout, real-time connection status
+
+**[📖 Full Documentation →](./liquid-handling-extension/README.md)**
+
+### Quick Install
+```bash
+cd rister-toolchanger/liquid-handling-extension
+# Load as unpacked extension in Chrome/Edge: chrome://extensions/
+# Or Firefox: about:debugging
+# See liquid-handling-extension/README.md for detailed instructions
+```
+
+### Integration with Configuration System
+
+The browser extension works seamlessly with the updated configuration files:
+
+**Updated Configuration Files:**
+- `config/microfluidics.cfg` - Main fluidics macros (no hardcoded positions)
+- `config/tipset_config.cfg` - Tip definitions and parameters
+- `config/variables.cfg` - Runtime tip storage (auto-updated by extension)
+
+**Key Improvements:**
+- All tip positions (drypad, wash, waste, eject) stored in `variables.cfg`
+- Browser extension edits tips → automatically saves to Klipper
+- Export/import tip configurations as JSON
+- Manage all 4 dispensers from single interface
+- No G-code editing required for tip position changes
+
+
 
 ## System Architecture
 
@@ -120,10 +173,11 @@ Each tool type uses optimized communication protocols and provides comprehensive
 ├── camera_calibration.cfg         # NEW: Pixel-to-printer calibration tools
 │
 ├── syringe_pump_0.cfg             # Liquid pump configuration
-├── microfluidics.cfg              # Wash station control
+├── tipset_config.cfg              # NEW: Tip configuration storage
+├── microfluidics.cfg              # UPDATED: Fluidics macros (no hardcoded values)
+├── variables.cfg 
 ├── tool_probe.cfg                 # Z-offset probing
 ├── smart_filament_sensor.cfg      # Runout detection
-└── [additional configuration files]
 ```
 
 **Camera Pi Scripts:**
@@ -700,6 +754,68 @@ If upgrading from a previous version:
    CAMERA_SERVICE_STATUS        # If using integrated service
    CAMERA_CALIBRATION_WIZARD    # Test calibration system
    ```
+
+## Configuration System Updates
+
+### Dynamic Tip Configuration
+
+The `4dispenser` branch introduces a configuration system that eliminates hardcoded tip positions:
+
+**New/Updated Files:**
+- `config/tipset_config.cfg` - Defines tip structure and parameters
+- `config/microfluidics.cfg` - Fluidics control macros reading from `variables.cfg`
+- `config/variables.cfg` - Stores runtime tip configurations (JSON format)
+
+**Migration from Hardcoded System:**
+
+If upgrading from the old hardcoded tip configuration:
+
+1. **Backup existing config:**
+```bash
+   cp ~/printer_data/config/microfluidics.cfg microfluidics.cfg.backup
+```
+
+2. **Install new configuration files:**
+```bash
+   # Copy updated files from repository
+   cp config/microfluidics.cfg ~/printer_data/config/
+   cp config/tipset_config.cfg ~/printer_data/config/
+```
+
+3. **Initialize tip configurations:**
+   - Use browser extension to configure tips
+   - Or manually edit `variables.cfg` with tip JSON data
+   - Run `SAVE_CONFIG` to persist changes
+
+4. **Verify operation:**
+```gcode
+   SELECT_TIP TIP=0        # Should load tip from variables.cfg
+   GO_WASH                 # Should use tip0's wash coordinates
+```
+
+**Benefits:**
+- ✅ Change tip positions without editing G-code
+- ✅ Manage multiple tip sets from browser
+- ✅ Export/import configurations for different setups
+- ✅ No Klipper restart required for tip position changes
+
+**Configuration Structure:**
+
+Tips are stored in `variables.cfg` as JSON:
+```python
+tips_config = {"tip0": {"name": "Tip0", "drypad_z": 70.0, "wash_x": 134.0, ...}, ...}
+active_tip = 0
+```
+
+Macros in `microfluidics.cfg` dynamically load tip data:
+```gcode
+[gcode_macro GO_WASH]
+gcode:
+    {% set tip = printer.save_variables.variables.tips_config['tip' + printer.save_variables.variables.active_tip|string] %}
+    G1 X{tip.wash_x} Y{tip.wash_y} Z{tip.wash_z}
+```
+
+
 
 ## License
 
