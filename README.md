@@ -37,7 +37,7 @@ Each tool type uses optimized communication protocols and provides comprehensive
 
 ## 🆕 Liquid Handling Browser Extension
 
-A professional browser extension provides unified control for liquid handling operations, replacing Tampermonkey scripts with native browser integration.
+A professional browser extension provides unified control for liquid handling operations with native browser integration.
 
 ### Features
 
@@ -49,8 +49,8 @@ A professional browser extension provides unified control for liquid handling op
 
 ### Why Use the Extension?
 
-- ✅ **No Tampermonkey required** - Standalone Chrome/Edge/Firefox extension
-- ✅ **No licensing concerns** - MIT licensed, free for commercial use
+- ✅ **Native browser integration** - Standalone Chrome/Edge/Firefox extension
+- ✅ **MIT licensed** - Free for commercial use
 - ✅ **Eliminates hardcoded values** - All tip positions dynamically loaded from `variables.cfg`
 - ✅ **Browser-to-Klipper sync** - Changes in browser automatically update Klipper configuration
 - ✅ **Professional interface** - Resizable window, tabbed layout, real-time connection status
@@ -815,6 +815,62 @@ gcode:
     G1 X{tip.wash_x} Y{tip.wash_y} Z{tip.wash_z}
 ```
 
+## OpenSCAD Files and CAD Assembly
+
+All OpenSCAD source files, STL components, and the complete assembly are organized in the `openscad/` directory.
+
+### Quick Links
+
+- **[OpenSCAD Documentation](openscad/README.md)** - Complete guide to the OpenSCAD structure
+- **[Main Assembly File](openscad/organized_openscad.scad)** - View complete machine assembly
+- **[Source Files](openscad/scad/)** - Parametric OpenSCAD source files
+- **[STL Files](openscad/stls/)** - Generated STL components organized by system
+
+### Directory Overview
+
+```
+openscad/
+├── README.md                    # Detailed OpenSCAD documentation
+├── organized_openscad.scad      # Main assembly (open in OpenSCAD)
+├── stls/                        # All STL files organized by component
+│   ├── LiquidDispenserTool0/    # 4-channel pipette system
+│   ├── ExtruderTool0/           # Sherpa Micro + Bambu hotend
+│   ├── ExtruderTool1/           # Second extruder
+│   ├── RaspiCameraTool/         # Camera tool
+│   ├── Klicky/                  # Klicky probe
+│   ├── peek_nozzle_4channel/    # PEEK nozzle assembly
+│   ├── TipCase/                 # Tip storage system
+│   └── ...                      # (Frame, motion, bed components)
+└── scad/                        # OpenSCAD source files
+    ├── tslot.inc.scad           # T-slot library
+    ├── carriage_v2_3dify.scad   # Carriage source
+    ├── linearactuator.scad      # Linear actuator
+    └── ...                      # (All parametric sources)
+```
+
+### Key Features
+
+- **Complete Assembly Model** - Single file showing entire machine
+- **Parametric Sources** - Editable OpenSCAD files for customization
+- **Organized STLs** - Components grouped by system/tool
+- **Audit Trail** - Documentation linking sources to generated STLs
+- **Dependency Management** - Automated script for copying dependencies
+
+### Viewing the Assembly
+
+1. Install [OpenSCAD](https://openscad.org/downloads.html)
+2. Open `openscad/organized_openscad.scad`
+3. Render (F6) to see the complete assembly
+
+For detailed information about modifying components, generating STLs, and working with the source files, see **[openscad/README.md](openscad/README.md)**.
+
+### Machine Specifications (CAD)
+
+**Build Volume:** 350mm × 350mm × 250mm (Voron Trident compatible)  
+**Motion System:** CoreXY with MGN linear rails (MGN9 X-axis, MGN12 Y-axis)  
+**Tools:** 4-channel liquid dispenser, 2× extruders, camera, Klicky probe  
+**Specialty:** 150μm PEEK nozzles for perovskite ink dispensing  
+**Frame:** Misumi HFSB5-2020 and HGSB5-2020 extrusions
 
 
 ## License
