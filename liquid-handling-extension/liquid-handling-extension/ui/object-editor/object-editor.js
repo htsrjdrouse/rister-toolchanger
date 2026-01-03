@@ -138,7 +138,7 @@ export class ObjectEditor {
         </label>
       </div>
 
-      <div class="form-row cols-3">
+      <div class="form-row cols-2">
         <div>
           <label>Object Size X (mm):</label>
           <input type="number" id="obj-X" value="${obj.X}" step="0.1">
@@ -146,10 +146,6 @@ export class ObjectEditor {
         <div>
           <label>Object Size Y (mm):</label>
           <input type="number" id="obj-Y" value="${obj.Y}" step="0.1">
-        </div>
-        <div>
-          <label>Z Height (mm):</label>
-          <input type="number" id="obj-Z" value="${obj.Z}" step="0.1">
         </div>
       </div>
 
@@ -162,6 +158,11 @@ export class ObjectEditor {
           <label>Position Y:</label>
           <input type="number" id="obj-posy" value="${obj.posy}" step="0.1">
         </div>
+      </div>
+      
+      <div style="margin-bottom: 15px;">
+        <label>Position Z (bed height, mm):</label>
+        <input type="number" id="obj-Z" value="${obj.Z}" step="0.1">
       </div>
 
       <h4 style="margin: 20px 0 10px 0; color: #667eea;">Array Configuration</h4>
@@ -294,6 +295,78 @@ export class ObjectEditor {
         document.getElementById('obj-color').value = `${rgb.r},${rgb.g},${rgb.b}`;
       }
     });
+    
+    // Auto-save setup
+    this.setupPrinterAreaAutoSave();
+    this.setupObjectAutoSave();
+    
+    // Canvas hover tooltips
+    this.setupCanvasTooltips();
+  }
+  
+  // Auto-save object fields on change
+  setupObjectAutoSave() {
+    if (this.selectedIndex === -1) return;
+    
+    const container = document.getElementById('object-editor-content');
+    const fields = [
+      'obj-name', 'obj-catalog', 'obj-X', 'obj-Y', 'obj-Z',
+      'obj-posx', 'obj-posy', 'obj-arrayrow', 'obj-arraycolumn',
+      'obj-arrayrowsp', 'obj-arraycolumnsp', 'obj-marginx', 'obj-marginy',
+      'obj-shimx', 'obj-shimy', 'obj-shapex', 'obj-shapey', 'obj-ztrav'
+    ];
+    
+    fields.forEach(fieldId => {
+      const element = container.querySelector(`#${fieldId}`);
+      element?.addEventListener('change', () => this.autoSaveObject());
+    });
+    
+    // Radio buttons
+    container.querySelectorAll('input[name="obj-status"]').forEach(radio => {
+      radio.addEventListener('change', () => this.autoSaveObject());
+    });
+    
+    container.querySelectorAll('input[name="array-shape"]').forEach(radio => {
+      radio.addEventListener('change', () => this.autoSaveObject());
+    });
+  }
+  
+  async autoSaveObject() {
+    if (this.selectedIndex === -1) return;
+
+    const obj = this.objects[this.selectedIndex];
+    const container = document.getElementById('object-editor-content');
+
+    obj.name = container.querySelector('#obj-name')?.value || obj.name;
+    obj.catalog = container.querySelector('#obj-catalog')?.value || obj.catalog;
+    obj.status = container.querySelector('input[name="obj-status"]:checked')?.value || obj.status;
+    obj.X = container.querySelector('#obj-X')?.value || obj.X;
+    obj.Y = container.querySelector('#obj-Y')?.value || obj.Y;
+    obj.Z = container.querySelector('#obj-Z')?.value || obj.Z;
+    obj.posx = container.querySelector('#obj-posx')?.value || obj.posx;
+    obj.posy = container.querySelector('#obj-posy')?.value || obj.posy;
+    obj.arrayrow = container.querySelector('#obj-arrayrow')?.value || obj.arrayrow;
+    obj.arraycolumn = container.querySelector('#obj-arraycolumn')?.value || obj.arraycolumn;
+    obj.arrayrowsp = container.querySelector('#obj-arrayrowsp')?.value || obj.arrayrowsp;
+    obj.arraycolumnsp = container.querySelector('#obj-arraycolumnsp')?.value || obj.arraycolumnsp;
+    obj.marginx = container.querySelector('#obj-marginx')?.value || obj.marginx;
+    obj.marginy = container.querySelector('#obj-marginy')?.value || obj.marginy;
+    obj.shimx = container.querySelector('#obj-shimx')?.value || obj.shimx;
+    obj.shimy = container.querySelector('#obj-shimy')?.value || obj.shimy;
+    obj.shapex = container.querySelector('#obj-shapex')?.value || obj.shapex;
+    obj.shapey = container.querySelector('#obj-shapey')?.value || obj.shapey;
+    obj.ztrav = container.querySelector('#obj-ztrav')?.value || obj.ztrav;
+    obj.arrayshape = container.querySelector('input[name="array-shape"]:checked')?.value || obj.arrayshape;
+    
+    const colorPicker = container.querySelector('#obj-color-picker');
+    if (colorPicker) {
+      const rgb = this.hexToRgb(colorPicker.value);
+      if (rgb) obj.color = `${rgb.r},${rgb.g},${rgb.b}`;
+    }
+
+    await this.storage.setObjects(this.objects);
+    this.drawCanvas();
+    console.log('Auto-saved object:', obj.name);
   }
 
   createNewObject() {
@@ -422,7 +495,105 @@ export class ObjectEditor {
     this.storage.setPrinterArea(width, height);
     this.render();
     this.attachEventListeners();
-    alert('Printer area updated!');
+    this.showNotification('Printer area updated!');
+  }
+  
+  // Auto-save printer area on input change
+  setupPrinterAreaAutoSave() {
+    const widthInput = document.getElementById('printer-width');
+    const heightInput = document.getElementById('printer-height');
+    
+    const autoSave = () => {
+      const width = parseFloat(widthInput.value);
+      const height = parseFloat(heightInput.value);
+      
+      if (width >= 100 && height >= 100) {
+        this.printerArea = { width, height };
+        this.storage.setPrinterArea(width, height);
+        console.log('Auto-saved printer area:', width, 'x', height);
+      }
+    };
+    
+    widthInput?.addEventListener('change', autoSave);
+    heightInput?.addEventListener('change', autoSave);
+  }
+  
+  setupCanvasTooltips() {
+    const canvas = document.getElementById('printer-canvas');
+    if (!canvas) return;
+    
+    // Create tooltip element
+    let tooltip = document.getElementById('canvas-tooltip');
+    if (!tooltip) {
+      tooltip = document.createElement('div');
+      tooltip.id = 'canvas-tooltip';
+      tooltip.style.position = 'absolute';
+      tooltip.style.display = 'none';
+      tooltip.style.backgroundColor = 'rgba(0, 0, 0, 0.9)';
+      tooltip.style.color = '#fff';
+      tooltip.style.padding = '8px 12px';
+      tooltip.style.borderRadius = '6px';
+      tooltip.style.fontSize = '14px';
+      tooltip.style.fontWeight = 'bold';
+      tooltip.style.pointerEvents = 'none';
+      tooltip.style.zIndex = '10000';
+      tooltip.style.boxShadow = '0 2px 8px rgba(0,0,0,0.3)';
+      tooltip.style.whiteSpace = 'nowrap';
+      document.body.appendChild(tooltip);
+    }
+    
+    // Mouse move handler
+    const handleMouseMove = (e) => {
+      const rect = canvas.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      
+      const scale = Math.min(canvas.width / this.printerArea.width, canvas.height / this.printerArea.height);
+      
+      // Check if mouse is over any object
+      let hoveredObject = null;
+      for (let i = this.objects.length - 1; i >= 0; i--) {
+        const obj = this.objects[i];
+        if (obj.status === 'off') continue;
+        
+        const x = (this.printerArea.width - parseFloat(obj.posx) - parseFloat(obj.X)) * scale;
+        const y = parseFloat(obj.posy) * scale;
+        const width = parseFloat(obj.X) * scale;
+        const height = parseFloat(obj.Y) * scale;
+        
+        if (mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height) {
+          hoveredObject = obj;
+          break;
+        }
+      }
+      
+      if (hoveredObject) {
+        // Show tooltip
+        tooltip.textContent = hoveredObject.name;
+        tooltip.style.display = 'block';
+        tooltip.style.left = (e.clientX + 15) + 'px';
+        tooltip.style.top = (e.clientY - 30) + 'px';
+        canvas.style.cursor = 'pointer';
+      } else {
+        // Hide tooltip
+        tooltip.style.display = 'none';
+        canvas.style.cursor = 'default';
+      }
+    };
+    
+    // Mouse leave handler
+    const handleMouseLeave = () => {
+      tooltip.style.display = 'none';
+      canvas.style.cursor = 'default';
+    };
+    
+    // Remove old listeners if they exist
+    canvas.removeEventListener('mousemove', handleMouseMove);
+    canvas.removeEventListener('mouseleave', handleMouseLeave);
+    
+    // Add new listeners
+    canvas.addEventListener('mousemove', handleMouseMove);
+    canvas.addEventListener('mouseleave', handleMouseLeave);
   }
 
   drawCanvas() {
@@ -486,11 +657,7 @@ export class ObjectEditor {
       ctx.fillRect(x, y, width, height);
       ctx.strokeRect(x, y, width, height);
 
-      // Draw object name
-      ctx.fillStyle = '#ffffff';
-      ctx.font = `${Math.max(10, 10 * scale)}px sans-serif`;
-      ctx.textAlign = 'center';
-      ctx.fillText(obj.name, x + width / 2, y + height / 2);
+      // No labels - tooltips show names on hover
 
       // Draw arrays
       this.drawArrays(ctx, obj, x, y, scale);
@@ -570,5 +737,9 @@ export class ObjectEditor {
   rgbToHex(rgb) {
     const [r, g, b] = rgb.split(',').map(c => parseInt(c.trim()));
     return "#" + ((1 << 24) + (r << 16) + (g << 8) + b).toString(16).slice(1);
+  }
+  
+  showNotification(message) {
+    console.log('ObjectEditor:', message);
   }
 }

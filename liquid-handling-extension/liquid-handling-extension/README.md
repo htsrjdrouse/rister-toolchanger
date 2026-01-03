@@ -8,14 +8,17 @@ A professional browser extension for controlling Klipper-based liquid handling a
 - Visual printer bed representation
 - Create and manage lab objects (well plates, racks, etc.)
 - Array positioning with automatic coordinate calculation
+- **NEW: Position Z (bed height) instead of object Z height**
 - Configurable printer area dimensions
 - Export/import object configurations
 
 ### 💧 Fluidics Control
 - Tip management system with customizable parameters
+- **NEW: Macro assignment for wash/waste/eject actions**
 - Pipette height control (servo positioning)
 - Syringe pump operations (aspirate/dispense)
 - Multi-valve control (A, B, C, D)
+- **NEW: Enhanced drypad control with linear actuator position and delay settings**
 - Quick actions: wash, waste, eject, home, drypad touch
 
 ### ⚙️ G-code Builder
@@ -80,13 +83,24 @@ You can modify these endpoints in `shared/api.js` if needed.
 
 ## Data Storage
 
-All configuration is stored locally in your browser using Chrome's storage API:
+**Automatic Default Configuration:** On first startup, the extension loads your pre-configured default settings from `default_config.json`. This includes all your objects, tips, macros, and printer settings - no manual import needed!
+
+**Configuration Auto-Saves:** All configuration changes are automatically saved to your browser's local storage. Changes persist immediately when you make them - no manual saving required!
+
+Storage includes:
 - Objects and their positions
-- Tip configurations
+- Tip configurations with macro assignments
 - Saved G-code macros
 - Printer area settings
+- Active tip selection
 
-Use the "Export Config" button to backup your configuration, and "Import Config" to restore it.
+**Export for Backup:** Use the "Export Config" button to create timestamped backup files (e.g., `liquid_handling_config_2025-01-02.json`). Import these to restore settings or transfer to another browser.
+
+**Workflow:**
+1. Install extension → Automatically loads default_config.json
+2. Make changes → Auto-saves to browser storage
+3. Need backup? → Export creates timestamped file
+4. Reinstall extension? → Loads default_config.json again
 
 ## Development
 
@@ -145,6 +159,13 @@ MIT License - Free to use and modify for your liquid handling automation needs.
 For issues or feature requests, please refer to the source repository.
 
 ## Version History
+
+### v1.1.0 (2025-01-02)
+- **NEW: Macro assignment for wash/waste/eject actions** - Select saved G-code macros to run for quick actions
+- **NEW: Enhanced drypad control** - Added linear actuator position and delay time settings
+- **IMPROVED: Object editor** - Changed "Z Height" to "Position Z" for clarity (bed position)
+- **IMPROVED: Auto-save** - Configuration automatically persists, no need to manually export on restart
+- Bug fixes and stability improvements
 
 ### v1.0.0 (2024)
 - Initial release

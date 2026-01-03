@@ -7,7 +7,7 @@ export class StorageManager {
       tips: [],
       activeTipIndex: 0,
       savedMacros: [],
-      version: '1.0.0'
+      version: '1.1.0'
     };
   }
 
@@ -16,12 +16,63 @@ export class StorageManager {
     const stored = await chrome.storage.local.get('liquidHandlingConfig');
     if (stored.liquidHandlingConfig) {
       this.config = { ...this.config, ...stored.liquidHandlingConfig };
-    } else {
-      // Create default Tip0 if no tips exist
-      if (this.config.tips.length === 0) {
-        this.config.tips.push(this.createDefaultTip());
+      
+      // Migrate existing tips to add new fields if they don't exist
+      if (this.config.tips && this.config.tips.length > 0) {
+        let needsSave = false;
+        this.config.tips = this.config.tips.map(tip => {
+          const updated = { ...tip };
+          
+          // Add new drypad fields if missing
+          if (updated.drypad_linear_pos === undefined) {
+            updated.drypad_linear_pos = 115;
+            needsSave = true;
+          }
+          if (updated.drypad_delay === undefined) {
+            updated.drypad_delay = 2000;
+            needsSave = true;
+          }
+          
+          // Add new macro fields if missing
+          if (updated.wash_macro === undefined) {
+            updated.wash_macro = "";
+            needsSave = true;
+          }
+          if (updated.waste_macro === undefined) {
+            updated.waste_macro = "";
+            needsSave = true;
+          }
+          if (updated.eject_macro === undefined) {
+            updated.eject_macro = "";
+            needsSave = true;
+          }
+          
+          return updated;
+        });
+        
+        // Save if we migrated any tips
+        if (needsSave) {
+          await this.save();
+          console.log('Migrated tips to v1.1.0 schema');
+        }
       }
-      await this.save();
+    } else {
+      // No stored config - load default config from file
+      console.log('No stored configuration found. Loading default configuration...');
+      try {
+        const response = await fetch(chrome.runtime.getURL('default_config.json'));
+        const defaultConfig = await response.json();
+        this.config = { ...this.config, ...defaultConfig };
+        await this.save();
+        console.log('Default configuration loaded and saved:', defaultConfig.version);
+      } catch (error) {
+        console.error('Failed to load default config, using basic defaults:', error);
+        // Fallback to basic defaults if file load fails
+        if (this.config.tips.length === 0) {
+          this.config.tips.push(this.createDefaultTip());
+        }
+        await this.save();
+      }
     }
     return this.config;
   }
@@ -32,18 +83,23 @@ export class StorageManager {
       drypad_z: 70.0,
       drypad_servo: 115,
       drypad_time: 3000,
+      drypad_linear_pos: 115,
+      drypad_delay: 2000,
       wash_x: 134.0,
       wash_y: 374.5,
       wash_z: 70.0,
       wash_servo: 120,
+      wash_macro: "",
       waste_x: 170.0,
       waste_y: 373.0,
       waste_z: 92.0,
       waste_servo: 170,
+      waste_macro: "",
       eject_x: 65.0,
       eject_y: 340.0,
       eject_z: 40.0,
-      eject_servo: 150
+      eject_servo: 150,
+      eject_macro: ""
     };
   }
 

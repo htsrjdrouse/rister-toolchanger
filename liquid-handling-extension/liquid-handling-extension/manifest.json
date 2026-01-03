@@ -1,7 +1,7 @@
 {
   "manifest_version": 3,
   "name": "Liquid Handling Control System",
-  "version": "1.0.0",
+  "version": "1.1.0",
   "description": "Complete control system for Klipper-based liquid handling automation with object positioning, fluidics control, and G-code generation",
   "permissions": [
     "storage",
@@ -32,6 +32,12 @@
       ],
       "js": ["content.js"],
       "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["default_config.json"],
+      "matches": ["<all_urls>"]
     }
   ]
 }
