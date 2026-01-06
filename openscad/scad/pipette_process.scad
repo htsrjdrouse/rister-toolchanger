@@ -29,7 +29,7 @@ include <pipette_wick_assembly.scad>
 //peek_nozzle_part1_4channel();
 //bayonet_pipette_tipcase_holder();
 
-
+peek_nozzle_part3_4channel();
 //translate([-15.7,10-10,-20])peek_nozzle_4channel();
 //translate([345.5,439,250+20])rotate([0,180,90])coolwashassembly();
 
@@ -275,20 +275,21 @@ translate([0,-i*5.2,-5])cylinder(d=5,h=5,$fn=50);
 module peek_nozzle_part3_4channel(){
 difference(){
 corner_radius = 1;  // Adjust this value to change roundness
-translate([-4-2,-5-2-15,-2-16-16])rounded_cube([8+4, 10+4+15, 7.5-1], corner_radius);
+translate([-4-2,-5-2-15,-2-16-16-4])rounded_cube([8+4, 10+4+15, 7.5-1+4], corner_radius);
 
 translate([0,0,-15-12.5]){
 translate([0,3.5,-2])rotate([0,90,0])cylinder(d=2.5,h=40,$fn=50);
 translate([0,-3.5-15,-2])rotate([0,-90,0])cylinder(d=2.5,h=40,$fn=50);
 }
 translate([0,0,-15])scale([1.02,1.02,1]){
-translate([-4,-5-15,-2-15])rounded_cube([8, 10+15, 17+5-5], corner_radius);
+translate([-4,-5-15,-2-15-1])rounded_cube([8, 10+15, 17+5-5], corner_radius);
 cylinder(d1=3,d2=2.5,h=5,$fn=50);
 translate([0,0,-5])cylinder(d=5,h=5,$fn=50);
 }
 
 for(i=[0:3]){
 translate([0,-i*5.2,-40])cylinder(d=3,h=40,$fn=50);
+#translate([0,-i*5.2,-40+2])cylinder(d1=4.75,d2=3,h=4,$fn=50);
 }
 
 
