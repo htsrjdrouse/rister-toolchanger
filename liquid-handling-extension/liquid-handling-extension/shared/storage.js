@@ -7,7 +7,7 @@ export class StorageManager {
       tips: [],
       activeTipIndex: 0,
       savedMacros: [],
-      version: '1.1.0'
+      version: '1.3.9'
     };
   }
 
@@ -20,16 +20,93 @@ export class StorageManager {
       // Migrate existing tips to add new fields if they don't exist
       if (this.config.tips && this.config.tips.length > 0) {
         let needsSave = false;
-        this.config.tips = this.config.tips.map(tip => {
+        this.config.tips = this.config.tips.map((tip, index) => {
           const updated = { ...tip };
           
+          // Update tip name to use L0 prefix if it doesn't have one
+          if (!updated.name.startsWith('L0') && !updated.name.startsWith('L1')) {
+            updated.name = `L0${updated.name}`;
+            needsSave = true;
+          }
+          
+          // Add drypad X/Y if missing
+          if (updated.drypad_x === undefined) {
+            updated.drypad_x = 92.0;
+            needsSave = true;
+          }
+          if (updated.drypad_y === undefined) {
+            updated.drypad_y = 335.0;
+            needsSave = true;
+          }
+          
+          // Migrate old drypad_servo to new split fields
+          if (updated.drypad_servo !== undefined && updated.drypad_servo_touch === undefined) {
+            updated.drypad_servo_move = 0;
+            updated.drypad_servo_touch = updated.drypad_servo;
+            delete updated.drypad_servo;
+            delete updated.drypad_linear_pos; // Remove old field
+            needsSave = true;
+          }
+          
           // Add new drypad fields if missing
-          if (updated.drypad_linear_pos === undefined) {
-            updated.drypad_linear_pos = 115;
+          if (updated.drypad_servo_move === undefined) {
+            updated.drypad_servo_move = 0;
+            needsSave = true;
+          }
+          if (updated.drypad_servo_touch === undefined) {
+            updated.drypad_servo_touch = 115;
             needsSave = true;
           }
           if (updated.drypad_delay === undefined) {
             updated.drypad_delay = 2000;
+            needsSave = true;
+          }
+          
+          // Migrate old wash_servo to new split fields
+          if (updated.wash_servo !== undefined && updated.wash_servo_wash === undefined) {
+            updated.wash_servo_move = 0;
+            updated.wash_servo_wash = updated.wash_servo;
+            delete updated.wash_servo;
+            needsSave = true;
+          }
+          if (updated.wash_servo_move === undefined) {
+            updated.wash_servo_move = 0;
+            needsSave = true;
+          }
+          if (updated.wash_servo_wash === undefined) {
+            updated.wash_servo_wash = 120;
+            needsSave = true;
+          }
+          
+          // Migrate old waste_servo to new split fields
+          if (updated.waste_servo !== undefined && updated.waste_servo_waste === undefined) {
+            updated.waste_servo_move = 0;
+            updated.waste_servo_waste = updated.waste_servo;
+            delete updated.waste_servo;
+            needsSave = true;
+          }
+          if (updated.waste_servo_move === undefined) {
+            updated.waste_servo_move = 0;
+            needsSave = true;
+          }
+          if (updated.waste_servo_waste === undefined) {
+            updated.waste_servo_waste = 170;
+            needsSave = true;
+          }
+          
+          // Migrate old eject_servo to new split fields
+          if (updated.eject_servo !== undefined && updated.eject_servo_eject === undefined) {
+            updated.eject_servo_move = 0;
+            updated.eject_servo_eject = updated.eject_servo;
+            delete updated.eject_servo;
+            needsSave = true;
+          }
+          if (updated.eject_servo_move === undefined) {
+            updated.eject_servo_move = 0;
+            needsSave = true;
+          }
+          if (updated.eject_servo_eject === undefined) {
+            updated.eject_servo_eject = 150;
             needsSave = true;
           }
           
@@ -53,7 +130,7 @@ export class StorageManager {
         // Save if we migrated any tips
         if (needsSave) {
           await this.save();
-          console.log('Migrated tips to v1.1.0 schema');
+          console.log('Migrated tips to v1.3.0 schema');
         }
       }
     } else {

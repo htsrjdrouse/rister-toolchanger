@@ -21,7 +21,33 @@ export class GcodeBuilder {
 
   render() {
     const container = document.getElementById('gcode-builder-content');
+    
+    // Get active tip info
+    const config = this.storage.getAll();
+    const tips = config.tips || [];
+    const activeTipIndex = config.activeTipIndex || 0;
+    const activeTip = tips[activeTipIndex] || { name: 'L0Tip0' };
+    
     container.innerHTML = `
+      <!-- Active Tip Indicator -->
+      <div class="section">
+        <div class="alert alert-success" style="margin-bottom: 0;">
+          Active Tip: <strong>${activeTip.name}</strong>
+        </div>
+      </div>
+
+      <!-- Position to Tip Stations -->
+      <div class="section">
+        <h3 class="section-title">🔸 Position to Tip Stations</h3>
+        <div class="btn-group">
+          <button id="position-to-drypad" class="btn btn-purple">🔸 Drypad</button>
+          <button id="position-to-wash" class="btn btn-secondary">🧼 Wash</button>
+        </div>
+        <div class="btn-group">
+          <button id="position-to-waste" class="btn btn-warning">🗑️ Waste</button>
+        </div>
+      </div>
+
       <!-- Position to Object -->
       <div class="section">
         <h3 class="section-title">📍 Position to Object</h3>
@@ -141,6 +167,19 @@ export class GcodeBuilder {
   attachEventListeners() {
     const container = document.getElementById('gcode-builder-content');
 
+    // Tip position controls
+    container.querySelector('#position-to-drypad')?.addEventListener('click', () => {
+      this.addPositionToTipStation('DRYPAD');
+    });
+
+    container.querySelector('#position-to-wash')?.addEventListener('click', () => {
+      this.addPositionToTipStation('WASH');
+    });
+
+    container.querySelector('#position-to-waste')?.addEventListener('click', () => {
+      this.addPositionToTipStation('WASTE');
+    });
+
     // Position controls
     container.querySelector('#refresh-objects')?.addEventListener('click', () => {
       this.updateObjectDropdown();
@@ -174,16 +213,62 @@ export class GcodeBuilder {
     container.querySelector('#combine-macros')?.addEventListener('click', () => this.combineMacros());
   }
 
+  addPositionToTipStation(station) {
+    const config = this.storage.getAll();
+    const tips = config.tips || [];
+    const activeTipIndex = config.activeTipIndex || 0;
+    const activeTip = tips[activeTipIndex] || {};
+    
+    const sequenceName = document.getElementById('macro-name').value || 'automation_sequence';
+    const currentGcode = document.getElementById('macro-output').value;
+
+    let newCommand = '';
+    if (!currentGcode.trim()) {
+      newCommand = `; G-code Sequence: ${sequenceName}\n`;
+      newCommand += `; Generated: ${new Date().toISOString()}\n`;
+      newCommand += `; Active Tip: ${activeTip.name || 'L0Tip0'}\n`;
+      newCommand += `; Ready to execute in Mainsail console\n\n`;
+    }
+
+    if (station === 'DRYPAD') {
+      const x = activeTip.drypad_x || 92.0;
+      const y = activeTip.drypad_y || 335.0;
+      const z = activeTip.drypad_z || 70.0;
+      
+      newCommand += `; Move to DRYPAD (${activeTip.name || 'L0Tip0'})\n`;
+      newCommand += `G90  ; Absolute positioning\n`;
+      newCommand += `G1 X${x} Y${y} F3000  ; Move to drypad XY position\n`;
+      newCommand += `G1 Z${z} F1500  ; Move to drypad Z height\n`;
+      newCommand += `G4 P500  ; Pause 500ms for stabilization\n\n`;
+    } else if (station === 'WASH') {
+      const x = activeTip.wash_x || 134.0;
+      const y = activeTip.wash_y || 374.5;
+      const z = activeTip.wash_z || 70.0;
+      
+      newCommand += `; Move to WASH (${activeTip.name || 'L0Tip0'})\n`;
+      newCommand += `G90  ; Absolute positioning\n`;
+      newCommand += `G1 X${x} Y${y} F3000  ; Move to wash XY position\n`;
+      newCommand += `G1 Z${z} F1500  ; Move to wash Z height\n`;
+      newCommand += `G4 P500  ; Pause 500ms for stabilization\n\n`;
+    } else if (station === 'WASTE') {
+      const x = activeTip.waste_x || 170.0;
+      const y = activeTip.waste_y || 373.0;
+      const z = activeTip.waste_z || 92.0;
+      
+      newCommand += `; Move to WASTE (${activeTip.name || 'L0Tip0'})\n`;
+      newCommand += `G90  ; Absolute positioning\n`;
+      newCommand += `G1 X${x} Y${y} F3000  ; Move to waste XY position\n`;
+      newCommand += `G1 Z${z} F1500  ; Move to waste Z height\n`;
+      newCommand += `G4 P500  ; Pause 500ms for stabilization\n\n`;
+    }
+
+    document.getElementById('macro-output').value = currentGcode + newCommand;
+  }
+
   addPositionToObject() {
     const selectedName = document.getElementById('macro-object-select').value;
     if (!selectedName) {
       alert('Please select an object from the dropdown');
-      return;
-    }
-
-    const obj = this.storage.getObject(selectedName);
-    if (!obj) {
-      alert('Object not found');
       return;
     }
 
@@ -197,15 +282,64 @@ export class GcodeBuilder {
       newCommand += `; Ready to execute in Mainsail console\n\n`;
     }
 
-    newCommand += `; Move to ${obj.name}\n`;
-    newCommand += `G90  ; Absolute positioning\n`;
-    newCommand += `G1 X${obj.posx} Y${obj.posy} F3000  ; Move to object position\n`;
+    // Check if this is a special tip station object
+    const lowerName = selectedName.toLowerCase();
+    if (lowerName === 'wash' || lowerName === 'waste' || lowerName === 'drypad') {
+      // Use tip position instead of object position
+      const config = this.storage.getAll();
+      const tips = config.tips || [];
+      const activeTipIndex = config.activeTipIndex || 0;
+      const activeTip = tips[activeTipIndex] || {};
 
-    if (obj.ztrav !== "0") {
-      newCommand += `G1 Z${obj.ztrav} F1500  ; Move to Z height\n`;
+      if (lowerName === 'wash') {
+        const x = activeTip.wash_x || 134.0;
+        const y = activeTip.wash_y || 374.5;
+        const z = activeTip.wash_z || 70.0;
+        
+        newCommand += `; Move to wash (${activeTip.name || 'L0Tip0'})\n`;
+        newCommand += `G90  ; Absolute positioning\n`;
+        newCommand += `G1 X${x} Y${y} F3000  ; Move to wash XY position\n`;
+        newCommand += `G1 Z${z} F1500  ; Move to wash Z height\n`;
+        newCommand += `G4 P500  ; Pause 500ms for stabilization\n\n`;
+      } else if (lowerName === 'waste') {
+        const x = activeTip.waste_x || 170.0;
+        const y = activeTip.waste_y || 373.0;
+        const z = activeTip.waste_z || 92.0;
+        
+        newCommand += `; Move to waste (${activeTip.name || 'L0Tip0'})\n`;
+        newCommand += `G90  ; Absolute positioning\n`;
+        newCommand += `G1 X${x} Y${y} F3000  ; Move to waste XY position\n`;
+        newCommand += `G1 Z${z} F1500  ; Move to waste Z height\n`;
+        newCommand += `G4 P500  ; Pause 500ms for stabilization\n\n`;
+      } else if (lowerName === 'drypad') {
+        const x = activeTip.drypad_x || 92.0;
+        const y = activeTip.drypad_y || 335.0;
+        const z = activeTip.drypad_z || 70.0;
+        
+        newCommand += `; Move to drypad (${activeTip.name || 'L0Tip0'})\n`;
+        newCommand += `G90  ; Absolute positioning\n`;
+        newCommand += `G1 X${x} Y${y} F3000  ; Move to drypad XY position\n`;
+        newCommand += `G1 Z${z} F1500  ; Move to drypad Z height\n`;
+        newCommand += `G4 P500  ; Pause 500ms for stabilization\n\n`;
+      }
+    } else {
+      // Regular object - use object editor positions
+      const obj = this.storage.getObject(selectedName);
+      if (!obj) {
+        alert('Object not found');
+        return;
+      }
+
+      newCommand += `; Move to ${obj.name}\n`;
+      newCommand += `G90  ; Absolute positioning\n`;
+      newCommand += `G1 X${obj.posx} Y${obj.posy} F3000  ; Move to object position\n`;
+
+      if (obj.ztrav !== "0") {
+        newCommand += `G1 Z${obj.ztrav} F1500  ; Move to Z height\n`;
+      }
+
+      newCommand += `G4 P500  ; Pause 500ms for stabilization\n\n`;
     }
-
-    newCommand += `G4 P500  ; Pause 500ms for stabilization\n\n`;
 
     document.getElementById('macro-output').value = currentGcode + newCommand;
   }

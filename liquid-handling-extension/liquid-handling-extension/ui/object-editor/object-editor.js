@@ -448,7 +448,7 @@ export class ObjectEditor {
     document.getElementById('edit-status').textContent = `Editing: ${this.objects[index].name}`;
   }
 
-  saveObject() {
+  async saveObject() {
     if (this.selectedIndex === -1) return;
 
     const obj = this.objects[this.selectedIndex];
@@ -476,10 +476,60 @@ export class ObjectEditor {
     obj.arrayshape = container.querySelector('input[name="array-shape"]:checked').value;
     obj.color = container.querySelector('#obj-color').value;
 
-    this.storage.setObjects(this.objects);
+    await this.storage.setObjects(this.objects);
+    
+    // If this is the drypad object, sync grid configuration to Klipper
+    if (obj.name === 'drypad') {
+      await this.saveDrypadGridToKlipper(obj);
+    }
+    
     this.render();
     this.attachEventListeners();
     alert('Object saved successfully!');
+  }
+
+  async saveDrypadGridToKlipper(drypadObj) {
+    // Extract drypad grid configuration
+    const baseX = parseFloat(drypadObj.posx) + parseFloat(drypadObj.marginx);
+    const baseY = parseFloat(drypadObj.posy) + parseFloat(drypadObj.marginy);
+    const columns = parseInt(drypadObj.arraycolumn);
+    const rows = parseInt(drypadObj.arrayrow);
+    const xSpacing = parseFloat(drypadObj.arraycolumnsp);
+    const ySpacing = parseFloat(drypadObj.arrayrowsp);
+    const totalPositions = columns * rows;
+
+    // Send grid configuration to Klipper
+    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_base_x VALUE=${baseX}`);
+    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_base_y VALUE=${baseY}`);
+    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_columns VALUE=${columns}`);
+    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_rows VALUE=${rows}`);
+    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_x_spacing VALUE=${xSpacing}`);
+    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_y_spacing VALUE=${ySpacing}`);
+    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_total_positions VALUE=${totalPositions}`);
+
+    // Get active tip drypad settings from storage and save to variables
+    const config = this.storage.getAll();
+    const activeTipIndex = config.activeTipIndex || 0;
+    const activeTip = config.tips?.[activeTipIndex];
+    
+    if (activeTip) {
+      await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_z VALUE=${activeTip.drypad_z || 70.0}`);
+      await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_servo VALUE=${activeTip.drypad_servo || 115}`);
+      await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_time VALUE=${activeTip.drypad_time || 3000}`);
+      await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_linear_pos VALUE=${activeTip.drypad_linear_pos || 115}`);
+      await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_delay VALUE=${activeTip.drypad_delay || 2000}`);
+    }
+
+    console.log('Drypad configuration saved to Klipper:', {
+      grid: { baseX, baseY, columns, rows, xSpacing, ySpacing, totalPositions },
+      activeTip: activeTip ? {
+        z: activeTip.drypad_z,
+        servo: activeTip.drypad_servo,
+        time: activeTip.drypad_time,
+        linearPos: activeTip.drypad_linear_pos,
+        delay: activeTip.drypad_delay
+      } : 'none'
+    });
   }
 
   updatePrinterArea() {

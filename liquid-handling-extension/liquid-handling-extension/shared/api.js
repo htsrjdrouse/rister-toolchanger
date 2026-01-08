@@ -52,14 +52,20 @@ export class KlipperAPI {
       });
 
       if (!response.ok) {
+        const errorText = await response.text();
+        console.error('Klipper API error:', response.statusText, errorText);
         throw new Error(`Klipper API error: ${response.statusText}`);
       }
 
       const data = await response.json();
-      console.log('G-code sent:', command);
+      console.log('✓ G-code sent successfully:', command);
+      if (data.result) {
+        console.log('  Response:', data.result);
+      }
       return data;
     } catch (error) {
-      console.error('Failed to send G-code:', error);
+      console.error('✗ Failed to send G-code:', command);
+      console.error('  Error:', error);
       throw error;
     }
   }

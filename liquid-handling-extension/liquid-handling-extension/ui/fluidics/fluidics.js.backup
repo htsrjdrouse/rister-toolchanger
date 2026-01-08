@@ -18,39 +18,31 @@ export class FluidicsControl {
       await this.storage.setTips(this.tips);
     }
     
-    // Sync all station variables to Klipper for active tip
-    await this.saveAllStationVariables();
-    
     this.render();
   }
 
   createDefaultTip() {
     return {
-      name: "L0Tip0",
-      drypad_x: 92.0,
-      drypad_y: 335.0,
+      name: "Tip0",
       drypad_z: 70.0,
-      drypad_servo_move: 0,
-      drypad_servo_touch: 115,
+      drypad_servo: 115,
       drypad_time: 3000,
+      drypad_linear_pos: 115,
       drypad_delay: 2000,
       wash_x: 134.0,
       wash_y: 374.5,
       wash_z: 70.0,
-      wash_servo_move: 0,
-      wash_servo_wash: 120,
+      wash_servo: 120,
       wash_macro: "",
       waste_x: 170.0,
       waste_y: 373.0,
       waste_z: 92.0,
-      waste_servo_move: 0,
-      waste_servo_waste: 170,
+      waste_servo: 170,
       waste_macro: "",
       eject_x: 65.0,
       eject_y: 340.0,
       eject_z: 40.0,
-      eject_servo_move: 0,
-      eject_servo_eject: 150,
+      eject_servo: 150,
       eject_macro: ""
     };
   }
@@ -151,12 +143,22 @@ export class FluidicsControl {
         </div>
       </div>
 
-      <!-- Touch Drypad -->
+      <!-- Drypad Control -->
       <div class="section">
-        <h3 class="section-title">🔸 Touch Drypad</h3>
+        <h3 class="section-title">🔸 Drypad Control</h3>
+        <div class="form-row cols-2" style="margin-bottom: 10px;">
+          <div>
+            <label>Linear Actuator Position:</label>
+            <input type="number" id="drypad-linear-position" value="${this.tips[this.activeTipIndex]?.drypad_linear_pos || 115}" min="0" max="180">
+          </div>
+          <div>
+            <label>Delay Time (ms):</label>
+            <input type="number" id="drypad-delay-time" value="${this.tips[this.activeTipIndex]?.drypad_delay || 2000}" min="0" step="100">
+          </div>
+        </div>
         <button id="touch-dry" class="btn btn-purple" style="width: 100%; margin-bottom: 10px;">Touch Drypad</button>
         <div style="display: flex; gap: 8px;">
-          <input type="number" id="drypad-position" value="1" min="1" max="210" style="flex: 1;" placeholder="Grid position">
+          <input type="number" id="drypad-position" value="1" min="1" max="210" style="flex: 1;">
           <button id="touch-dry-at" class="btn btn-purple">Touch At #</button>
         </div>
       </div>
@@ -206,18 +208,23 @@ export class FluidicsControl {
     // Use auto-detected macros or fall back to tip assignments
     const washMacro = washGcode ? 'wash.gcode' : (activeTip.wash_macro || '');
     const wasteMacro = wasteGcode ? 'waste.gcode' : (activeTip.waste_macro || '');
+    const ejectMacro = ejectGcode ? 'eject.gcode' : (activeTip.eject_macro || '');
     
-    // Show macro name if selected, otherwise just show icon + label
     const washLabel = washMacro ? `🧼 Wash (${washMacro})` : '🧼 Wash';
     const wasteLabel = wasteMacro ? `🗑️ Waste (${wasteMacro})` : '🗑️ Waste';
+    const ejectLabel = ejectMacro ? `📤 Eject (${ejectMacro})` : '📤 Eject';
     
     const washTitle = washMacro ? `Run macro: ${washMacro}` : 'Run GO_WASH command';
     const wasteTitle = wasteMacro ? `Run macro: ${wasteMacro}` : 'Run GO_WASTE command';
+    const ejectTitle = ejectMacro ? `Run macro: ${ejectMacro}` : 'Run BAYONET_EJECT command';
     
     return `
       <div class="btn-group">
         <button id="go-wash" class="btn btn-secondary" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${washTitle}">${washLabel}</button>
         <button id="go-waste" class="btn btn-warning" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${wasteTitle}">${wasteLabel}</button>
+      </div>
+      <div class="btn-group">
+        <button id="eject-tip" class="btn btn-danger" style="flex: 1; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="${ejectTitle}">${ejectLabel}</button>
       </div>
     `;
   }
@@ -228,7 +235,7 @@ export class FluidicsControl {
     
     const renderMacroSelect = (currentMacro) => {
       return `
-        <select style="width: 100%;" class="tip-macro-select">
+        <select style="width: 100%;">
           <option value="">-- None --</option>
           ${savedMacros.map(macro => 
             `<option value="${macro.name}" ${currentMacro === macro.name ? 'selected' : ''}>${macro.name}</option>`
@@ -251,56 +258,53 @@ export class FluidicsControl {
         </div>
 
         <h4 style="color: #9c27b0; margin: 15px 0 10px 0;">🔸 DRYPAD</h4>
-        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px;">
-          <div style="flex: 1; display: flex; gap: 5px;">
-            <div style="flex: 1;"><label>X:</label><input type="number" id="tip-drypad-x" value="${tip.drypad_x || 92.0}" step="0.1" style="width: 100%;"></div>
-            <div style="flex: 1;"><label>Y:</label><input type="number" id="tip-drypad-y" value="${tip.drypad_y || 335.0}" step="0.1" style="width: 100%;"></div>
-            <div style="flex: 1;"><label>Z:</label><input type="number" id="tip-drypad-z" value="${tip.drypad_z}" step="0.1" style="width: 100%;"></div>
-          </div>
-          <div style="border-left: 2px solid #ddd; padding-left: 10px; flex: 1; display: flex; gap: 5px;">
-            <div style="flex: 1;"><label>Move°:</label><input type="number" id="tip-drypad-servo-move" value="${tip.drypad_servo_move || 0}" min="0" max="180" style="width: 100%;"></div>
-            <div style="flex: 1;"><label>Touch°:</label><input type="number" id="tip-drypad-servo-touch" value="${tip.drypad_servo_touch || 115}" min="0" max="180" style="width: 100%;"></div>
-          </div>
-          <div style="border-left: 2px solid #ddd; padding-left: 10px; flex: 1; display: flex; gap: 5px;">
-            <div style="flex: 1;"><label>Time (ms):</label><input type="number" id="tip-drypad-time" value="${tip.drypad_time}" style="width: 100%;"></div>
-            <div style="flex: 1;"><label>Delay (ms):</label><input type="number" id="tip-drypad-delay" value="${tip.drypad_delay || 2000}" step="100" style="width: 100%;"></div>
-          </div>
+        <div class="form-row cols-3">
+          <div><label>Z:</label><input type="number" id="tip-drypad-z" value="${tip.drypad_z}" step="0.1"></div>
+          <div><label>Servo:</label><input type="number" id="tip-drypad-servo" value="${tip.drypad_servo}"></div>
+          <div><label>Time (ms):</label><input type="number" id="tip-drypad-time" value="${tip.drypad_time}"></div>
+        </div>
+        <div class="form-row cols-2">
+          <div><label>Linear Actuator Pos:</label><input type="number" id="tip-drypad-linear-pos" value="${tip.drypad_linear_pos || 115}" min="0" max="180"></div>
+          <div><label>Delay (ms):</label><input type="number" id="tip-drypad-delay" value="${tip.drypad_delay || 2000}" step="100"></div>
         </div>
 
         <h4 style="color: #2196F3; margin: 15px 0 10px 0;">🧼 WASH</h4>
-        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 5px;">
-          <div style="flex: 1; display: flex; gap: 5px;">
-            <div style="flex: 1;"><label>X:</label><input type="number" id="tip-wash-x" value="${tip.wash_x}" step="0.1" style="width: 100%;"></div>
-            <div style="flex: 1;"><label>Y:</label><input type="number" id="tip-wash-y" value="${tip.wash_y}" step="0.1" style="width: 100%;"></div>
-            <div style="flex: 1;"><label>Z:</label><input type="number" id="tip-wash-z" value="${tip.wash_z}" step="0.1" style="width: 100%;"></div>
-          </div>
-          <div style="border-left: 2px solid #ddd; padding-left: 10px; flex: 1; display: flex; gap: 5px;">
-            <div style="flex: 1;"><label>Move°:</label><input type="number" id="tip-wash-servo-move" value="${tip.wash_servo_move || 0}" min="0" max="180" style="width: 100%;"></div>
-            <div style="flex: 1;"><label>Wash°:</label><input type="number" id="tip-wash-servo-wash" value="${tip.wash_servo_wash || tip.wash_servo || 120}" min="0" max="180" style="width: 100%;"></div>
-          </div>
+        <div class="form-row cols-4">
+          <div><label>X:</label><input type="number" id="tip-wash-x" value="${tip.wash_x}" step="0.1"></div>
+          <div><label>Y:</label><input type="number" id="tip-wash-y" value="${tip.wash_y}" step="0.1"></div>
+          <div><label>Z:</label><input type="number" id="tip-wash-z" value="${tip.wash_z}" step="0.1"></div>
+          <div><label>Servo:</label><input type="number" id="tip-wash-servo" value="${tip.wash_servo}"></div>
         </div>
         <div style="margin-bottom: 10px;">
-          <label>Macro:</label>
-          <div id="wash-macro-select">${renderMacroSelect(tip.wash_macro || "")}</div>
+          <label>G-code Macro (optional):</label>
+          ${renderMacroSelect(tip.wash_macro || "")}
           <div id="wash-macro-select-holder" style="display:none;">${tip.wash_macro || ""}</div>
         </div>
 
         <h4 style="color: #ff9800; margin: 15px 0 10px 0;">🗑️ WASTE</h4>
-        <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 5px;">
-          <div style="flex: 1; display: flex; gap: 5px;">
-            <div style="flex: 1;"><label>X:</label><input type="number" id="tip-waste-x" value="${tip.waste_x}" step="0.1" style="width: 100%;"></div>
-            <div style="flex: 1;"><label>Y:</label><input type="number" id="tip-waste-y" value="${tip.waste_y}" step="0.1" style="width: 100%;"></div>
-            <div style="flex: 1;"><label>Z:</label><input type="number" id="tip-waste-z" value="${tip.waste_z}" step="0.1" style="width: 100%;"></div>
-          </div>
-          <div style="border-left: 2px solid #ddd; padding-left: 10px; flex: 1; display: flex; gap: 5px;">
-            <div style="flex: 1;"><label>Move°:</label><input type="number" id="tip-waste-servo-move" value="${tip.waste_servo_move || 0}" min="0" max="180" style="width: 100%;"></div>
-            <div style="flex: 1;"><label>Waste°:</label><input type="number" id="tip-waste-servo-waste" value="${tip.waste_servo_waste || tip.waste_servo || 170}" min="0" max="180" style="width: 100%;"></div>
-          </div>
+        <div class="form-row cols-4">
+          <div><label>X:</label><input type="number" id="tip-waste-x" value="${tip.waste_x}" step="0.1"></div>
+          <div><label>Y:</label><input type="number" id="tip-waste-y" value="${tip.waste_y}" step="0.1"></div>
+          <div><label>Z:</label><input type="number" id="tip-waste-z" value="${tip.waste_z}" step="0.1"></div>
+          <div><label>Servo:</label><input type="number" id="tip-waste-servo" value="${tip.waste_servo}"></div>
         </div>
         <div style="margin-bottom: 10px;">
-          <label>Macro:</label>
-          <div id="waste-macro-select">${renderMacroSelect(tip.waste_macro || "")}</div>
+          <label>G-code Macro (optional):</label>
+          ${renderMacroSelect(tip.waste_macro || "")}
           <div id="waste-macro-select-holder" style="display:none;">${tip.waste_macro || ""}</div>
+        </div>
+
+        <h4 style="color: #f44336; margin: 15px 0 10px 0;">📤 EJECT</h4>
+        <div class="form-row cols-4">
+          <div><label>X:</label><input type="number" id="tip-eject-x" value="${tip.eject_x}" step="0.1"></div>
+          <div><label>Y:</label><input type="number" id="tip-eject-y" value="${tip.eject_y}" step="0.1"></div>
+          <div><label>Z:</label><input type="number" id="tip-eject-z" value="${tip.eject_z}" step="0.1"></div>
+          <div><label>Servo:</label><input type="number" id="tip-eject-servo" value="${tip.eject_servo}"></div>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <label>G-code Macro (optional):</label>
+          ${renderMacroSelect(tip.eject_macro || "")}
+          <div id="eject-macro-select-holder" style="display:none;">${tip.eject_macro || ""}</div>
         </div>
 
         <div class="btn-group">
@@ -342,7 +346,7 @@ export class FluidicsControl {
     container.querySelector('#set-height')?.addEventListener('click', () => {
       const angle = document.getElementById('servo-angle').value;
       this.api.sendGcode(`LINEARACTSERVOMOVE ANGLE=${angle} HOLD=1000`);
-      
+      this.showNotification(`Pipette height set to ${angle}°`);
     });
     
     container.querySelector('#preset-0')?.addEventListener('click', () => this.setPresetAngle(0));
@@ -350,7 +354,7 @@ export class FluidicsControl {
     container.querySelector('#preset-180')?.addEventListener('click', () => this.setPresetAngle(180));
     container.querySelector('#servo-off')?.addEventListener('click', () => {
       this.api.sendGcode('LINEARACTSERVOOFF');
-      
+      this.showNotification('Servo turned OFF');
     });
 
     // Syringe pump
@@ -358,7 +362,7 @@ export class FluidicsControl {
     container.querySelector('#dispense')?.addEventListener('click', () => this.dispense());
     container.querySelector('#zero-syringe')?.addEventListener('click', () => {
       this.api.sendGcode('G92 E0');
-      
+      this.showNotification('Syringe position zeroed');
     });
 
     // Valve controls
@@ -368,57 +372,74 @@ export class FluidicsControl {
     container.querySelector('#valve-output')?.addEventListener('click', () => this.setValves('OUTPUT'));
     container.querySelector('#valve-bypass')?.addEventListener('click', () => this.setValves('BYPASS'));
 
-    // Touch Drypad buttons
+    // Drypad
+    document.getElementById('drypad-linear-position')?.addEventListener('change', () => this.saveDrypadSettings());
+    document.getElementById('drypad-delay-time')?.addEventListener('change', () => this.saveDrypadSettings());
+    
     container.querySelector('#touch-dry')?.addEventListener('click', () => {
-      console.log('TOUCH_DRY button clicked, sending command: TOUCH_DRY');
       this.api.sendGcode('TOUCH_DRY');
+      this.showNotification('Touching drypad...');
     });
     
     container.querySelector('#touch-dry-at')?.addEventListener('click', () => {
       const pos = document.getElementById('drypad-position').value;
-      console.log(`TOUCH_DRY_AT button clicked, sending command: TOUCH_DRY_AT KEY=${pos}`);
       this.api.sendGcode(`TOUCH_DRY_AT KEY=${pos}`);
+      this.showNotification(`Touching drypad at position ${pos}`);
     });
 
     // Quick actions
-    this.attachQuickActionListeners();
-  }
-
-  attachQuickActionListeners() {
-    const container = document.getElementById('fluidics-content');
-    
-    container.querySelector('#go-wash')?.addEventListener('click', async () => {
+    container.querySelector('#go-wash')?.addEventListener('click', () => {
       const savedMacros = this.storage.getMacros();
       const washGcode = savedMacros.find(m => m.name === 'wash.gcode');
       const activeTip = this.tips[this.activeTipIndex];
       
-      // ALWAYS move to wash position first
-      await this.api.sendGcode('GO_WASH_STATION');
-      
-      // Then run macro if one is assigned
+      // Priority: 1. wash.gcode, 2. tip-assigned macro, 3. default command
       if (washGcode) {
-        await this.runMacro('wash.gcode');
+        this.runMacro('wash.gcode');
+        this.showNotification('Running wash.gcode');
       } else if (activeTip && activeTip.wash_macro) {
-        await this.runMacro(activeTip.wash_macro);
+        this.runMacro(activeTip.wash_macro);
+        this.showNotification(`Running ${activeTip.wash_macro}`);
+      } else {
+        this.api.sendGcode('GO_WASH');
+        this.showNotification('Moving to wash station...');
       }
-      // If no macro, just the movement is enough
     });
     
-    container.querySelector('#go-waste')?.addEventListener('click', async () => {
+    container.querySelector('#go-waste')?.addEventListener('click', () => {
       const savedMacros = this.storage.getMacros();
       const wasteGcode = savedMacros.find(m => m.name === 'waste.gcode');
       const activeTip = this.tips[this.activeTipIndex];
       
-      // ALWAYS move to waste position first
-      await this.api.sendGcode('GO_WASTE_STATION');
-      
-      // Then run macro if one is assigned
+      // Priority: 1. waste.gcode, 2. tip-assigned macro, 3. default command
       if (wasteGcode) {
-        await this.runMacro('waste.gcode');
+        this.runMacro('waste.gcode');
+        this.showNotification('Running waste.gcode');
       } else if (activeTip && activeTip.waste_macro) {
-        await this.runMacro(activeTip.waste_macro);
+        this.runMacro(activeTip.waste_macro);
+        this.showNotification(`Running ${activeTip.waste_macro}`);
+      } else {
+        this.api.sendGcode('GO_WASTE');
+        this.showNotification('Moving to waste...');
       }
-      // If no macro, just the movement is enough
+    });
+    
+    container.querySelector('#eject-tip')?.addEventListener('click', () => {
+      const savedMacros = this.storage.getMacros();
+      const ejectGcode = savedMacros.find(m => m.name === 'eject.gcode');
+      const activeTip = this.tips[this.activeTipIndex];
+      
+      // Priority: 1. eject.gcode, 2. tip-assigned macro, 3. default command
+      if (ejectGcode) {
+        this.runMacro('eject.gcode');
+        this.showNotification('Running eject.gcode');
+      } else if (activeTip && activeTip.eject_macro) {
+        this.runMacro(activeTip.eject_macro);
+        this.showNotification(`Running ${activeTip.eject_macro}`);
+      } else {
+        this.api.sendGcode('BAYONET_EJECT');
+        this.showNotification('Ejecting tip...');
+      }
     });
   }
 
@@ -455,7 +476,8 @@ export class FluidicsControl {
 
   cloneTip() {
     if (this.selectedTipIndex === -1) {
-      return;  // No tip selected to clone
+      alert('Please select a tip to clone');
+      return;
     }
 
     const cloned = { ...this.tips[this.selectedTipIndex] };
@@ -468,11 +490,13 @@ export class FluidicsControl {
 
   deleteTip() {
     if (this.selectedTipIndex === -1) {
-      return;  // No tip selected to delete
+      alert('Please select a tip to delete');
+      return;
     }
 
     if (this.selectedTipIndex === 0) {
-      return;  // Cannot delete the first tip
+      alert('Cannot delete the first tip!');
+      return;
     }
 
     if (confirm(`Delete "${this.tips[this.selectedTipIndex].name}"?`)) {
@@ -488,10 +512,11 @@ export class FluidicsControl {
     
     const container = document.getElementById('fluidics-content');
     const fields = [
-      'tip-name', 
-      'tip-drypad-x', 'tip-drypad-y', 'tip-drypad-z', 'tip-drypad-servo-move', 'tip-drypad-servo-touch', 'tip-drypad-time', 'tip-drypad-delay',
-      'tip-wash-x', 'tip-wash-y', 'tip-wash-z', 'tip-wash-servo-move', 'tip-wash-servo-wash',
-      'tip-waste-x', 'tip-waste-y', 'tip-waste-z', 'tip-waste-servo-move', 'tip-waste-servo-waste'
+      'tip-name', 'tip-drypad-z', 'tip-drypad-servo', 'tip-drypad-time',
+      'tip-drypad-linear-pos', 'tip-drypad-delay',
+      'tip-wash-x', 'tip-wash-y', 'tip-wash-z', 'tip-wash-servo',
+      'tip-waste-x', 'tip-waste-y', 'tip-waste-z', 'tip-waste-servo',
+      'tip-eject-x', 'tip-eject-y', 'tip-eject-z', 'tip-eject-servo'
     ];
     
     fields.forEach(fieldId => {
@@ -513,68 +538,38 @@ export class FluidicsControl {
     const c = document.getElementById('fluidics-content');
 
     tip.name = c.querySelector('#tip-name')?.value || tip.name;
-    tip.drypad_x = parseFloat(c.querySelector('#tip-drypad-x')?.value || tip.drypad_x || 92.0);
-    tip.drypad_y = parseFloat(c.querySelector('#tip-drypad-y')?.value || tip.drypad_y || 335.0);
     tip.drypad_z = parseFloat(c.querySelector('#tip-drypad-z')?.value || tip.drypad_z);
-    tip.drypad_servo_move = parseInt(c.querySelector('#tip-drypad-servo-move')?.value || 0);
-    tip.drypad_servo_touch = parseInt(c.querySelector('#tip-drypad-servo-touch')?.value || 115);
+    tip.drypad_servo = parseInt(c.querySelector('#tip-drypad-servo')?.value || tip.drypad_servo);
     tip.drypad_time = parseInt(c.querySelector('#tip-drypad-time')?.value || tip.drypad_time);
+    tip.drypad_linear_pos = parseInt(c.querySelector('#tip-drypad-linear-pos')?.value || 115);
     tip.drypad_delay = parseInt(c.querySelector('#tip-drypad-delay')?.value || 2000);
     
     tip.wash_x = parseFloat(c.querySelector('#tip-wash-x')?.value || tip.wash_x);
     tip.wash_y = parseFloat(c.querySelector('#tip-wash-y')?.value || tip.wash_y);
     tip.wash_z = parseFloat(c.querySelector('#tip-wash-z')?.value || tip.wash_z);
-    tip.wash_servo_move = parseInt(c.querySelector('#tip-wash-servo-move')?.value || 0);
-    tip.wash_servo_wash = parseInt(c.querySelector('#tip-wash-servo-wash')?.value || 120);
+    tip.wash_servo = parseInt(c.querySelector('#tip-wash-servo')?.value || tip.wash_servo);
     
     tip.waste_x = parseFloat(c.querySelector('#tip-waste-x')?.value || tip.waste_x);
     tip.waste_y = parseFloat(c.querySelector('#tip-waste-y')?.value || tip.waste_y);
     tip.waste_z = parseFloat(c.querySelector('#tip-waste-z')?.value || tip.waste_z);
-    tip.waste_servo_move = parseInt(c.querySelector('#tip-waste-servo-move')?.value || 0);
-    tip.waste_servo_waste = parseInt(c.querySelector('#tip-waste-servo-waste')?.value || 170);
+    tip.waste_servo = parseInt(c.querySelector('#tip-waste-servo')?.value || tip.waste_servo);
     
-    // Get macro selects by ID to ensure correct order
-    const washMacroSelect = c.querySelector('#wash-macro-select select');
-    const wasteMacroSelect = c.querySelector('#waste-macro-select select');
-    tip.wash_macro = washMacroSelect?.value || "";
-    tip.waste_macro = wasteMacroSelect?.value || "";
+    tip.eject_x = parseFloat(c.querySelector('#tip-eject-x')?.value || tip.eject_x);
+    tip.eject_y = parseFloat(c.querySelector('#tip-eject-y')?.value || tip.eject_y);
+    tip.eject_z = parseFloat(c.querySelector('#tip-eject-z')?.value || tip.eject_z);
+    tip.eject_servo = parseInt(c.querySelector('#tip-eject-servo')?.value || tip.eject_servo);
+    
+    // Get macro selects
+    const washMacroSelects = c.querySelectorAll('select');
+    if (washMacroSelects.length >= 3) {
+      tip.wash_macro = washMacroSelects[0]?.value || "";
+      tip.waste_macro = washMacroSelects[1]?.value || "";
+      tip.eject_macro = washMacroSelects[2]?.value || "";
+    }
 
     await this.storage.setTips(this.tips);
     await this.saveAllTipsToKlipper();
-    
-    // If this is the active tip, also sync all station variables
-    if (this.selectedTipIndex === this.activeTipIndex) {
-      await this.saveAllStationVariables();
-      
-      // Re-render Quick Actions section to show updated macro names
-      const quickActionsSection = document.querySelector('.section:has(#go-wash)');
-      if (quickActionsSection) {
-        const sectionTitle = quickActionsSection.querySelector('.section-title');
-        const newContent = this.renderQuickActionButtons();
-        
-        // Clear old content but keep title
-        while (quickActionsSection.firstChild) {
-          quickActionsSection.removeChild(quickActionsSection.firstChild);
-        }
-        
-        // Add title back
-        if (sectionTitle) {
-          quickActionsSection.appendChild(sectionTitle.cloneNode(true));
-        }
-        
-        // Add new buttons
-        const tempDiv = document.createElement('div');
-        tempDiv.innerHTML = newContent;
-        while (tempDiv.firstChild) {
-          quickActionsSection.appendChild(tempDiv.firstChild);
-        }
-        
-        // Re-attach event listeners
-        this.attachQuickActionListeners();
-      }
-    }
-    
-    console.log('Auto-saved tip:', tip.name, 'wash_macro:', tip.wash_macro, 'waste_macro:', tip.waste_macro);
+    console.log('Auto-saved tip:', tip.name);
   }
 
   async saveTip() {
@@ -595,20 +590,25 @@ export class FluidicsControl {
     tip.wash_z = parseFloat(c.querySelector('#tip-wash-z').value);
     tip.wash_servo = parseInt(c.querySelector('#tip-wash-servo').value);
     
-    // Get macro selects by ID to ensure correct order
-    const washMacroSelect = c.querySelector('#wash-macro-select select');
-    const wasteMacroSelect = c.querySelector('#waste-macro-select select');
-    tip.wash_macro = washMacroSelect?.value || "";
-    tip.waste_macro = wasteMacroSelect?.value || "";
+    // Get macro selects - they appear after the "G-code Macro (optional):" labels
+    const washMacroSelects = c.querySelectorAll('select');
+    tip.wash_macro = washMacroSelects[0]?.value || "";
+    tip.waste_macro = washMacroSelects[1]?.value || "";
+    tip.eject_macro = washMacroSelects[2]?.value || "";
     
     tip.waste_x = parseFloat(c.querySelector('#tip-waste-x').value);
     tip.waste_y = parseFloat(c.querySelector('#tip-waste-y').value);
     tip.waste_z = parseFloat(c.querySelector('#tip-waste-z').value);
     tip.waste_servo = parseInt(c.querySelector('#tip-waste-servo').value);
+    
+    tip.eject_x = parseFloat(c.querySelector('#tip-eject-x').value);
+    tip.eject_y = parseFloat(c.querySelector('#tip-eject-y').value);
+    tip.eject_z = parseFloat(c.querySelector('#tip-eject-z').value);
+    tip.eject_servo = parseInt(c.querySelector('#tip-eject-servo').value);
 
     await this.storage.setTips(this.tips);
     await this.saveAllTipsToKlipper();
-    
+    this.showNotification('Tip saved successfully!');
     this.render();
   }
 
@@ -617,11 +617,7 @@ export class FluidicsControl {
     this.activeTipIndex = parseInt(select.value);
     await this.storage.setActiveTipIndex(this.activeTipIndex);
     await this.api.sendGcode(`SELECT_TIP TIP=${this.activeTipIndex}`);
-    
-    // Sync all station variables for the new active tip
-    await this.saveAllStationVariables();
-    
-    
+    this.showNotification(`Active tip set to: ${this.tips[this.activeTipIndex].name}`);
     this.render();
   }
 
@@ -638,21 +634,21 @@ export class FluidicsControl {
   setPresetAngle(angle) {
     document.getElementById('servo-angle').value = angle;
     this.api.sendGcode(`LINEARACTSERVOMOVE ANGLE=${angle} HOLD=1000`);
-    
+    this.showNotification(`Pipette set to ${angle}°`);
   }
 
   aspirate() {
     const steps = document.getElementById('syringe-steps').value;
     const feedrate = document.getElementById('syringe-feedrate').value;
     this.api.sendGcode(`G91\nG1 E-${steps} F${feedrate}\nG90`);
-    
+    this.showNotification(`Aspirating ${steps} steps`);
   }
 
   dispense() {
     const steps = document.getElementById('syringe-steps').value;
     const feedrate = document.getElementById('syringe-feedrate').value;
     this.api.sendGcode(`G91\nG1 E${steps} F${feedrate}\nG90`);
-    
+    this.showNotification(`Dispensing ${steps} steps`);
   }
 
   getValveMask() {
@@ -673,79 +669,26 @@ export class FluidicsControl {
   setValves(mode) {
     const mask = this.getValveMask();
     if (mask === '0000') {
-      return;  // No valve selected
+      alert('Please select at least one valve');
+      return;
     }
     this.api.sendGcode(`VALVE_${mode} MASK=${mask}`);
-    
+    this.showNotification(`Valves set to ${mode} (${mask})`);
   }
 
   async saveDrypadSettings() {
-    const drypadX = parseFloat(document.getElementById('drypad-x')?.value || 92.0);
-    const drypadY = parseFloat(document.getElementById('drypad-y')?.value || 335.0);
-    const drypadZ = parseFloat(document.getElementById('drypad-z')?.value || 70.0);
-    const servoMove = parseInt(document.getElementById('drypad-servo-move')?.value || 0);
-    const servoTouch = parseInt(document.getElementById('drypad-servo-touch')?.value || 115);
-    const time = parseInt(document.getElementById('drypad-time')?.value || 3000);
+    const linearPos = parseInt(document.getElementById('drypad-linear-position')?.value || 115);
     const delayTime = parseInt(document.getElementById('drypad-delay-time')?.value || 2000);
     
     // Save to active tip
     if (this.tips[this.activeTipIndex]) {
-      this.tips[this.activeTipIndex].drypad_x = drypadX;
-      this.tips[this.activeTipIndex].drypad_y = drypadY;
-      this.tips[this.activeTipIndex].drypad_z = drypadZ;
-      this.tips[this.activeTipIndex].drypad_servo_move = servoMove;
-      this.tips[this.activeTipIndex].drypad_servo_touch = servoTouch;
-      this.tips[this.activeTipIndex].drypad_time = time;
+      this.tips[this.activeTipIndex].drypad_linear_pos = linearPos;
       this.tips[this.activeTipIndex].drypad_delay = delayTime;
       
       await this.storage.setTips(this.tips);
       await this.saveAllTipsToKlipper();
-      
-      // Also save to standalone variables for active tip
-      await this.saveAllStationVariables();
-      
-      console.log('Auto-saved drypad settings:', { drypadX, drypadY, drypadZ, servoMove, servoTouch, time, delayTime });
+      console.log('Auto-saved drypad settings:', linearPos, delayTime);
     }
-  }
-
-  async saveAllStationVariables() {
-    const activeTip = this.tips[this.activeTipIndex];
-    if (!activeTip) {
-      console.warn('No active tip found');
-      return;
-    }
-
-    // Save all drypad variables
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_x VALUE=${activeTip.drypad_x || 92.0}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_y VALUE=${activeTip.drypad_y || 335.0}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_z VALUE=${activeTip.drypad_z}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_servo_move VALUE=${activeTip.drypad_servo_move || 0}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_servo_touch VALUE=${activeTip.drypad_servo_touch || 115}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_time VALUE=${activeTip.drypad_time || 3000}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=drypad_delay VALUE=${activeTip.drypad_delay || 2000}`);
-
-    // Save all wash variables
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=wash_x VALUE=${activeTip.wash_x}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=wash_y VALUE=${activeTip.wash_y}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=wash_z VALUE=${activeTip.wash_z}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=wash_servo_move VALUE=${activeTip.wash_servo_move || 0}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=wash_servo_wash VALUE=${activeTip.wash_servo_wash || 120}`);
-
-    // Save all waste variables
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=waste_x VALUE=${activeTip.waste_x}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=waste_y VALUE=${activeTip.waste_y}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=waste_z VALUE=${activeTip.waste_z}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=waste_servo_move VALUE=${activeTip.waste_servo_move || 0}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=waste_servo_waste VALUE=${activeTip.waste_servo_waste || 170}`);
-
-    // Save all eject variables
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=eject_x VALUE=${activeTip.eject_x}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=eject_y VALUE=${activeTip.eject_y}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=eject_z VALUE=${activeTip.eject_z}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=eject_servo_move VALUE=${activeTip.eject_servo_move || 0}`);
-    await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=eject_servo_eject VALUE=${activeTip.eject_servo_eject || 150}`);
-
-    console.log('All station variables saved to Klipper for tip:', activeTip.name);
   }
 
   runMacro(macroName) {
@@ -759,8 +702,7 @@ export class FluidicsControl {
   }
 
   showNotification(message) {
+    // Simple notification - could be enhanced with a toast system
     console.log('Fluidics:', message);
-    // Show a temporary alert (could be replaced with a toast notification later)
-    alert(message);
   }
 }
