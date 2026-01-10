@@ -47,7 +47,7 @@ export class ObjectEditor {
 
       <!-- Canvas Visualization -->
       <div class="section">
-        <h3 class="section-title">📐 Printer Bed (<span id="area-display">${this.printerArea.width}x${this.printerArea.height}</span>mm)</h3>
+        <h3 class="section-title">📐 Printer Bed (<span id="area-display">${this.printerArea.width}x${this.printerArea.height}</span>mm)<span id="mouse-coords" style="margin-left: 15px; font-size: 14px; color: #667eea; font-weight: normal;"></span></h3>
         <div class="canvas-wrapper">
           <canvas id="printer-canvas" style="width: 100%; height: auto;"></canvas>
         </div>
@@ -600,6 +600,17 @@ export class ObjectEditor {
       
       const scale = Math.min(canvas.width / this.printerArea.width, canvas.height / this.printerArea.height);
       
+      // Calculate real printer coordinates from canvas position
+      // X coordinate is inverted (left to right on canvas = high to low X)
+      const printerX = this.printerArea.width - (mouseX / scale);
+      const printerY = mouseY / scale;
+      
+      // Update coordinate display in header
+      const coordsDisplay = document.getElementById('mouse-coords');
+      if (coordsDisplay) {
+        coordsDisplay.textContent = `X: ${printerX.toFixed(1)}mm, Y: ${printerY.toFixed(1)}mm`;
+      }
+      
       // Check if mouse is over any object
       let hoveredObject = null;
       for (let i = this.objects.length - 1; i >= 0; i--) {
@@ -635,6 +646,11 @@ export class ObjectEditor {
     const handleMouseLeave = () => {
       tooltip.style.display = 'none';
       canvas.style.cursor = 'default';
+      // Clear coordinate display when mouse leaves canvas
+      const coordsDisplay = document.getElementById('mouse-coords');
+      if (coordsDisplay) {
+        coordsDisplay.textContent = '';
+      }
     };
     
     // Remove old listeners if they exist

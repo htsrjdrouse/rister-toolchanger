@@ -83,8 +83,8 @@
       "X": "150",
       "Y": "30",
       "Z": "29",
-      "arraycolumn": "35",
-      "arraycolumnsp": "4",
+      "arraycolumn": "9",
+      "arraycolumnsp": "16",
       "arrayrow": "6",
       "arrayrowsp": "4",
       "arrayshape": "ellipse",
@@ -134,11 +134,11 @@
     {
       "drypad_delay": 2000,
       "drypad_servo_move": 0,
-      "drypad_servo_touch": 115,
+      "drypad_servo_touch": 120,
       "drypad_time": 3000,
-      "drypad_x": 92,
-      "drypad_y": 335,
-      "drypad_z": 70,
+      "drypad_x": 95,
+      "drypad_y": 313,
+      "drypad_z": 25,
       "eject_macro": "eject",
       "eject_servo_eject": 150,
       "eject_servo_move": 0,
@@ -146,18 +146,18 @@
       "eject_y": 340,
       "eject_z": 40,
       "name": "L0Tip0",
-      "wash_macro": "wash_test",
+      "wash_macro": "",
       "wash_servo_move": 0,
       "wash_servo_wash": 120,
-      "wash_x": 100,
-      "wash_y": 100,
-      "wash_z": 70,
+      "wash_x": 136,
+      "wash_y": 355,
+      "wash_z": 23,
       "waste_macro": "",
       "waste_servo_move": 0,
-      "waste_servo_waste": 150,
-      "waste_x": 130,
-      "waste_y": 100,
-      "waste_z": 70
+      "waste_servo_waste": 100,
+      "waste_x": 169,
+      "waste_y": 357,
+      "waste_z": 23
     }
   ],
   "activeTipIndex": 0,
@@ -191,8 +191,8 @@
       "name": "eject"
     },
     {
-      "name": "wash_test",
-      "content": "LINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=50 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=50 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nVALVE_OUTPUT MASK=1111\nG4 P1000\nVALVE_BYPASS MASK=1111\nG4 P1000\nVALVE_INPUT MASK=1111\nG4 P1000\nVALVE_BYPASS MASK=1111\nG4 P1000\nVALVE_INPUT MASK=1111\nG4 P1000"
+      "content": "; G-code Sequence: automation_sequence\n; Generated: 2026-01-08T23:58:01.876Z\n; Ready to execute in Mainsail console\n\n; Move to drypad (L0Tip0)\nG90  ; Absolute positioning\nG1 X92 Y335 F3000  ; Move to drypad XY position\nG1 Z70 F1500  ; Move to drypad Z height\nG4 P500  ; Pause 500ms for stabilization\n\n; Move to wash (L0Tip0)\nG90  ; Absolute positioning\nG1 X100 Y100 F3000  ; Move to wash XY position\nG1 Z70 F1500  ; Move to wash Z height\nG4 P500  ; Pause 500ms for stabilization\n\n; Move to wash array A1\nG90  ; Absolute positioning\nG1 X138.00 Y367.50 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\n\n; Move to drypad array A1\nG90  ; Absolute positioning\nG1 X92.00 Y335.00 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization",
+      "name": "position_problem"
     }
   ],
   "version": "1.1.0"

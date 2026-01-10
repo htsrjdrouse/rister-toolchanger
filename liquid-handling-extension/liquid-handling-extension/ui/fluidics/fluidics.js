@@ -22,6 +22,9 @@ export class FluidicsControl {
     await this.saveAllStationVariables();
     
     this.render();
+    
+    // Update syringe position after rendering
+    await this.updateSyringePosition();
   }
 
   createDefaultTip() {
@@ -114,6 +117,16 @@ export class FluidicsControl {
       <!-- Syringe Pump -->
       <div class="section">
         <h3 class="section-title">💉 Syringe Pump</h3>
+        
+        <!-- Position Display -->
+        <div style="background: #e8f5e9; padding: 12px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #4CAF50;">
+          <div style="display: flex; justify-content: space-between; align-items: center;">
+            <label style="font-weight: 600; color: #2e7d32;">Current Position:</label>
+            <span id="syringe-position" style="font-size: 18px; font-weight: bold; color: #1b5e20; font-family: monospace;">0.0 steps</span>
+          </div>
+          <button id="refresh-position" class="btn btn-secondary" style="width: 100%; margin-top: 8px; font-size: 12px;">🔄 Refresh Position</button>
+        </div>
+        
         <div class="form-row cols-2" style="margin-bottom: 10px;">
           <div>
             <label>Steps:</label>
@@ -148,6 +161,53 @@ export class FluidicsControl {
           <button id="valve-input" class="btn btn-secondary">INPUT</button>
           <button id="valve-output" class="btn">OUTPUT</button>
           <button id="valve-bypass" class="btn btn-warning">BYPASS</button>
+        </div>
+      </div>
+
+      <!-- Pump Control -->
+      <div class="section">
+        <h3 class="section-title">🚰 Pump Control</h3>
+        
+        <!-- Wash Pump -->
+        <div style="background: #e3f2fd; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 8px;">Wash Pump</label>
+          <div class="btn-group" style="margin-bottom: 8px;">
+            <button id="wash-on" class="btn" style="background: #4CAF50; color: white;">ON</button>
+            <button id="wash-off" class="btn btn-danger">OFF</button>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <label style="font-size: 12px; white-space: nowrap;">Speed:</label>
+            <input type="number" id="wash-speed" value="255" min="0" max="255" style="width: 70px;">
+            <button id="wash-set-speed" class="btn btn-secondary" style="font-size: 11px; padding: 6px 10px;">Set</button>
+          </div>
+        </div>
+
+        <!-- Waste/Dry Pump -->
+        <div style="background: #fff3e0; padding: 10px; border-radius: 4px; margin-bottom: 10px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 8px;">Waste/Dry Pump</label>
+          <div class="btn-group" style="margin-bottom: 8px;">
+            <button id="waste-on" class="btn" style="background: #FF9800; color: white;">ON</button>
+            <button id="waste-off" class="btn btn-danger">OFF</button>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <label style="font-size: 12px; white-space: nowrap;">Speed:</label>
+            <input type="number" id="waste-speed" value="255" min="0" max="255" style="width: 70px;">
+            <button id="waste-set-speed" class="btn btn-secondary" style="font-size: 11px; padding: 6px 10px;">Set</button>
+          </div>
+        </div>
+
+        <!-- PCV Control -->
+        <div style="background: #f3e5f5; padding: 10px; border-radius: 4px;">
+          <label style="font-weight: 600; display: block; margin-bottom: 8px;">Pressure Compensation Vessel</label>
+          <div class="btn-group" style="margin-bottom: 8px;">
+            <button id="feedback-pcv" class="btn" style="background: #9C27B0; color: white;">Feedback</button>
+            <button id="manual-pcv" class="btn btn-warning">Manual</button>
+          </div>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <label style="font-size: 12px; white-space: nowrap;">Speed:</label>
+            <input type="number" id="pcv-speed" value="255" min="0" max="255" style="width: 70px;">
+            <button id="pcv-set-speed" class="btn btn-secondary" style="font-size: 11px; padding: 6px 10px;">Set</button>
+          </div>
         </div>
       </div>
 
@@ -354,11 +414,20 @@ export class FluidicsControl {
     });
 
     // Syringe pump
-    container.querySelector('#aspirate')?.addEventListener('click', () => this.aspirate());
-    container.querySelector('#dispense')?.addEventListener('click', () => this.dispense());
-    container.querySelector('#zero-syringe')?.addEventListener('click', () => {
-      this.api.sendGcode('G92 E0');
-      
+    container.querySelector('#aspirate')?.addEventListener('click', async () => {
+      await this.aspirate();
+      await this.updateSyringePosition();
+    });
+    container.querySelector('#dispense')?.addEventListener('click', async () => {
+      await this.dispense();
+      await this.updateSyringePosition();
+    });
+    container.querySelector('#zero-syringe')?.addEventListener('click', async () => {
+      await this.api.sendGcode('G92 E0');
+      await this.updateSyringePosition();
+    });
+    container.querySelector('#refresh-position')?.addEventListener('click', () => {
+      this.updateSyringePosition();
     });
 
     // Valve controls
@@ -367,6 +436,40 @@ export class FluidicsControl {
     container.querySelector('#valve-input')?.addEventListener('click', () => this.setValves('INPUT'));
     container.querySelector('#valve-output')?.addEventListener('click', () => this.setValves('OUTPUT'));
     container.querySelector('#valve-bypass')?.addEventListener('click', () => this.setValves('BYPASS'));
+
+    // Pump controls
+    container.querySelector('#wash-on')?.addEventListener('click', () => {
+      this.api.sendGcode('WASH_ON');
+    });
+    container.querySelector('#wash-off')?.addEventListener('click', () => {
+      this.api.sendGcode('WASH_OFF');
+    });
+    container.querySelector('#wash-set-speed')?.addEventListener('click', () => {
+      const speed = document.getElementById('wash-speed').value;
+      this.api.sendGcode(`SET_WASH_SPEED SPEED=${speed}`);
+    });
+    
+    container.querySelector('#waste-on')?.addEventListener('click', () => {
+      this.api.sendGcode('WASTE_ON');
+    });
+    container.querySelector('#waste-off')?.addEventListener('click', () => {
+      this.api.sendGcode('WASTE_OFF');
+    });
+    container.querySelector('#waste-set-speed')?.addEventListener('click', () => {
+      const speed = document.getElementById('waste-speed').value;
+      this.api.sendGcode(`SET_DRY_SPEED SPEED=${speed}`);
+    });
+    
+    container.querySelector('#feedback-pcv')?.addEventListener('click', () => {
+      this.api.sendGcode('FEEDBACK_PCV');
+    });
+    container.querySelector('#manual-pcv')?.addEventListener('click', () => {
+      this.api.sendGcode('MANUAL_PCV');
+    });
+    container.querySelector('#pcv-set-speed')?.addEventListener('click', () => {
+      const speed = document.getElementById('pcv-speed').value;
+      this.api.sendGcode(`SET_PCV_SPEED SPEED=${speed}`);
+    });
 
     // Touch Drypad buttons
     container.querySelector('#touch-dry')?.addEventListener('click', () => {
@@ -653,6 +756,39 @@ export class FluidicsControl {
     const feedrate = document.getElementById('syringe-feedrate').value;
     this.api.sendGcode(`G91\nG1 E${steps} F${feedrate}\nG90`);
     
+  }
+
+  async updateSyringePosition() {
+    try {
+      // Get printer status from Klipper API
+      const response = await fetch('http://192.168.1.89/printer/objects/query?toolhead&extruder');
+      const data = await response.json();
+      
+      // Extract E position from the response
+      // The position is typically in data.result.status.toolhead.position[3] (E is 4th axis)
+      let ePosition = 0;
+      if (data && data.result && data.result.status) {
+        // Try to get from gcode_move first (more accurate for extruder position)
+        const gcodeResponse = await fetch('http://192.168.1.89/printer/objects/query?gcode_move');
+        const gcodeData = await gcodeResponse.json();
+        
+        if (gcodeData && gcodeData.result && gcodeData.result.status && gcodeData.result.status.gcode_move) {
+          ePosition = gcodeData.result.status.gcode_move.gcode_position[3] || 0;
+        }
+      }
+      
+      // Update the display
+      const positionDisplay = document.getElementById('syringe-position');
+      if (positionDisplay) {
+        positionDisplay.textContent = `${ePosition.toFixed(1)} steps`;
+      }
+    } catch (error) {
+      console.error('Error fetching syringe position:', error);
+      const positionDisplay = document.getElementById('syringe-position');
+      if (positionDisplay) {
+        positionDisplay.textContent = 'Error reading position';
+      }
+    }
   }
 
   getValveMask() {
