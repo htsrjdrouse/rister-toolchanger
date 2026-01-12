@@ -1,8 +1,6 @@
 // Rister Toolchanger - Clean Organized Build
 // Using FreeCAD-exported STLs where available, parametric where useful
-
 include <scad/tslot.inc.scad>
-include <conduit_and_pipette_tubing.scad>
 
 // For STL source documentation, see: stl_source_tracking.scad
 // Optional: Uncomment to display source documentation in console
@@ -40,7 +38,6 @@ X_GANTRY_LENGTH = 510;
 module freecad_assembly() {
     translate(FREECAD_OFFSET) {
     
-        /* 
         // =====================================================================
         // X-AXIS COMPONENTS
         // =====================================================================
@@ -264,7 +261,6 @@ module freecad_assembly() {
         // Right Z carriages
         import("stls/ZParts/z_carriage_right.stl");
         import("stls/ZParts/z_carriage_right_1.stl");
-        */
         
         // =====================================================================
         // TOOLHEAD CARRIAGE (rides on MGN9 X-axis)
@@ -334,7 +330,6 @@ module freecad_assembly() {
         import("stls/Carriage/slider.stl");
        
 
-	/*
  
         // =====================================================================
         // BED ASSEMBLY
@@ -356,7 +351,6 @@ module freecad_assembly() {
         import("stls/Bed/z_bed_left_1.stl");
         import("stls/Bed/z_bed_right.stl");
         import("stls/Bed/z_bed_right_1.stl");
-        */ 
         
  
         
@@ -453,7 +447,6 @@ module freecad_assembly() {
        
 
 
-	/* 
         // =====================================================================
         // PEEK NOZZLE 4-CHANNEL (Liquid dispenser nozzle assembly)
         // =====================================================================
@@ -483,9 +476,7 @@ module freecad_assembly() {
         import("stls/peek_nozzle_4channel/silicon_tubing_od_4mm_id_2mm.stl");
         import("stls/peek_nozzle_4channel/silicon tubing_od_4mm_id_2mm_stretched_part.stl");
         import("stls/peek_nozzle_4channel/silicon_tubing_od_4mm_id_2mm_stretched_part.stl");
-        */
         
-	/* 
         // =====================================================================
         // TIP CASE SYSTEM (Pipette tip storage)
         // =====================================================================
@@ -506,11 +497,8 @@ module freecad_assembly() {
         // T-slot 20mm tip case mounts (100mm length)
         import("stls/TipCase/tipcase_tslot20_100_A.stl");
         import("stls/TipCase/tipcase_tslot20_100_B.stl");
-	*/
 
 
-
-	/*        
         // =====================================================================
         // RASPBERRY PI CAMERA TOOL
         // =====================================================================
@@ -538,8 +526,7 @@ module freecad_assembly() {
         
         // Umbilical
         import("stls/RaspiCameraTool/umbilical_extrusion.stl");
-       	*/
-	/* 
+
         // =====================================================================
         // EXTRUDER TOOL 0 (Sherpa Micro + Bambu hotend)
         // =====================================================================
@@ -613,8 +600,8 @@ module freecad_assembly() {
         import("stls/ExtruderTool0/klicky_mount_mod_pcb_clone.stl");
         import("stls/ExtruderTool0/Nozzle_Blocker_Mount_R2_tube_block.stl");
         import("stls/ExtruderTool0/Umbilical_Extrusion_Mount_ribboncable_filamentsensor.stl");
-        */
-	/*
+
+
         // =====================================================================
         // EXTRUDER TOOL 1 (Sherpa Micro + Bambu hotend - duplicate)
         // =====================================================================
@@ -687,7 +674,7 @@ module freecad_assembly() {
         import("stls/ExtruderTool1/sherpa_micro_mount_positioned_1.stl");
         import("stls/ExtruderTool1/Nozzle_Blocker_Mount_R2_tube_block_1.stl");
         import("stls/ExtruderTool1/Umbilical_Extrusion_Mount_ribboncable_filamentsensor_1.stl");
-	*/
+
         // =====================================================================
         // SYRINGE PUMP & VALVE SYSTEM (Microfluidics control)
         // =====================================================================
@@ -761,7 +748,7 @@ module freecad_assembly() {
 	import("stls/LiquidDispenserTool0/conduit.stl");
 
         }
-	/*
+
         // Wash station components
         import("stls/Syringepump_valve/washbowl_1tip001.stl");
         import("stls/Syringepump_valve/washbowl_stilt001.stl");
@@ -789,8 +776,8 @@ module freecad_assembly() {
         import("stls/Syringepump_valve/TaidacentNon-ContactLiquidSensor.stl");
         import("stls/Syringepump_valve/keystone-box-1_box.stl");
         import("stls/Syringepump_valve/keystone-box-1_lid.stl");
-	*/
-        
+       
+ 
         // =====================================================================
         // WASH STATION (Tip cleaning and drying)
         // =====================================================================
@@ -800,11 +787,10 @@ module freecad_assembly() {
         // Generated STLs:
         //   Wash bowl assembly for pipette tip cleaning
         // =====================================================================
-        /*
+
         import("stls/Washstation/drypad.stl");
         import("stls/Washstation/washbowl_stilt.stl");
         import("stls/Washstation/washbowl_watervacinput_tpu.stl");
-	*/
         
         //
         //=====================================================================
@@ -817,7 +803,6 @@ module freecad_assembly() {
         //   Voron-style keystone jacks for cable management
         //   XT60 power connectors
         // =====================================================================
-	/*
         
         // Keystone jacks - Inside mounting (5 units)
         import("stls/Cabling/voron_keystone_inside.stl");
@@ -835,8 +820,8 @@ module freecad_assembly() {
         
         // Power connector
         import("stls/Cabling/XT60_v2.stl");
-	*/
-        
+       
+ 
         // =====================================================================
         // KLICKY PROBE SYSTEM
         // =====================================================================
