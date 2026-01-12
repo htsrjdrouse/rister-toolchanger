@@ -29,7 +29,7 @@ include <pipette_wick_assembly.scad>
 //peek_nozzle_part1_4channel();
 //bayonet_pipette_tipcase_holder();
 
-peek_nozzle_part3_4channel();
+//peek_nozzle_part3_4channel();
 //translate([-15.7,10-10,-20])peek_nozzle_4channel();
 //translate([345.5,439,250+20])rotate([0,180,90])coolwashassembly();
 
@@ -69,7 +69,7 @@ translate([-0.5,-0.7,0])rotate([0,180,180])piezo_dispenser_assy_holder();
 //translate([337,427,300-15])rotate([0,180,90])peek_nozzle_part2(); //nozzle end
 //translate([337,427,300-15])rotate([0,180,90])peek_nozzle_part3();
 
-//translate([425.5,-344.4,-300-4])rotate([0,0,90])peek_nozzle_4channel();
+translate([425.5,-344.4,-300-4])rotate([0,0,90])peek_nozzle_4channel();
 
 //bayonet_pipette_tip_box();
 //bayonet_pipette_tipcase();
@@ -79,13 +79,16 @@ translate([-0.5,-0.7,0])rotate([0,180,180])piezo_dispenser_assy_holder();
 module peek_nozzle_4channel(){
 translate([337,427,300])rotate([0,180,90])peek_nozzle_part1_4channel(); 
 //translate([337,427,300])rotate([0,180,90])peek_nozzle_part1_4channel_groove(); 
+
 translate([337,427,300-15])rotate([0,180,90])peek_nozzle_part2_4channel(); //nozzle end
 translate([337,427,300-15])rotate([0,180,90])peek_nozzle_part3_4channel();
+
 translate([337,427,300]){
 for(i=[0:3]){
 translate([i*5.2,0,0])pipette_assy_for_peek_nozzle_4channel();
 }
 }
+
 }
 
 

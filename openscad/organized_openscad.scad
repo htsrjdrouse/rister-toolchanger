@@ -2,6 +2,7 @@
 // Using FreeCAD-exported STLs where available, parametric where useful
 
 include <scad/tslot.inc.scad>
+include <conduit_and_pipette_tubing.scad>
 
 // For STL source documentation, see: stl_source_tracking.scad
 // Optional: Uncomment to display source documentation in console
@@ -38,6 +39,8 @@ X_GANTRY_LENGTH = 510;
 
 module freecad_assembly() {
     translate(FREECAD_OFFSET) {
+    
+        /* 
         // =====================================================================
         // X-AXIS COMPONENTS
         // =====================================================================
@@ -261,6 +264,7 @@ module freecad_assembly() {
         // Right Z carriages
         import("stls/ZParts/z_carriage_right.stl");
         import("stls/ZParts/z_carriage_right_1.stl");
+        */
         
         // =====================================================================
         // TOOLHEAD CARRIAGE (rides on MGN9 X-axis)
@@ -328,7 +332,10 @@ module freecad_assembly() {
         // Toolchanger components
         import("stls/Carriage/locking_plate_lineux_one.stl");
         import("stls/Carriage/slider.stl");
-        
+       
+
+	/*
+ 
         // =====================================================================
         // BED ASSEMBLY
         // =====================================================================
@@ -349,6 +356,9 @@ module freecad_assembly() {
         import("stls/Bed/z_bed_left_1.stl");
         import("stls/Bed/z_bed_right.stl");
         import("stls/Bed/z_bed_right_1.stl");
+        */ 
+        
+ 
         
         // =====================================================================
         // LIQUID DISPENSER TOOL 0 (4-channel pipette system)
@@ -393,8 +403,8 @@ module freecad_assembly() {
         // =====================================================================
         
         
-        
         translate([0,31,5]){
+
         // Dock and backplate
         import("stls/LiquidDispenserTool0/dock_body_linearactuator_10mmlonger_3.stl");
         import("stls/LiquidDispenserTool0/lineux_backplate_for_linearactuator_modified.stl");
@@ -405,7 +415,6 @@ module freecad_assembly() {
         import("stls/LiquidDispenserTool0/holder_half_top.stl");
         
         // Pipette system
-        import("stls/LiquidDispenserTool0/just_pipette.stl");
         import("stls/LiquidDispenserTool0/pipette_loading_module_rack.stl");
         import("stls/LiquidDispenserTool0/pipettes_rack.stl");
         
@@ -419,14 +428,16 @@ module freecad_assembly() {
         import("stls/LiquidDispenserTool0/tubing_straight_sledcap.stl");
         
         // Tubing and umbilical
-        import("stls/LiquidDispenserTool0/tubing_to_pipettes_valve_side_umbilical.stl");
-        import("stls/LiquidDispenserTool0/tubing_to_pipettes.stl");
-        import("stls/LiquidDispenserTool0/pipette_tubing.stl");
+        translate([0,-30,-5])import("stls/LiquidDispenserTool0/tubing_to_pipettes_valve_side_umbilical.stl");
+
+	//pipette tubing fix
+	import("stls/LiquidDispenserTool0/pipette_tubing_liquidhandler.stl");
+
         import("stls/LiquidDispenserTool0/umbilical_cord.stl");
         import("stls/LiquidDispenserTool0/umbilical_extrusion_1.stl");
         
         // Tip removal and loading
-        translate([0,-31,0]){
+        translate([-47,-31,0]){
         import("stls/PipetteRemoval/piezo_dispenser_assy_remover.stl");
         import("stls/PipetteRemoval/singlechannel_tipremoval_base.stl");
         }
@@ -435,10 +446,14 @@ module freecad_assembly() {
         import("stls/LiquidDispenserTool0/led_diffuser_back.stl");
         import("stls/LiquidDispenserTool0/led_diffuser.stl");
         }
-        
+
        
         }
         
+       
+
+
+	/* 
         // =====================================================================
         // PEEK NOZZLE 4-CHANNEL (Liquid dispenser nozzle assembly)
         // =====================================================================
@@ -448,12 +463,13 @@ module freecad_assembly() {
         // Generated STLs:
         //   PEEK nozzle components and tubing connections
         // =====================================================================
-        
         // PEEK nozzle parts
         import("stls/peek_nozzle_4channel/peek_nozzle_part1_4channel.stl");
         import("stls/peek_nozzle_4channel/peek_nozzle_part2_4channel.stl");
+        
         import("stls/peek_nozzle_4channel/peek_nozzle_part3_4channel.stl");
         import("stls/peek_nozzle_4channel/peek_nozzle.stl");
+        
         
         // Connectors
         import("stls/peek_nozzle_4channel/plastic_polypropylene_connector.stl");
@@ -467,7 +483,9 @@ module freecad_assembly() {
         import("stls/peek_nozzle_4channel/silicon_tubing_od_4mm_id_2mm.stl");
         import("stls/peek_nozzle_4channel/silicon tubing_od_4mm_id_2mm_stretched_part.stl");
         import("stls/peek_nozzle_4channel/silicon_tubing_od_4mm_id_2mm_stretched_part.stl");
+        */
         
+	/* 
         // =====================================================================
         // TIP CASE SYSTEM (Pipette tip storage)
         // =====================================================================
@@ -488,7 +506,11 @@ module freecad_assembly() {
         // T-slot 20mm tip case mounts (100mm length)
         import("stls/TipCase/tipcase_tslot20_100_A.stl");
         import("stls/TipCase/tipcase_tslot20_100_B.stl");
-        
+	*/
+
+
+
+	/*        
         // =====================================================================
         // RASPBERRY PI CAMERA TOOL
         // =====================================================================
@@ -497,7 +519,6 @@ module freecad_assembly() {
         //
         // Generated STLs:
         // =====================================================================
-        
         // Camera mounts
         import("stls/RaspiCameraTool/arducam_adjuster.stl");
         import("stls/RaspiCameraTool/arducam_lineux.stl");
@@ -517,7 +538,8 @@ module freecad_assembly() {
         
         // Umbilical
         import("stls/RaspiCameraTool/umbilical_extrusion.stl");
-        
+       	*/
+	/* 
         // =====================================================================
         // EXTRUDER TOOL 0 (Sherpa Micro + Bambu hotend)
         // =====================================================================
@@ -591,7 +613,8 @@ module freecad_assembly() {
         import("stls/ExtruderTool0/klicky_mount_mod_pcb_clone.stl");
         import("stls/ExtruderTool0/Nozzle_Blocker_Mount_R2_tube_block.stl");
         import("stls/ExtruderTool0/Umbilical_Extrusion_Mount_ribboncable_filamentsensor.stl");
-        
+        */
+	/*
         // =====================================================================
         // EXTRUDER TOOL 1 (Sherpa Micro + Bambu hotend - duplicate)
         // =====================================================================
@@ -601,7 +624,7 @@ module freecad_assembly() {
         // Generated STLs:
         //   Duplicate of ExtruderTool0 with _1 suffix
         // =====================================================================
-        
+
         // Dock and backplate
         import("stls/ExtruderTool1/dock_body_linearactuator_10mmlonger_1.stl");
         import("stls/ExtruderTool1/back_plate_positioned_1.stl");
@@ -664,6 +687,155 @@ module freecad_assembly() {
         import("stls/ExtruderTool1/sherpa_micro_mount_positioned_1.stl");
         import("stls/ExtruderTool1/Nozzle_Blocker_Mount_R2_tube_block_1.stl");
         import("stls/ExtruderTool1/Umbilical_Extrusion_Mount_ribboncable_filamentsensor_1.stl");
+	*/
+        // =====================================================================
+        // SYRINGE PUMP & VALVE SYSTEM (Microfluidics control)
+        // =====================================================================
+        // OpenSCAD Sources: openscad_sources/syringe_pump/
+        //   (Source files TBD - add when identified)
+        //
+        // Generated STLs:
+        //   Complete syringe pump system with 4-channel valve control
+        //   Includes peristaltic pumps, wash station, and pressure compensation
+        // =====================================================================
+        
+        // Syringe pump assembly - 4-channel system
+        import("stls/Syringepump_valve/multichannel_syringe1ml_clamp.stl");
+        import("stls/Syringepump_valve/multichannel_syringe1ml_clamp_luerlock.stl");
+        import("stls/Syringepump_valve/multichannel_syringe1ml_clamp_top_luerlock.stl");
+        import("stls/Syringepump_valve/multichannel_syringe1ml_clamp_extrusion_connect_1.stl");
+        import("stls/Syringepump_valve/multichannel_syringe1ml_clamp_extrusion_connect_2.stl");
+        import("stls/Syringepump_valve/multichannel_plunger_clamp.stl");
+        import("stls/Syringepump_valve/syringe_1ml_stack_1piece_multichannel.stl");
+        import("stls/Syringepump_valve/syringe_1ml_stack_1piece_multichannel_clamp.stl");
+        import("stls/Syringepump_valve/syringe_1m_4units.stl");
+        
+        // Linear motion system
+        import("stls/Syringepump_valve/mgn12_rail_300mm.stl");
+        import("stls/Syringepump_valve/mgn12_shuttle.stl");
+        import("stls/Syringepump_valve/MGN12_slider_mount.stl");
+        import("stls/Syringepump_valve/MGN12_slider_mount_motormount_screws.stl");
+        import("stls/Syringepump_valve/multichannel_syringeshuttle_clipbracket.stl");
+        import("stls/Syringepump_valve/m8_threaded_rod_200mm.stl");
+        import("stls/Syringepump_valve/oneml_syringe_stepper_linear_m8nut_coupler.stl");
+        
+        // Motor and frame
+        import("stls/Syringepump_valve/nema_multichannel.stl");
+        import("stls/Syringepump_valve/HFSB5-2020-350.stl");
+        import("stls/Syringepump_valve/iverntech_pump_slider_plate.stl");
+        
+        // Valve system (4 channels: 0-3)
+        import("stls/Syringepump_valve/servo_0.stl");
+        import("stls/Syringepump_valve/servo_1.stl");
+        import("stls/Syringepump_valve/servo_2.stl");
+        import("stls/Syringepump_valve/servo_3.stl");
+        import("stls/Syringepump_valve/stopcock_0.stl");
+        import("stls/Syringepump_valve/stopcock_1.stl");
+        import("stls/Syringepump_valve/stopcock_2.stl");
+        import("stls/Syringepump_valve/stopcock_3.stl");
+        
+        // Valve mounting and connections
+        import("stls/Syringepump_valve/smallsyringe_valvesupportmodule_plate_4valve.stl");
+        import("stls/Syringepump_valve/valvemountplate_screwattach_smallersyringe_0.stl");
+        import("stls/Syringepump_valve/valvemountplate_screwattach_smallersyringe_1.stl");
+        import("stls/Syringepump_valve/valvemountplate_screwattach_smallersyringe_2.stl");
+        import("stls/Syringepump_valve/valvemountplate_screwattach_smallersyringe_3.stl");
+        import("stls/Syringepump_valve/valvemountplate_screwattach_smallersyringe_vertical_attach_0.stl");
+        import("stls/Syringepump_valve/valvemountplate_screwattach_smallersyringe_vertical_attach_1.stl");
+        import("stls/Syringepump_valve/valvemountplate_screwattach_smallersyringe_vertical_attach_2.stl");
+        import("stls/Syringepump_valve/valvemountplate_screwattach_smallersyringe_vertical_attach_3.stl");
+        import("stls/Syringepump_valve/valveconnect_part_0.stl");
+        import("stls/Syringepump_valve/valveconnect_part_1.stl");
+        import("stls/Syringepump_valve/valveconnect_part_2.stl");
+        import("stls/Syringepump_valve/valveconnect_part_3.stl");
+        
+        // Tubing and connections
+        translate([0,0,0]){
+        import("stls/Syringepump_valve/syringe_pump_tubing_to_valves.stl");
+        import("stls/Syringepump_valve/valve_tubing_0.stl");
+        import("stls/Syringepump_valve/valve_tubing_1.stl");
+        import("stls/Syringepump_valve/valve_tubing_2.stl");
+        import("stls/Syringepump_valve/valve_tubing_3.stl");
+
+	//openscad conduit tubing fix
+	import("stls/LiquidDispenserTool0/conduit.stl");
+
+        }
+	/*
+        // Wash station components
+        import("stls/Syringepump_valve/washbowl_1tip001.stl");
+        import("stls/Syringepump_valve/washbowl_stilt001.stl");
+        import("stls/Syringepump_valve/washbowl_watervacinput_tpu001.stl");
+        import("stls/Syringepump_valve/wash_dry_pressure_plate_rj45_connector.stl");
+        import("stls/Syringepump_valve/drypad001.stl");
+        
+        // Peristaltic pumps
+        import("stls/Syringepump_valve/peristaltic_pump_1.stl");
+        import("stls/Syringepump_valve/peristaltic_pump_1_tubing.stl");
+        import("stls/Syringepump_valve/peristaltic_pump_2.stl");
+        import("stls/Syringepump_valve/peristaltic_pump_2_tubing.stl");
+        import("stls/Syringepump_valve/peristaltic_waste_bottle_tubing.stl");
+        
+        // Bottles and containers
+        import("stls/Syringepump_valve/bottle.stl");
+        import("stls/Syringepump_valve/bottle_lid.stl");
+        import("stls/Syringepump_valve/waterbottle.stl");
+        import("stls/Syringepump_valve/waterbottle_tubing.stl");
+        import("stls/Syringepump_valve/wastebottle.stl");
+        import("stls/Syringepump_valve/nalgene_250ml_bottle_holder_liquid_level_sensor.stl");
+        import("stls/Syringepump_valve/pcv_bottle_tubing.stl");
+        
+        // Sensors and electronics housing
+        import("stls/Syringepump_valve/TaidacentNon-ContactLiquidSensor.stl");
+        import("stls/Syringepump_valve/keystone-box-1_box.stl");
+        import("stls/Syringepump_valve/keystone-box-1_lid.stl");
+	*/
+        
+        // =====================================================================
+        // WASH STATION (Tip cleaning and drying)
+        // =====================================================================
+        // OpenSCAD Sources: openscad_sources/washstation/
+        //   (Source files TBD - add when identified)
+        //
+        // Generated STLs:
+        //   Wash bowl assembly for pipette tip cleaning
+        // =====================================================================
+        /*
+        import("stls/Washstation/drypad.stl");
+        import("stls/Washstation/washbowl_stilt.stl");
+        import("stls/Washstation/washbowl_watervacinput_tpu.stl");
+	*/
+        
+        //
+        //=====================================================================
+        // CABLING SYSTEM (Cable management and connections)
+        // =====================================================================
+        // OpenSCAD Sources: openscad_sources/cabling/
+        //   (Source files TBD - add when identified)
+        //
+        // Generated STLs:
+        //   Voron-style keystone jacks for cable management
+        //   XT60 power connectors
+        // =====================================================================
+	/*
+        
+        // Keystone jacks - Inside mounting (5 units)
+        import("stls/Cabling/voron_keystone_inside.stl");
+        import("stls/Cabling/voron_keystone_inside_1.stl");
+        import("stls/Cabling/voron_keystone_inside_2.stl");
+        import("stls/Cabling/voron_keystone_inside_3.stl");
+        import("stls/Cabling/voron_keystone_inside_4.stl");
+        
+        // Keystone jacks - Outside mounting (5 units)
+        import("stls/Cabling/voron_keystone_outside.stl");
+        import("stls/Cabling/voron_keystone_outside_1.stl");
+        import("stls/Cabling/voron_keystone_outside_2.stl");
+        import("stls/Cabling/voron_keystone_outside_3.stl");
+        import("stls/Cabling/voron_keystone_outside_4.stl");
+        
+        // Power connector
+        import("stls/Cabling/XT60_v2.stl");
+	*/
         
         // =====================================================================
         // KLICKY PROBE SYSTEM
@@ -681,6 +853,9 @@ module freecad_assembly() {
         
         // Magnetic probe
         import("stls/Klicky/mag_probe_screw_mod.stl");
+        
+        
+       
     }
 }
 
