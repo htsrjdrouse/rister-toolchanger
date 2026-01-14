@@ -24,6 +24,9 @@ openscad/
 │   ├── RaspiCameraTool/         (Camera tool)
 │   ├── ExtruderTool0/           (Extruder tool #1)
 │   ├── ExtruderTool1/           (Extruder tool #2)
+│   ├── Syringepump_valve/       (Syringe pump & valve system)
+│   ├── Washstation/             (Wash station)
+│   ├── Cabling/                 (Cable management)
 │   └── Klicky/                  (Klicky probe system)
 └── scad/                        (OpenSCAD source files)
     ├── tslot.inc.scad           (T-slot extrusion library)
@@ -93,6 +96,11 @@ The assembly is organized into these major sections:
    - **Extruder Tool 0** - Sherpa Micro + Bambu hotend
    - **Extruder Tool 1** - Duplicate extruder
    - **Klicky Probe** - Bed leveling probe
+
+6. **Microfluidics Support Systems**
+   - **Syringe Pump & Valve System** - 4-channel precision liquid control
+   - **Wash Station** - Automated tip cleaning and drying
+   - **Cabling System** - Voron-style cable management
 
 ## Source File Documentation
 
@@ -235,6 +243,13 @@ Then comment out tool sections you don't need to see.
 - 2x Extruders (Sherpa Micro + Bambu hotend)
 - 1x Camera Tool (Raspberry Pi + Arducam)
 - 1x Klicky Probe
+
+**Microfluidics Infrastructure:**
+- 4-channel syringe pump with servo valves
+- Peristaltic pumps for wash/waste
+- Automated wash station
+- Pressure compensation vessel
+- Liquid level sensing
 
 ## Related Documentation
 

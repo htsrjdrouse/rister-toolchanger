@@ -2,6 +2,7 @@
 // Using FreeCAD-exported STLs where available, parametric where useful
 include <scad/tslot.inc.scad>
 
+
 // For STL source documentation, see: stl_source_tracking.scad
 // Optional: Uncomment to display source documentation in console
 // use <stl_source_tracking.scad>
@@ -37,7 +38,6 @@ X_GANTRY_LENGTH = 510;
 
 module freecad_assembly() {
     translate(FREECAD_OFFSET) {
-    
         // =====================================================================
         // X-AXIS COMPONENTS
         // =====================================================================
@@ -675,6 +675,8 @@ module freecad_assembly() {
         import("stls/ExtruderTool1/Nozzle_Blocker_Mount_R2_tube_block_1.stl");
         import("stls/ExtruderTool1/Umbilical_Extrusion_Mount_ribboncable_filamentsensor_1.stl");
 
+
+
         // =====================================================================
         // SYRINGE PUMP & VALVE SYSTEM (Microfluidics control)
         // =====================================================================
@@ -687,16 +689,24 @@ module freecad_assembly() {
         // =====================================================================
         
         // Syringe pump assembly - 4-channel system
-        import("stls/Syringepump_valve/multichannel_syringe1ml_clamp.stl");
-        import("stls/Syringepump_valve/multichannel_syringe1ml_clamp_luerlock.stl");
-        import("stls/Syringepump_valve/multichannel_syringe1ml_clamp_top_luerlock.stl");
+        color("lime")translate([0,32,0])import("stls/Syringepump_valve/tyco_multichannel_syringe1ml_clamp.stl");
+        color("lime")translate([0,32,0])import("stls/Syringepump_valve/tyco_multichannel_syringe1ml_clamp_luerlock.stl");
         import("stls/Syringepump_valve/multichannel_syringe1ml_clamp_extrusion_connect_1.stl");
         import("stls/Syringepump_valve/multichannel_syringe1ml_clamp_extrusion_connect_2.stl");
         import("stls/Syringepump_valve/multichannel_plunger_clamp.stl");
         import("stls/Syringepump_valve/syringe_1ml_stack_1piece_multichannel.stl");
         import("stls/Syringepump_valve/syringe_1ml_stack_1piece_multichannel_clamp.stl");
-        import("stls/Syringepump_valve/syringe_1m_4units.stl");
-        
+
+
+	color("lime")translate([0,0,0])import("stls/Syringepump_valve/syringe_1m_4units.stl");
+	color("lime")translate([0,32,0])import("stls/Syringepump_valve/oneml_syringe_stepper_linear_m8nut_coupler.stl");
+
+        //import("stls/Syringepump_valve/syringe_1m_4units.stl");
+        //color("lime")translate([640,591,306])import("tuberculin_syringe_1ml.stl");
+	//color("orange")translate([600,659+1,228-4.5])rotate([90,0,90])import("iverntech_pump_slider_plate.stl");
+
+	//import("multichannel_syringeshuttle_clipbracket.stl");
+
         // Linear motion system
         import("stls/Syringepump_valve/mgn12_rail_300mm.stl");
         import("stls/Syringepump_valve/mgn12_shuttle.stl");
@@ -704,12 +714,10 @@ module freecad_assembly() {
         import("stls/Syringepump_valve/MGN12_slider_mount_motormount_screws.stl");
         import("stls/Syringepump_valve/multichannel_syringeshuttle_clipbracket.stl");
         import("stls/Syringepump_valve/m8_threaded_rod_200mm.stl");
-        import("stls/Syringepump_valve/oneml_syringe_stepper_linear_m8nut_coupler.stl");
-        
+ 
         // Motor and frame
         import("stls/Syringepump_valve/nema_multichannel.stl");
         import("stls/Syringepump_valve/HFSB5-2020-350.stl");
-        import("stls/Syringepump_valve/iverntech_pump_slider_plate.stl");
         
         // Valve system (4 channels: 0-3)
         import("stls/Syringepump_valve/servo_0.stl");
@@ -735,6 +743,7 @@ module freecad_assembly() {
         import("stls/Syringepump_valve/valveconnect_part_1.stl");
         import("stls/Syringepump_valve/valveconnect_part_2.stl");
         import("stls/Syringepump_valve/valveconnect_part_3.stl");
+
         
         // Tubing and connections
         translate([0,0,0]){
@@ -803,24 +812,25 @@ module freecad_assembly() {
         //   Voron-style keystone jacks for cable management
         //   XT60 power connectors
         // =====================================================================
-        
+ 
         // Keystone jacks - Inside mounting (5 units)
         import("stls/Cabling/voron_keystone_inside.stl");
         import("stls/Cabling/voron_keystone_inside_1.stl");
         import("stls/Cabling/voron_keystone_inside_2.stl");
         import("stls/Cabling/voron_keystone_inside_3.stl");
         import("stls/Cabling/voron_keystone_inside_4.stl");
-        
+
         // Keystone jacks - Outside mounting (5 units)
         import("stls/Cabling/voron_keystone_outside.stl");
         import("stls/Cabling/voron_keystone_outside_1.stl");
         import("stls/Cabling/voron_keystone_outside_2.stl");
         import("stls/Cabling/voron_keystone_outside_3.stl");
         import("stls/Cabling/voron_keystone_outside_4.stl");
-        
+
         // Power connector
         import("stls/Cabling/XT60_v2.stl");
-       
+
+
  
         // =====================================================================
         // KLICKY PROBE SYSTEM
@@ -838,7 +848,6 @@ module freecad_assembly() {
         
         // Magnetic probe
         import("stls/Klicky/mag_probe_screw_mod.stl");
-        
         
        
     }
