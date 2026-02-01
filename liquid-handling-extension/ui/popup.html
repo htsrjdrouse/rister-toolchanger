@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Liquid Handling Control System</title>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    html, body {
+      width: 100%;
+      height: 100%;
+      margin: 0;
+      padding: 0;
+      overflow: hidden;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Header -->
+    <div class="header">
+      <h1>Liquid Handling Control System</h1>
+      <div class="connection-status">
+        <span class="status-indicator" id="status-indicator"></span>
+        <span id="status-text">Detecting...</span>
+      </div>
+    </div>
+
+    <!-- Tab Navigation -->
+    <div class="tabs">
+      <button class="tab-button active" data-tab="object-editor">
+        <span class="tab-icon">📐</span>
+        Object Editor
+      </button>
+      <button class="tab-button" data-tab="fluidics">
+        <span class="tab-icon">💧</span>
+        Fluidics
+      </button>
+      <button class="tab-button" data-tab="gcode-builder">
+        <span class="tab-icon">⚙️</span>
+        G-code Builder
+      </button>
+    </div>
+
+    <!-- Tab Content -->
+    <div class="tab-content">
+      <!-- Object Editor Tab -->
+      <div id="object-editor" class="tab-panel active">
+        <div id="object-editor-content"></div>
+      </div>
+
+      <!-- Fluidics Control Tab -->
+      <div id="fluidics" class="tab-panel">
+        <div id="fluidics-content"></div>
+      </div>
+
+      <!-- G-code Builder Tab -->
+      <div id="gcode-builder" class="tab-panel">
+        <div id="gcode-builder-content"></div>
+      </div>
+    </div>
+
+    <!-- Command Log -->
+    <div class="command-log-container">
+      <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 4px;">
+        <label style="font-size: 11px; font-weight: 600; color: #666;">Command Log:</label>
+        <button id="clear-log" style="font-size: 10px; padding: 2px 6px; cursor: pointer;">Clear</button>
+        <button id="copy-log" style="font-size: 10px; padding: 2px 6px; cursor: pointer;">Copy</button>
+      </div>
+      <textarea id="command-log" readonly
+        style="width: 100%; height: 54px; font-family: monospace; font-size: 11px;
+               resize: none; background: #1e1e1e; color: #00ff00; border: 1px solid #444;
+               border-radius: 4px; padding: 6px; box-sizing: border-box;"
+        placeholder="Commands will appear here..."></textarea>
+    </div>
+
+    <!-- Footer -->
+    <div class="footer">
+      <button id="export-all" class="footer-btn">💾 Export Config</button>
+      <button id="import-all" class="footer-btn">📂 Import Config</button>
+      <span class="version">v1.5.0</span>
+    </div>
+  </div>
+
+  <script type="module" src="popup.js"></script>
+</body>
+</html>

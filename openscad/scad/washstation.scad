@@ -136,8 +136,6 @@ xd=5.5;
 xdd=1.5;
 translate([0,-43,0])difference(){
 union(){
-
-
 /*
 */
 translate([-20,2,0])rotate([0,0,90])difference(){
@@ -147,8 +145,6 @@ translate([6,-13,5-3]){translate([0,i,-0])cylinder(r=10/2,h=4);translate([0,i,4]
 translate([19,-13,5-3]){translate([0,i,-0])cylinder(r=10/2,h=4);translate([0,i,4])cylinder(r=4.7/2,h=10+6);}
 }
 }
-
-
 cube([25,40,10]);
 }
 translate([10,32,0])cube([5,20,3]);
@@ -184,5 +180,62 @@ translate([25-4,-30-4,-5])cylinder(r=3.7/2,h=20);
 translate([25-4,-30-4,-0.1])cylinder(r=6.2/2,h=3.5);
 }
 }
+
+
+
+
+
+
+
+module washbowl_1tip_p200_LTS(){
+xd=5.5;
+xdd=1.5;
+translate([0,-43,0])difference(){
+union(){
+/*
+*/
+translate([-20,2,0])rotate([0,0,90])difference(){
+translate([0,-21,5])cube([25,20+13,5]);
+translate([0,3,0])for(i=[0:15]){
+translate([6,-13,5-3]){translate([0,i,-0])cylinder(r=10/2,h=4);translate([0,i,4])cylinder(r=4.7/2,h=10+6);}
+translate([19,-13,5-3]){translate([0,i,-0])cylinder(r=10/2,h=4);translate([0,i,4])cylinder(r=4.7/2,h=10+6);}
+}
+}
+cube([25,40,10]);
+}
+translate([10,32,0])cube([5,20,3]);
+translate([8,12,-2])cube([10,26,20]);
+translate([4,6,-5])cylinder(r=3.7/2,h=20);
+translate([4,6,-0.1])cylinder(r=6.2/2,h=3.5);
+translate([25-4,6,-5])cylinder(r=3.7/2,h=20);
+translate([25-4,6,-0.1])cylinder(r=6.2/2,h=3.5);
+}
+translate([0,-3,0])difference(){
+cube([25,40,10]);
+translate([10,-10,0])cube([5,20,3]);
+//translate([12,60,0])sphere(r=10);
+for (y = [0:0]) // two iterations, z = -1, z = 1
+{
+    translate([0.5, y, 0])
+    scale([0.8,1.6,1])translate([12+3,27.5-(15.5*y)-8-7,0])sphere(r=10);
+        //translate([12.5,27.5-(15.*y)-8,2.5])sphere(r=5);
+        #translate([12.5,27.5-(15.5*y)-8,2])cylinder(r=3.5/2,h=10, $fn=30);
+    cube(size = 1, center = false);
+}
+translate([4,4,-5])cylinder(r=3.7/2,h=20);
+translate([4,4,-0.1])cylinder(r=6.2/2,h=3.5);
+translate([25-4,4,-5])cylinder(r=3.7/2,h=20);
+translate([25-4,4,-0.1])cylinder(r=6.2/2,h=3.5);
+translate([4,40-4,-5])cylinder(r=3.7/2,h=20);
+translate([4,40-4,-0.1])cylinder(r=6.2/2,h=3.5);
+translate([25-4,40-4,-5])cylinder(r=3.7/2,h=20);
+translate([25-4,40-4,-0.1])cylinder(r=6.2/2,h=3.5);
+translate([4,-30-4,-5])cylinder(r=3.7/2,h=20);
+translate([4,-30-4,-0.1])cylinder(r=6.2/2,h=3.5);
+translate([25-4,-30-4,-5])cylinder(r=3.7/2,h=20);
+translate([25-4,-30-4,-0.1])cylinder(r=6.2/2,h=3.5);
+}
+}
+
 
 

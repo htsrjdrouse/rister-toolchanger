@@ -142,7 +142,7 @@ translate([15,6.5,9])import("ebb36_brd.stl");
 */
 translate([24,0-10+4,-4])rotate([90,0,90])import("pinion.stl");
 translate([55,70.5,14])rotate([0,90,-90])servo();
-translate([22-0.5,-5.25,-100-40+10+5-20+31])rotate([0,0,90])servo_linear_actuator_rack_toolchanger_4channel();
+#translate([22-0.5,-5.25,-100-40+10+5-20+31])rotate([0,0,90])servo_linear_actuator_rack_toolchanger_4channel();
 lineux_backplate_for_linearactuator_modified();
 translate([0.5,0,0]){
 translate([70-1,-0.45,-35-2])color("")translate([64-1.5-61.5+1.5,-20+20,0])rotate([-0,0,90])holder_half_top();
@@ -284,7 +284,7 @@ translate([30.25,-8.4,58])rotate([0,-90,180])import("sled_cap.stl");
 translate([0,0,20]){
 translate([35,-65+4,40])mirror([0,1,0])rotate([0,-90,0])rack();
 //translate([25,-35,37.5+27])rotate([0,180,0])pipette_p1000_noextrusion(8.3,0,"y",10);
-translate([17.0,-46.5,6.5])rotate([0,0,90])fourchannel_pipette_loading_module();
+//translate([17.0,-46.5,6.5])rotate([0,0,90])fourchannel_pipette_loading_module();
 }
 }
 translate([28,-30,29])cube([20,20,35]);

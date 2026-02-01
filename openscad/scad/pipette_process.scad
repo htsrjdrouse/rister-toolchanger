@@ -4,6 +4,7 @@ include <luerlock.scad>
 include <tslot.inc.scad>
 
 include <washstation.scad>
+include <multichannel_cameramount.scad>
 
 
 p10_length = 34;            // mm
@@ -25,6 +26,19 @@ include <bom_camera.scad>
 //include <pipette_wick_assembly.scad>
 include <pipette_wick_assembly.scad>
 
+//piezo_dispenser_assy_holder_p200LTS();
+
+
+//p10_tip();
+//p200_cut_tip();
+//pipette_p300_lts_model();
+
+//piezo_dispenser_assy_remover();
+
+//translate([425.5,-344.4,-300-4])rotate([0,0,90])peek_nozzle_4channel();
+//bayonet_pipette_tipcase_holder();
+
+
 //import("pipetting/Luer_Connectors_ISO594/Luer_Female_1mm_ID_ISO594.STL");
 //peek_nozzle_part1_4channel();
 //bayonet_pipette_tipcase_holder();
@@ -33,7 +47,8 @@ include <pipette_wick_assembly.scad>
 //translate([-15.7,10-10,-20])peek_nozzle_4channel();
 //translate([345.5,439,250+20])rotate([0,180,90])coolwashassembly();
 
-
+//translate([337,427,300-15])rotate([0,180,90])peek_nozzle_part3_4channel();
+//peek_nozzle_4channel();
 //bayonet_dispenser_assy();
 //bayonet_pipette_tip_assy();
 
@@ -52,7 +67,6 @@ translate([-0.5,-0.7,0])rotate([0,180,180])piezo_dispenser_assy_holder();
 //translate([-15.7,0,-25-0])peek_nozzle_4channel();
 //peek_nozzle_part2_4channel();
 //piezo_dispenser_assy_holder();
-//piezo_dispenser_assy_remover();
 
 //piezo_dispenser_assy_holder();
 
@@ -69,26 +83,103 @@ translate([-0.5,-0.7,0])rotate([0,180,180])piezo_dispenser_assy_holder();
 //translate([337,427,300-15])rotate([0,180,90])peek_nozzle_part2(); //nozzle end
 //translate([337,427,300-15])rotate([0,180,90])peek_nozzle_part3();
 
-translate([425.5,-344.4,-300-4])rotate([0,0,90])peek_nozzle_4channel();
 
 //bayonet_pipette_tip_box();
 //bayonet_pipette_tipcase();
 //bayonet_pipette_tipcase_holder();
 
+/*
+*/
+
+//bayonet_pipette_tip_assy();
+
+/*
+translate([0,0.8,0])linearactuator_pipette_holder_p200LTS();
+difference(){
+import("../stls/LiquidDispenserTool0/pipette_loading_module_rack.stl");
+translate([310,423,310.5])cube([40,50,7]);
+}
+*/
+
+//peek_nozzle_4channel();
+
+/*
+translate([320-1,427,306+2])
+for(i=[0:3]){
+translate([i*7,0,0])p200_lts_holder();
+}
+*/
+
+//p200LTS_guillitine();
+//translate([337-12.5,427,300-15])rotate([0,180,90])peek_nozzle_part3_4channel_p200LTS();
+
+//peek_nozzle_part1and2_4channel_p200LTS();
+//p200_lts_holder();
+//translate([20,0,0])p20_lts_holder();
+
+/*
+difference(){
+union(){
+translate([337-12.5,427,300-15])rotate([0,180,90])peek_nozzle_part3_4channel_p200LTS();
+//translate([337-12.5,427,300])rotate([0,180,90])peek_nozzle_part1_4channel_p200LTS(); 
+
+//translate([337-12.5,427,300-15])rotate([0,180,90])peek_nozzle_part2_4channel_p200LTS(); //nozzle end
+}
+translate([320-1,427,306+2])
+for(i=[0:3]){
+translate([i*7,0,0])scale([1.0,1.0,1])#p200_lts_holder();
+}
+}
+*/
+
+module peek_nozzle_part1and2_4channel_p200LTS(){
+translate([337-12.5,427,300])rotate([0,180,90])peek_nozzle_part1_4channel_p200LTS(); 
+translate([337-12.5,427,300-15])rotate([0,180,90])peek_nozzle_part2_4channel_p200LTS(); //nozzle end
+}
+
+module p200LTS_guillitine(){
+difference(){union(){
+//translate([337-12.5,427,300])rotate([0,180,90])peek_nozzle_part1_4channel_p200LTS(); 
+corner_radius = 1;  // Adjust this value to change roundness
+translate([337-12.5,427,300])rotate([0,180,90])translate([-4-2,-5-15.2,-2-15])rounded_cube([8+4, 10+15.1+5-18, 17+5-5], corner_radius);
+translate([337-12.5+1.4+7,427-5,300-17.7])cube([18-7,10,17.7]);
+}
+translate([320-1,427,306+2])
+for(i=[0:3]){
+translate([i*7,0,0])scale([1.0,1.0,1])p200_lts_holder();
+}
+}
+}
+
+module p200_lts_holder(){
+//translate([0,0,13.0])color("lightgreen")cylinder(d2=7.5,d1=7.1,h=8,$fn=30); //this part I cut out to assemble
+color("pink")cylinder(d2=7.1,d1=6.1,h=13,$fn=30);
+color("lime")translate([0,0,-9.])cylinder(d2=5,d1=4.8,h=9,$fn=30);
+color("lightblue")translate([0,0,-9.-6.0])cylinder(d2=4.5,d1=4,h=6,$fn=30);
+color("peru")translate([0,0,-9.-6.0-10])cylinder(d2=3.85,d1=2.85,h=10,$fn=30);
+color("")translate([0,0,-9.-6.0-10-10])cylinder(d2=2.6,d1=1,h=10,$fn=30);
+}
+
+module p20_lts_holder(){
+//translate([0,0,9])color("lightgreen")cylinder(d2=6,d1=5.8,h=6.2,$fn=30); // this part I cut out. 
+color("pink")cylinder(d2=5.8,d1=5.5,h=9,$fn=30);
+color("lime")translate([0,0,-5.5])cylinder(d2=4.5,d1=2,h=5.5,$fn=30);
+color("lightblue")translate([0,0,-5.5-8])cylinder(d2=2,d1=1.8,h=8,$fn=30);
+color("peru")translate([0,0,-5.5-8-13])cylinder(d2=1.6,d1=1.1,h=13,$fn=30);
+color("")translate([0,0,-5.5-8-13-8])cylinder(d2=1,d1=0.6,h=8,$fn=30);
+}
+
 
 module peek_nozzle_4channel(){
 translate([337,427,300])rotate([0,180,90])peek_nozzle_part1_4channel(); 
 //translate([337,427,300])rotate([0,180,90])peek_nozzle_part1_4channel_groove(); 
-
 translate([337,427,300-15])rotate([0,180,90])peek_nozzle_part2_4channel(); //nozzle end
 translate([337,427,300-15])rotate([0,180,90])peek_nozzle_part3_4channel();
-
 translate([337,427,300]){
 for(i=[0:3]){
 translate([i*5.2,0,0])pipette_assy_for_peek_nozzle_4channel();
 }
 }
-
 }
 
 
@@ -139,22 +230,16 @@ translate([0,0,-0.5])cylinder(d=1.5878,h=5.7,$fn=50);
 
 module peek_nozzle_part1_4channel(){
 difference(){
-
-
 union(){
 corner_radius = 1;  // Adjust this value to change roundness
 translate([-4,-5-15.2,-2-15])rounded_cube([8, 10+15.1, 17+5-5], corner_radius);
 }
-
-
 translate([0,3.5,-1.5])rotate([0,90,0])cylinder(d=1.7,h=40,$fn=50);
 translate([0,-3.5-15,-1.5])rotate([0,-90,0])cylinder(d=1.7,h=40,$fn=50);
 translate([0,0,-12.5]){
 translate([0,3.5,-2])rotate([0,90,0])cylinder(d=1.7,h=40,$fn=50);
 translate([0,-3.5-15,-2])rotate([0,-90,0])cylinder(d=1.7,h=40,$fn=50);
 }
-
-
 for(i=[0:3]){
 translate([0,-i*5.2,0]){
 scale([1.02,1.02,1]){
@@ -165,9 +250,43 @@ translate([0,0,-5-15-20])cylinder(d=4.1,h=122,$fn=50);
 }
 }
 }
-
-
 }
+
+
+
+
+module peek_nozzle_part1_4channel_p200LTS(){
+difference(){
+union(){
+corner_radius = 1;  // Adjust this value to change roundness
+translate([-4-2,-5-15.2,-2-15])rounded_cube([8+4, 10+15.1+5, 17+5-5], corner_radius);
+}
+#translate([0,0,-12.5]){
+translate([0,3.5+4,-2])rotate([0,90,0])cylinder(d=1.7,h=40,$fn=50);
+translate([0,-3.5-15,-2])rotate([0,-90,0])cylinder(d=1.7,h=40,$fn=50);
+}
+for(i=[-1:2]){
+translate([0,-i*7-1.5,-8])scale([1.05,1.05,1])rotate([0,180,0])p200_lts_holder();
+}
+}
+}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 module nichrome_groove() {
@@ -274,12 +393,34 @@ translate([0,-i*5.2,-5])cylinder(d=5,h=5,$fn=50);
 }
 }
 
+module peek_nozzle_part2_4channel_p200LTS(){
+difference(){
+corner_radius = 1;  // Adjust this value to change roundness
+union(){
+translate([-4-2-2,-5-2-15,-2-17])rounded_cube([8+4+4, 10+4+15+5, 7.5+1], corner_radius);
+hull(){for(i=[-1:2]){
+translate([0,-i*7-1.5,-10.5])cylinder(d1=8,d2=5,h=3.3,$fn=50);
+}
+}
+}
+for(i=[-1:2]){
+translate([0,-i*7-1.5,-23])scale([1.05,1.05,1])rotate([0,180,0])p200_lts_holder();
+}
+}
+}
+
+
+
+
+
+
+
+
 
 module peek_nozzle_part3_4channel(){
 difference(){
 corner_radius = 1;  // Adjust this value to change roundness
 translate([-4-2,-5-2-15,-2-16-16-4])rounded_cube([8+4, 10+4+15, 7.5-1+4], corner_radius);
-
 translate([0,0,-15-12.5]){
 translate([0,3.5,-2])rotate([0,90,0])cylinder(d=2.5,h=40,$fn=50);
 translate([0,-3.5-15,-2])rotate([0,-90,0])cylinder(d=2.5,h=40,$fn=50);
@@ -289,15 +430,37 @@ translate([-4,-5-15,-2-15-1])rounded_cube([8, 10+15, 17+5-5], corner_radius);
 cylinder(d1=3,d2=2.5,h=5,$fn=50);
 translate([0,0,-5])cylinder(d=5,h=5,$fn=50);
 }
-
 for(i=[0:3]){
 translate([0,-i*5.2,-40])cylinder(d=3,h=40,$fn=50);
-#translate([0,-i*5.2,-40+2])cylinder(d1=4.75,d2=3,h=4,$fn=50);
+translate([0,-i*5.2,-40+2])cylinder(d1=5.75,d2=3,h=4,$fn=50);
+translate([0+0.5,-i*5.2,-40+2])cylinder(d1=5.75,d2=3,h=4,$fn=50);
+translate([0-0.5,-i*5.2,-40+2])cylinder(d1=5.75,d2=3,h=4,$fn=50);
+}
+}
 }
 
+module peek_nozzle_part3_4channel_p200LTS(){
+difference(){
+corner_radius = 1;  // Adjust this value to change roundness
+translate([-4-2-2,-5-2-15,-2-16-16-4-2])rounded_cube([8+4+4, 10+4+15+5, 7.5-1+4+2+2], corner_radius);
+translate([0,0,-15-12.5+2]){
+translate([0,3.5+4,-2])rotate([0,90,0])cylinder(d=2.5,h=40,$fn=50);
+translate([0,-3.5-15,-2])rotate([0,-90,0])cylinder(d=2.5,h=40,$fn=50);
+}
+translate([0,0,-15])scale([1.02,1.02,1]){
+translate([-4-2,-5-15,-2-15-1-2])rounded_cube([8+4, 10+15+5, 17+5-5], corner_radius);
+}
+//underside orifice relfecting the p200 LTS pipette tip
+for(i=[-1:2]){
+translate([0,-i*7-1.5,-23])scale([1.05,1.05,1])rotate([0,180,0])p200_lts_holder();
+}
+//topside orifice
+for(i=[-1:2]){
+translate([0,-i*7-1.5,-40+2-2.01])cylinder(d1=6.25,d2=5,h=5,$fn=50);
+}
+}
+}
 
-}
-}
 
 
 
@@ -610,6 +773,27 @@ translate([10,5,0])cylinder(d=3.1,h=30,$fn=100);
 }
 
 
+
+module linearactuator_pipette_holder_p200LTS(){
+translate([0,0,0]){
+difference(){
+translate([320+5.7+47,300-3-31.5+180-6,400-1-57+16.5])rotate([0,0,180])translate([22-0.5,-5.25,-100-40+10+5-20+31])rotate([0,0,90])pipette_loading_module_rack_base();
+translate([320+5.7+47-50,300-3-31.5+180-6-20-5.5-20,400-1-57+16.5-68])cube([20,20+20,20]);
+}
+}
+translate([400-70,426.5,330-3])rotate([0,0,-90]){
+translate([0,0,-13]){
+translate([-0.5,-0.7,0])rotate([0,180,180])piezo_dispenser_assy_holder_p200LTS();
+}
+}
+}
+
+
+
+
+
+
+
 module linearactuator_pipette_holder(){
 translate([0,0,0]){
 difference(){
@@ -622,7 +806,6 @@ translate([0,0,-13]){
 translate([-0.5,-0.7,0])rotate([0,180,180])piezo_dispenser_assy_holder();
 }
 }
-
 }
 
 
@@ -644,8 +827,6 @@ linearactuator_pipette_holder();
 
 
 module bayonet_pipette_tipcase_makesquare(){
-
-
 translate([0-0.5,0-2,-130]){
 difference(){
 translate([-9,-32,-14])cube([14,64,5]);
@@ -659,7 +840,6 @@ translate([-2,23,-11])cylinder(d=10.5,h=20,$fn=100);
 }
 }
 }
-
 }
 
 
@@ -681,14 +861,12 @@ translate([-4.25+10,-5-2-7.5+1,-2-11])rounded_cube([8+4, 10, 7.5+1], corner_radi
 translate([-4.25-10,-5-2+10,-2-6])rounded_cube([8+4, 10, 7.5+1], corner_radius);
 for(i=[-1:1]){
 for(j=[-1:1]){
-#translate([-6.25+j/2,-5-2-7.5+2.7+i/2,-2-13])rounded_cube([12, 10+4+10, 7.5+10], corner_radius);
-#translate([-6.25+i/2,-5-2-7.5+2.7+j/2,-2-13])rounded_cube([12, 10+4+10, 7.5+10], corner_radius);
+translate([-6.25+j/2,-5-2-7.5+2.7+i/2,-2-13])rounded_cube([12, 10+4+10, 7.5+10], corner_radius);
+translate([-6.25+i/2,-5-2-7.5+2.7+j/2,-2-13])rounded_cube([12, 10+4+10, 7.5+10], corner_radius);
 translate([-6.25+j/2,-5-2-7.5+i/2,-2-10])rounded_cube([8+4, 10+4+15, 7.5+10], corner_radius);
 translate([-6.25+i/2,-5-2-7.5+j/2,-2-10])rounded_cube([8+4, 10+4+15, 7.5+10], corner_radius);
 }
 }
-
-
 translate([-2,23,-22])cylinder(d=5.2,h=42,$fn=100);
 translate([-2,23,-11])cylinder(d=10.5,h=20,$fn=100);
 translate([0,-46,0]){
@@ -697,6 +875,19 @@ translate([-2,23,-11])cylinder(d=10.5,h=20,$fn=100);
 }
 }
 }
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 module bayonet_pipette_tipcase(){
 
@@ -835,43 +1026,117 @@ translate([0,-5.7+(i*4),-17-8-3.9-14])cylinder(d2=2.4,d1=2.4,h=36,$fn=100);
 
 
 module piezo_dispenser_assy_remover(){
-
 difference(){
 union(){
 translate([-7,0,-.75])rounded_box_minkowski(size = [17, 20+2+6.5+30, 4], radius = 0.5, center = true);
 translate([-18,0,-.75])rounded_box_minkowski(size = [10, 20+2+6.5+22, 4], radius = 0.5, center = true);
 translate([-23,0,-.75])rounded_box_minkowski(size = [10, 20+2+6.5+22, 4], radius = 0.5, center = true);
+translate([-23+3.5,0,-.75-7.5])rounded_box_minkowski(size = [15, 20+2+6.5+22, 4+15], radius = 0.5, center = true);
 }
 translate([-2,0,-.75])rounded_box_minkowski(size = [19, 20+2+6.5+12, 7], radius = 2, center = true);
+#translate([-18.8,17.5,-.75-5-15])cylinder(d=6,h=35,$fn=100);
+#translate([-18.8,-17.5,-.75-5-15])cylinder(d=6,h=35,$fn=100);
+}
+}
 
 
-translate([-18.8,17.5,-.75-5])cylinder(d=6,h=20,$fn=100);
-translate([-18.8,-17.5,-.75-5])cylinder(d=6,h=20,$fn=100);
 
-//translate([5,0,-3])rounded_box_minkowski(size = [10, 20+2+6.5+0.5, 5.5+5], radius = 2, center = true);
 
+module piezo_dispenser_assy_holder_p200LTS(){
+$fn = 50; // Increase $fn for smoother curves
 /*
-translate([0,-2.9,17.8]){
-l = 8;
 for(i=[0:3]){
-for(j=[-20:22]){
-translate([0-j*0.25,-5.8+i*5.2,-21.4])cylinder(d1=3.8,d2=3.8,h=l,$fn=100);
+translate([0,-1.9+(i*5.2),18])rotate([0,180,0])pipette_plug();
+}
+*/
+/*
+color("lightblue")translate([0,-1.9,10.5+12-20]){
+for(i=[0:3]){
+difference(){
+translate([0,-5.7+(i*5.2),-17-8-4-80-60])cylinder(d=2,h=106+60,$fn=100);
+translate([0,-5.7+(i*5.2),-17-8-4.1-80-60])cylinder(d=1,h=106+60,$fn=100);
+}
+}
+}
+color("lightgreen")translate([0,-1.9,10.5+12+1]){
+for(i=[0:3]){
+difference(){
+translate([0,-5.7+(i*5.2),-17-8-4])cylinder(d1=5,d2=2.5,h=26,$fn=100);
+translate([0,-5.7+(i*5.2),-17-8-4.1])cylinder(d1=3,d2=0.8,h=26,$fn=100);
 }
 }
 }
 */
+/*
 
+//for set screws
+color("silver")translate([0,-1.9,10.5+12]){
+for(i=[0:3]){
+translate([0-6.5,-5.7+(i*5.2),-17-5.5])rotate([0,90,0])cylinder(d=3.5,h=1.5,$fn=100);
+}
+}
+*/
+difference(){
+union(){
+rounded_box_minkowski(size = [10+4, 20+2+6.5+6, 7], radius = 2, center = true);
+}
+translate([0,0,17.8]){
+l = 7.2;
+for(i=[0:3]){
+//translate([0,-5.8+5.2*i-1.8,-21.4])cylinder(d1=5,d2=4,h=l,$fn=100);
+#translate([0,-5.8+7*i-4.9,-21.4-3.5])cylinder(d1=7,d2=6,h=13,$fn=30);
+}
+}
+translate([14,0,17.8-18])rotate([0,90,0]){
+l = 6;
+for(i=[0:3]){
+translate([0,-5.8+7*i-4.9,-21.4])cylinder(d=1.8,h=l,$fn=100);
+}
+}
+}
 }
 
-}
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 
 
 
 module piezo_dispenser_assy_holder(){
 $fn = 50; // Increase $fn for smoother curves
+/*
 for(i=[0:3]){
 translate([0,-1.9+(i*5.2),18])rotate([0,180,0])pipette_plug();
 }
+*/
 color("lightblue")translate([0,-1.9,10.5+12-20]){
 for(i=[0:3]){
 difference(){

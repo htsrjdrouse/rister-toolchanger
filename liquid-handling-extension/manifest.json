@@ -1,0 +1,43 @@
+{
+  "manifest_version": 3,
+  "name": "Liquid Handling Control System (FLUSH)",
+  "version": "1.5.0",
+  "description": "Complete control system for Klipper-based liquid handling automation - includes FLUSH valve position (180°) for PCV-to-output bypass",
+  "permissions": [
+    "storage",
+    "activeTab"
+  ],
+  "host_permissions": [
+    "http://192.168.1.89/*",
+    "http://mainsailos.local/*",
+    "http://localhost/*"
+  ],
+  "action": {
+    "default_title": "Open Liquid Handling Control"
+  },
+  "icons": {
+    "16": "assets/icons/icon16.png",
+    "48": "assets/icons/icon48.png",
+    "128": "assets/icons/icon128.png"
+  },
+  "background": {
+    "service_worker": "background.js"
+  },
+  "content_scripts": [
+    {
+      "matches": [
+        "http://192.168.1.89/*",
+        "http://mainsailos.local/*",
+        "http://localhost/*"
+      ],
+      "js": ["content.js"],
+      "run_at": "document_idle"
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["default_config.json"],
+      "matches": ["<all_urls>"]
+    }
+  ]
+}
