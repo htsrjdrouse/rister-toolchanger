@@ -438,17 +438,61 @@ export class GcodeBuilder {
       return;
     }
 
-    navigator.clipboard.writeText(gcode).then(() => {
-      this.showNotification('G-code copied to clipboard!');
-    }).catch(() => {
-      const textArea = document.createElement('textarea');
-      textArea.value = gcode;
-      document.body.appendChild(textArea);
-      textArea.select();
-      document.execCommand('copy');
-      document.body.removeChild(textArea);
-      this.showNotification('G-code copied to clipboard!');
-    });
+    // Try modern clipboard API first (requires HTTPS)
+    if (navigator.clipboard && window.isSecureContext) {
+      navigator.clipboard.writeText(gcode).then(() => {
+        this.showNotification('G-code copied to clipboard!');
+        alert('G-code copied to clipboard!');
+      }).catch((err) => {
+        console.error('Clipboard API failed:', err);
+        this.fallbackCopy(gcode);
+      });
+    } else {
+      // Use fallback for HTTP connections
+      this.fallbackCopy(gcode);
+    }
+  }
+
+  fallbackCopy(text) {
+    // Create a temporary textarea element
+    const textArea = document.createElement('textarea');
+    textArea.value = text;
+    
+    // Make it invisible but still part of the document
+    textArea.style.position = 'fixed';
+    textArea.style.top = '0';
+    textArea.style.left = '0';
+    textArea.style.width = '2em';
+    textArea.style.height = '2em';
+    textArea.style.padding = '0';
+    textArea.style.border = 'none';
+    textArea.style.outline = 'none';
+    textArea.style.boxShadow = 'none';
+    textArea.style.background = 'transparent';
+    
+    document.body.appendChild(textArea);
+    textArea.focus();
+    textArea.select();
+    
+    try {
+      const successful = document.execCommand('copy');
+      if (successful) {
+        this.showNotification('G-code copied to clipboard!');
+        alert('G-code copied to clipboard!');
+      } else {
+        // execCommand failed - show the text for manual copy
+        alert('Auto-copy failed. The G-code is selected in the text area - press Ctrl+C / Cmd+C to copy manually.');
+        document.getElementById('macro-output').focus();
+        document.getElementById('macro-output').select();
+      }
+    } catch (err) {
+      console.error('Fallback copy failed:', err);
+      alert('Auto-copy failed. The G-code is selected in the text area - press Ctrl+C / Cmd+C to copy manually.');
+      document.getElementById('macro-output').focus();
+      document.getElementById('macro-output').select();
+    }
+    
+    document.body.removeChild(textArea);
   }
 
   downloadGcode() {

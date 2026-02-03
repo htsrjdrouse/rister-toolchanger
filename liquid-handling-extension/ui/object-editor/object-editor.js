@@ -580,20 +580,28 @@ export class ObjectEditor {
     console.log('Collision objects synced and reloaded in Klipper');
   }
 
-  updatePrinterArea() {
-    const width = parseFloat(document.getElementById('printer-width').value);
-    const height = parseFloat(document.getElementById('printer-height').value);
+  async updatePrinterArea() {
+    const widthInput = document.getElementById('printer-width');
+    const heightInput = document.getElementById('printer-height');
+    
+    if (!widthInput || !heightInput) {
+      alert('Error: Could not find printer area input fields');
+      return;
+    }
+    
+    const width = parseFloat(widthInput.value);
+    const height = parseFloat(heightInput.value);
 
-    if (width < 100 || height < 100) {
+    if (isNaN(width) || isNaN(height) || width < 100 || height < 100) {
       alert('Dimensions must be at least 100mm');
       return;
     }
 
     this.printerArea = { width, height };
-    this.storage.setPrinterArea(width, height);
+    await this.storage.setPrinterArea(width, height);
     this.render();
     this.attachEventListeners();
-    this.showNotification('Printer area updated!');
+    alert('Printer area updated to ' + width + 'x' + height + 'mm');
   }
   
   // Auto-save printer area on input change
