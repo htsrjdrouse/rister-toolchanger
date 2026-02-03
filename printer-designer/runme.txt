@@ -1,0 +1,46 @@
+docker-compose up -d
+
+http://localhost:3100
+
+docker-compose down
+
+docker-compose up -d --build
+
+
+Current Test Setup:
+ - Password: test123
+ - URL: http://localhost:3100
+
+ What viewers see:
+ - 👁️ "Viewer" badge in header
+ - Can view all designs, objects, tips, G-code
+ - Can copy/download G-code
+ - Can export designs
+ - Cannot create, edit, or delete anything
+
+ What publishers see:
+ - ✏️ "Publisher" badge + Logout button
+ - Full access to everything
+
+ ────────────────────────────────────────────────────────────────────────────────
+
+ To Set Your Own Password
+
+ ```bash
+   cd /Users/richard/Documents/voron/Trident/lineux_toolchanger/rister-toolchanger-4dispenser/rister-toolchanger/printer-designer
+
+   # Option 1: One-time start
+   PUBLISHER_PASSWORD=your-real-password docker-compose up -d --build
+
+   # Option 2: Create .env file (persists)
+   echo "PUBLISHER_PASSWORD=your-real-password" > .env
+   docker-compose up -d --build
+ ```
+
+ ────────────────────────────────────────────────────────────────────────────────
+
+ To Disable Password (Open Access)
+
+ ```bash
+   docker-compose up -d --build
+   # (without PUBLISHER_PASSWORD set)

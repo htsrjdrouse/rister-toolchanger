@@ -196,17 +196,17 @@
       "eject_y": 340,
       "eject_z": 40,
       "name": "L0Tip0",
-      "wash_macro": "wash",
+      "wash_macro": "",
       "wash_servo_move": 0,
       "wash_servo_wash": 150,
       "wash_x": 170,
       "wash_y": 344,
       "wash_z": 70,
-      "waste_macro": "waste",
+      "waste_macro": "",
       "waste_servo_move": 0,
       "waste_servo_waste": 150,
       "waste_x": 206,
-      "waste_y": 344,
+      "waste_y": 345,
       "waste_z": 61
     },
     {
@@ -224,17 +224,17 @@
       "eject_y": 340,
       "eject_z": 40,
       "name": "L0Tip1_15awg",
-      "wash_macro": "wash",
+      "wash_macro": "",
       "wash_servo_move": 0,
       "wash_servo_wash": 30,
       "wash_x": 170,
       "wash_y": 344,
       "wash_z": 69,
-      "waste_macro": "waste",
+      "waste_macro": "",
       "waste_servo_move": 0,
       "waste_servo_waste": 30,
       "waste_x": 206,
-      "waste_y": 344,
+      "waste_y": 345,
       "waste_z": 73
     },
     {
@@ -252,21 +252,21 @@
       "eject_y": 340,
       "eject_z": 40,
       "name": "L0Tip2_25awg",
-      "wash_macro": "wash",
+      "wash_macro": "",
       "wash_servo_move": 0,
       "wash_servo_wash": 30,
       "wash_x": 170,
       "wash_y": 344,
       "wash_z": 69,
-      "waste_macro": "waste",
+      "waste_macro": "",
       "waste_servo_move": 0,
       "waste_servo_waste": 30,
       "waste_x": 206,
-      "waste_y": 344,
+      "waste_y": 345,
       "waste_z": 73
     }
   ],
-  "activeTipIndex": 1,
+  "activeTipIndex": 0,
   "savedMacros": [
     {
       "content": "; G-code Sequence: Sample_Collection_Sequence\n; Generated: 2025-12-04T22:05:52.333Z\n; Ready to execute in Mainsail console\n\n;X:59.000 Y:347.000 Z:9.4 E:0.000\n;ENABLE_LINEARACTUATOR_SERVO_L0\n;SET_SERVO SERVO=linearactuator_servo_l0 ANGLE=130\n;X:59.000 Y:355.000 Z:9.4 E:0.000\n\nG90  ; Absolute positioning\nG1 Z100 F1500\nG1 X65 F3000  \nG4 P500\nG1 Y340 F3000\nENABLE_LINEARACTUATOR_SERVO_L0\nSET_SERVO SERVO=linearactuator_servo_l0 ANGLE=150\nG4 P500\nG1 Z40 F1500\nG1 Y358 F3000\nG4 P500\nG1 X57 F1000\nG1 Z47 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X77 F1000\nG1 Z50 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X57 F1000\nG1 Z52 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X77 F1000\nG1 Z53 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X57 F1000\nG1 Z55 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG4 P500\nG1 Z100 F1000\nG4 P500\nENABLE_LINEARACTUATOR_SERVO_L0\nG4 P500\nDISABLE_LINEARACTUATOR_SERVO_L0\nG4 P500",
@@ -285,28 +285,20 @@
       "name": "load_dispense_sequence_910"
     },
     {
-      "content": "; Wash Routine\n; Generated for wash station operations\n\nG90  ; Absolute positioning\nG1 Z100 F1500  ; Lift to safe height\nG1 X134 Y374.5 F3000  ; Move to wash station\nG1 Z70 F1500  ; Lower to wash height\nG4 P2000  ; Dwell 2 seconds\n; Add your wash commands here\nG1 Z100 F1500  ; Lift back up",
-      "name": "wash"
-    },
-    {
-      "content": "; Waste Routine\n; Generated for waste station operations\n\nG90  ; Absolute positioning\nG1 Z100 F1500  ; Lift to safe height\nG1 X170 Y373 F3000  ; Move to waste station\nG1 Z92 F1500  ; Lower to waste height\nG4 P1000  ; Dwell 1 second\n; Add your waste disposal commands here\nG1 Z100 F1500  ; Lift back up",
-      "name": "waste"
-    },
-    {
       "content": "; G-code Sequence: Sample_Collection_Sequence\n; Generated: 2025-12-04T22:05:52.333Z\n; Ready to execute in Mainsail console\n\n;X:59.000 Y:347.000 Z:9.4 E:0.000\n;ENABLE_LINEARACTUATOR_SERVO_L0\n;SET_SERVO SERVO=linearactuator_servo_l0 ANGLE=130\n;X:59.000 Y:355.000 Z:9.4 E:0.000\n\nG90  ; Absolute positioning\nG1 Z100 F1500\nG1 X65 F3000  \nG4 P500\nG1 Y340 F3000\nENABLE_LINEARACTUATOR_SERVO_L0\nSET_SERVO SERVO=linearactuator_servo_l0 ANGLE=150\nG4 P500\nG1 Z40 F1500\nG1 Y358 F3000\nG4 P500\nG1 X57 F1000\nG1 Z47 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X77 F1000\nG1 Z50 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X57 F1000\nG1 Z52 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X77 F1000\nG1 Z53 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X57 F1000\nG1 Z55 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG4 P500\nG1 Z100 F1000\nG4 P500\nENABLE_LINEARACTUATOR_SERVO_L0\nG4 P500\nDISABLE_LINEARACTUATOR_SERVO_L0\nG4 P500",
       "name": "eject"
     },
     {
       "name": "aspirate_sample",
-      "content": "; G-code Sequence: aspirate_sample\n; Generated: 2026-02-02T03:59:42.847Z\n; Ready to execute in Mainsail console\n\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG90  ; Absolute positioning\n; Move to sample_wells array A1\nG90  ; Absolute positioning\nG1 X100.00 Y91.01 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nG1 Z68 F2000\nG1 Z64 F500\nG4 P500  ; Pause 500ms for stabilization\nVALVE_INPUT MASK=1111\nG4 P500  ; Pause 500ms for stabilization\nG1 E-390 F1000\nG4 P500  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111\nG1 Z130 F2000"
+      "content": "; G-code Sequence: aspirate_sample\n; Generated: 2026-02-02T03:59:42.847Z\n; Ready to execute in Mainsail console\n\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG90  ; Absolute positioning\n; Move to sample_wells array A1\nG90  ; Absolute positioning\nG1 X100.00 Y91.01 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nG1 Z68 F2000\nG1 Z64 F500\nG4 P500  ; Pause 500ms for stabilization\nVALVE_OUTPUT MASK=1111\nG4 P500  ; Pause 500ms for stabilization\nG1 E-130 F1000\nG4 P500  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111\nG4 P500  ; Pause 500ms for stabilization\nG1 Z130 F2000"
     },
     {
       "content": "; G-code Sequence: Sample_Collection_Sequence\n; Generated: 2025-12-04T22:05:52.333Z\n; Ready to execute in Mainsail console\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nG90  ; Absolute positioning\nG1 Z130 F1500\nG1 X330.50 Y152.01 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=90 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOON\nG4 P500  ; Pause 500ms for stabilization\nG1 Z101 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z94 F500\nG4 P500  ; Pause 500ms for stabilization\nG1 Z101 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z94 F500\nG4 P500  ; Pause 500ms for stabilization\nG1 Z150 F2000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOOFF\nG4 P500  ; Pause 500ms for stabilization\nSELECT_TIP TIP=2\nG4 P500  ; Pause 500ms for stabilization",
       "name": "Dispenser_25_load_1"
     },
     {
-      "content": "; G-code Sequence: Sample_Collection_Sequence\n; Generated: 2025-12-04T22:05:52.333Z\n; Ready to execute in Mainsail console\n\n; Move to small_dispenser_box array A1\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nG90  ; Absolute positioning\nG1 Z130 F1500\nG1 X332.50 Y181.01 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=90 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOON\nG4 P500  ; Pause 500ms for stabilization\nG1 Z101 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z94 F500\nG4 P500  ; Pause 500ms for stabilization\nG1 Z101 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z94 F500\nG4 P500  ; Pause 500ms for stabilization\nG1 Z150 F2000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOOFF\nG4 P500  ; Pause 500ms for stabilization\nSELECT_TIP TIP=1\nG4 P500  ; Pause 500ms for stabilization",
-      "name": "Dispenser_14_load_1"
+      "name": "Dispenser_14_load_1",
+      "content": "; G-code Sequence: Sample_Collection_Sequence\n; Generated: 2025-12-04T22:05:52.333Z\n; Ready to execute in Mainsail console\n\n; Move to small_dispenser_box array A1\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nG90  ; Absolute positioning\nG1 Z130 F1500\nG1 X332.50 Y181.01 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=90 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOON\nG4 P500  ; Pause 500ms for stabilization\nG1 Z101 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z94 F500\nG4 P500  ; Pause 500ms for stabilization\nG1 Z101 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z92 F500\nG4 P500  ; Pause 500ms for stabilization\nG1 Z101 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z89 F500\nG4 P500  ; Pause 500ms for stabilization\nG1 Z150 F2000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOOFF\nG4 P500  ; Pause 500ms for stabilization\nSELECT_TIP TIP=1\nG4 P500  ; Pause 500ms for stabilization"
     },
     {
       "content": "; G-code Sequence: automation_sequence\n; Generated: 2026-02-02T23:14:09.738Z\n; Ready to execute in Mainsail console\n\n; Move to nanoarray array A1\nG90  ; Absolute positioning\nG1 Z100 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 X106.00 Y117.00 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nG1 Z60 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z58 F500\nG4 P500  ; Pause 500ms for stabilization\nG1 X106.00 Y187.00 F3000   ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nG1 Z100 F2000",
