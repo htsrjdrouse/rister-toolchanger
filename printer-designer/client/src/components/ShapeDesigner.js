@@ -59,6 +59,10 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     extrusionWidth: 0.1,
     perimeterSpeed: 5
   });
+  const [buildPlate, setBuildPlate] = useState({
+    width: 100,
+    height: 100
+  });
   
   const viewerRef = useRef(null);
   const sceneRef = useRef(null);
@@ -66,6 +70,9 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
   const meshRef = useRef(null);
   const controlsRef = useRef(null);
   const animationRef = useRef(null);
+  const gridRef = useRef(null);
+  const substrateRef = useRef(null);
+  const cameraRef = useRef(null);
 
   // Initialize Three.js scene
   useEffect(() => {
@@ -98,6 +105,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     controls.dampingFactor = 0.05;
     controls.target.set(0, 0, 0);
     controlsRef.current = controls;
+    cameraRef.current = camera;
     
     // Lighting
     const ambientLight = new THREE.AmbientLight(0x404040, 0.8);
@@ -111,10 +119,11 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     directionalLight2.position.set(-50, 50, -50);
     scene.add(directionalLight2);
     
-    // Grid helper (100x100mm substrate)
+    // Grid helper (initial size, will be updated by buildPlate effect)
     const gridHelper = new THREE.GridHelper(100, 20, 0x444444, 0x333333);
     gridHelper.rotation.x = Math.PI / 2;
     scene.add(gridHelper);
+    gridRef.current = gridHelper;
     
     // Substrate outline
     const substrateGeometry = new THREE.PlaneGeometry(100, 100);
@@ -127,6 +136,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     const substrate = new THREE.Mesh(substrateGeometry, substrateMaterial);
     substrate.position.z = -0.01;
     scene.add(substrate);
+    substrateRef.current = substrate;
     
     // Animation loop
     const animate = () => {
@@ -157,6 +167,37 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
       }
     };
   }, []);
+
+  // Update grid and substrate when buildPlate changes
+  useEffect(() => {
+    if (!sceneRef.current || !gridRef.current || !substrateRef.current) return;
+    
+    const scene = sceneRef.current;
+    const maxDim = Math.max(buildPlate.width, buildPlate.height);
+    const divisions = Math.max(10, Math.floor(maxDim / 5)); // Grid line every 5mm minimum
+    
+    // Remove old grid
+    scene.remove(gridRef.current);
+    gridRef.current.dispose();
+    
+    // Create new grid with updated size
+    const newGrid = new THREE.GridHelper(maxDim, divisions, 0x444444, 0x333333);
+    newGrid.rotation.x = Math.PI / 2;
+    scene.add(newGrid);
+    gridRef.current = newGrid;
+    
+    // Update substrate plane
+    substrateRef.current.geometry.dispose();
+    substrateRef.current.geometry = new THREE.PlaneGeometry(buildPlate.width, buildPlate.height);
+    
+    // Adjust camera position based on build plate size
+    if (cameraRef.current && controlsRef.current) {
+      const distance = maxDim * 1.5;
+      cameraRef.current.position.set(distance, distance, distance);
+      controlsRef.current.update();
+    }
+    
+  }, [buildPlate]);
 
   // Load STL into scene when stlData changes
   useEffect(() => {
@@ -355,6 +396,34 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
           <div className="stl-viewer" ref={viewerRef}></div>
           <div className="viewer-controls-info">
             <span>🖱️ Left: Rotate | Right: Pan | Scroll: Zoom</span>
+          </div>
+          {/* Build Plate Settings */}
+          <div className="build-plate-settings">
+            <span className="settings-label">📐 Build Plate:</span>
+            <label>
+              W:
+              <input
+                type="number"
+                step="10"
+                min="10"
+                max="500"
+                value={buildPlate.width}
+                onChange={(e) => setBuildPlate(bp => ({ ...bp, width: parseInt(e.target.value) || 100 }))}
+              />
+              mm
+            </label>
+            <label>
+              H:
+              <input
+                type="number"
+                step="10"
+                min="10"
+                max="500"
+                value={buildPlate.height}
+                onChange={(e) => setBuildPlate(bp => ({ ...bp, height: parseInt(e.target.value) || 100 }))}
+              />
+              mm
+            </label>
           </div>
         </div>
         

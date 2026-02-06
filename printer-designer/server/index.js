@@ -448,9 +448,16 @@ app.post('/api/shape/compile', async (req, res) => {
     await fs.writeFile(jscadFile, code);
     
     // Run JSCAD CLI to compile to STL
-    // jscad input.js -o output.stl
-    const { stdout, stderr } = await execAsync(`jscad "${jscadFile}" -o "${stlFile}"`, {
-      timeout: 30000 // 30 second timeout
+    // Use local jscad from node_modules and set NODE_PATH for @jscad/modeling resolution
+    const jscadBin = path.join(__dirname, 'node_modules', '.bin', 'jscad');
+    const nodeModulesPath = path.join(__dirname, 'node_modules');
+    
+    const { stdout, stderr } = await execAsync(`"${jscadBin}" "${jscadFile}" -o "${stlFile}"`, {
+      timeout: 30000, // 30 second timeout
+      env: {
+        ...process.env,
+        NODE_PATH: nodeModulesPath
+      }
     });
     
     // Read the generated STL
