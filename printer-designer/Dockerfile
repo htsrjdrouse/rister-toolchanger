@@ -14,9 +14,13 @@ FROM node:20-bookworm-slim
 RUN apt-get update && apt-get install -y \
     wget \
     ca-certificates \
+    bzip2 \
     libgtk-3-0 \
     libgl1-mesa-glx \
     libglu1-mesa \
+    libegl1 \
+    libegl-mesa0 \
+    libgbm1 \
     xvfb \
     libpng16-16 \
     libjpeg62-turbo \

@@ -11,10 +11,13 @@ const execAsync = promisify(exec);
 
 const app = express();
 const PORT = process.env.PORT || 3100;
-const DATA_DIR = path.join(__dirname, '..', 'data');
+// In Docker (production), server files are at /app/ with data/temp/slicer-profiles as siblings
+// In local dev, server files are at server/ with data/temp/slicer-profiles at parent level
+const IS_PRODUCTION = process.env.NODE_ENV === 'production';
+const DATA_DIR = IS_PRODUCTION ? path.join(__dirname, 'data') : path.join(__dirname, '..', 'data');
 const DESIGNS_FILE = path.join(DATA_DIR, 'designs.json');
-const TEMP_DIR = path.join(__dirname, '..', 'temp');
-const SLICER_PROFILES_DIR = path.join(__dirname, '..', 'slicer-profiles');
+const TEMP_DIR = IS_PRODUCTION ? path.join(__dirname, 'temp') : path.join(__dirname, '..', 'temp');
+const SLICER_PROFILES_DIR = IS_PRODUCTION ? path.join(__dirname, 'slicer-profiles') : path.join(__dirname, '..', 'slicer-profiles');
 const SHAPES_DIR = path.join(DATA_DIR, 'shapes');
 
 // Publisher password from environment variable
