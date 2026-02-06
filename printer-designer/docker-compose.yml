@@ -7,12 +7,16 @@ services:
       - "3100:3100"
     volumes:
       - ./data:/app/data
+      - ./temp:/app/temp
+      - ./slicer-profiles:/app/slicer-profiles
     environment:
       - NODE_ENV=production
       - PORT=3100
       # Set a password to enable publisher/viewer mode separation
       # Remove or leave empty for open access (everyone is publisher)
       - PUBLISHER_PASSWORD=${PUBLISHER_PASSWORD:-}
+    # Required for PrusaSlicer AppImage
+    privileged: true
     restart: unless-stopped
 
   # Development mode with hot reload
@@ -27,6 +31,8 @@ services:
       - ./server:/app/server
       - ./client/src:/app/client/src
       - ./data:/app/data
+      - ./temp:/app/temp
+      - ./slicer-profiles:/app/slicer-profiles
     environment:
       - NODE_ENV=development
       - PORT=3100

@@ -1,14 +1,21 @@
 const express = require('express');
 const cors = require('cors');
 const fs = require('fs').promises;
+const fsSync = require('fs');
 const path = require('path');
 const crypto = require('crypto');
 const { v4: uuidv4 } = require('uuid');
+const { exec, spawn } = require('child_process');
+const { promisify } = require('util');
+const execAsync = promisify(exec);
 
 const app = express();
 const PORT = process.env.PORT || 3100;
 const DATA_DIR = path.join(__dirname, '..', 'data');
 const DESIGNS_FILE = path.join(DATA_DIR, 'designs.json');
+const TEMP_DIR = path.join(__dirname, '..', 'temp');
+const SLICER_PROFILES_DIR = path.join(__dirname, '..', 'slicer-profiles');
+const SHAPES_DIR = path.join(DATA_DIR, 'shapes');
 
 // Publisher password from environment variable
 const PUBLISHER_PASSWORD = process.env.PUBLISHER_PASSWORD || null;
@@ -415,6 +422,310 @@ app.post('/api/published/unpublish', requirePublisher, async (req, res) => {
 });
 
 // =====================
+// Shape Designer Routes
+// =====================
+
+// Initialize temp and shapes directories
+async function initShapeDirectories() {
+  await fs.mkdir(TEMP_DIR, { recursive: true });
+  await fs.mkdir(SHAPES_DIR, { recursive: true });
+}
+
+// Compile JSCAD code to STL
+app.post('/api/shape/compile', async (req, res) => {
+  const { code, filename } = req.body;
+  
+  if (!code) {
+    return res.status(400).json({ error: 'No code provided' });
+  }
+  
+  const jobId = uuidv4();
+  const jscadFile = path.join(TEMP_DIR, `${jobId}.js`);
+  const stlFile = path.join(TEMP_DIR, `${jobId}.stl`);
+  
+  try {
+    // Write JSCAD code to temp file
+    await fs.writeFile(jscadFile, code);
+    
+    // Run JSCAD CLI to compile to STL
+    // jscad input.js -o output.stl
+    const { stdout, stderr } = await execAsync(`jscad "${jscadFile}" -o "${stlFile}"`, {
+      timeout: 30000 // 30 second timeout
+    });
+    
+    // Read the generated STL
+    const stlData = await fs.readFile(stlFile);
+    const stlBase64 = stlData.toString('base64');
+    
+    // Clean up temp files
+    await fs.unlink(jscadFile).catch(() => {});
+    await fs.unlink(stlFile).catch(() => {});
+    
+    res.json({
+      success: true,
+      jobId,
+      stl: stlBase64,
+      format: 'base64',
+      logs: stdout || stderr || 'Compilation successful'
+    });
+    
+  } catch (err) {
+    // Clean up on error
+    await fs.unlink(jscadFile).catch(() => {});
+    await fs.unlink(stlFile).catch(() => {});
+    
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      logs: err.stderr || err.stdout || ''
+    });
+  }
+});
+
+// Slice STL to G-code
+app.post('/api/shape/slice', async (req, res) => {
+  const { stl, profile, settings } = req.body;
+  
+  if (!stl) {
+    return res.status(400).json({ error: 'No STL data provided' });
+  }
+  
+  const jobId = uuidv4();
+  const stlFile = path.join(TEMP_DIR, `${jobId}.stl`);
+  const gcodeFile = path.join(TEMP_DIR, `${jobId}.gcode`);
+  const profileFile = profile ? path.join(SLICER_PROFILES_DIR, profile) : null;
+  
+  try {
+    // Write STL from base64
+    const stlBuffer = Buffer.from(stl, 'base64');
+    await fs.writeFile(stlFile, stlBuffer);
+    
+    // Build PrusaSlicer command
+    // For Docker: use prusa-slicer-cli wrapper (with xvfb)
+    // For local: use prusa-slicer or PrusaSlicer directly
+    const slicerCmd = process.env.NODE_ENV === 'production' 
+      ? 'prusa-slicer-cli' 
+      : 'prusa-slicer';
+    
+    let cmd = `${slicerCmd} --export-gcode "${stlFile}" -o "${gcodeFile}"`;
+    
+    // Add profile if specified
+    if (profileFile && fsSync.existsSync(profileFile)) {
+      cmd += ` --load "${profileFile}"`;
+    }
+    
+    // Add individual settings overrides
+    if (settings) {
+      if (settings.layerHeight) cmd += ` --layer-height ${settings.layerHeight}`;
+      if (settings.firstLayerHeight) cmd += ` --first-layer-height ${settings.firstLayerHeight}`;
+      if (settings.perimeterSpeed) cmd += ` --perimeter-speed ${settings.perimeterSpeed}`;
+      if (settings.extrusionWidth) cmd += ` --extrusion-width ${settings.extrusionWidth}`;
+      if (settings.nozzleDiameter) cmd += ` --nozzle-diameter ${settings.nozzleDiameter}`;
+    }
+    
+    const { stdout, stderr } = await execAsync(cmd, {
+      timeout: 60000 // 60 second timeout for slicing
+    });
+    
+    // Read the generated G-code
+    const gcodeData = await fs.readFile(gcodeFile, 'utf-8');
+    
+    // Parse some stats from G-code
+    const stats = parseGcodeStats(gcodeData);
+    
+    // Clean up temp files
+    await fs.unlink(stlFile).catch(() => {});
+    await fs.unlink(gcodeFile).catch(() => {});
+    
+    res.json({
+      success: true,
+      jobId,
+      gcode: gcodeData,
+      stats,
+      logs: stdout || stderr || 'Slicing successful'
+    });
+    
+  } catch (err) {
+    // Clean up on error
+    await fs.unlink(stlFile).catch(() => {});
+    await fs.unlink(gcodeFile).catch(() => {});
+    
+    res.status(500).json({
+      success: false,
+      error: err.message,
+      logs: err.stderr || err.stdout || ''
+    });
+  }
+});
+
+// Parse basic stats from G-code
+function parseGcodeStats(gcode) {
+  const lines = gcode.split('\n');
+  let totalLines = lines.length;
+  let moveCount = 0;
+  let layerCount = 0;
+  let minX = Infinity, maxX = -Infinity;
+  let minY = Infinity, maxY = -Infinity;
+  let minZ = Infinity, maxZ = -Infinity;
+  
+  for (const line of lines) {
+    if (line.startsWith('G1 ') || line.startsWith('G0 ')) {
+      moveCount++;
+      
+      const xMatch = line.match(/X([\d.-]+)/);
+      const yMatch = line.match(/Y([\d.-]+)/);
+      const zMatch = line.match(/Z([\d.-]+)/);
+      
+      if (xMatch) {
+        const x = parseFloat(xMatch[1]);
+        minX = Math.min(minX, x);
+        maxX = Math.max(maxX, x);
+      }
+      if (yMatch) {
+        const y = parseFloat(yMatch[1]);
+        minY = Math.min(minY, y);
+        maxY = Math.max(maxY, y);
+      }
+      if (zMatch) {
+        const z = parseFloat(zMatch[1]);
+        if (z > minZ) layerCount++;
+        minZ = Math.min(minZ, z);
+        maxZ = Math.max(maxZ, z);
+      }
+    }
+  }
+  
+  return {
+    totalLines,
+    moveCount,
+    layerCount,
+    bounds: {
+      x: { min: minX === Infinity ? 0 : minX, max: maxX === -Infinity ? 0 : maxX },
+      y: { min: minY === Infinity ? 0 : minY, max: maxY === -Infinity ? 0 : maxY },
+      z: { min: minZ === Infinity ? 0 : minZ, max: maxZ === -Infinity ? 0 : maxZ }
+    }
+  };
+}
+
+// Get available slicer profiles
+app.get('/api/shape/profiles', async (req, res) => {
+  try {
+    const files = await fs.readdir(SLICER_PROFILES_DIR);
+    const profiles = files.filter(f => f.endsWith('.ini')).map(f => ({
+      name: f,
+      path: f
+    }));
+    res.json(profiles);
+  } catch (err) {
+    res.json([]); // Return empty array if no profiles directory
+  }
+});
+
+// Save a shape design
+app.post('/api/shape/save', requirePublisher, async (req, res) => {
+  const { name, code, stl, gcode, designId } = req.body;
+  
+  if (!name || !code) {
+    return res.status(400).json({ error: 'Name and code are required' });
+  }
+  
+  try {
+    const shapeId = uuidv4();
+    const shape = {
+      id: shapeId,
+      name,
+      code,
+      designId: designId || null,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString()
+    };
+    
+    // Save shape metadata
+    const shapeFile = path.join(SHAPES_DIR, `${shapeId}.json`);
+    await fs.writeFile(shapeFile, JSON.stringify(shape, null, 2));
+    
+    // Optionally save STL and G-code files
+    if (stl) {
+      const stlBuffer = Buffer.from(stl, 'base64');
+      await fs.writeFile(path.join(SHAPES_DIR, `${shapeId}.stl`), stlBuffer);
+    }
+    if (gcode) {
+      await fs.writeFile(path.join(SHAPES_DIR, `${shapeId}.gcode`), gcode);
+    }
+    
+    res.json({ success: true, shape });
+  } catch (err) {
+    res.status(500).json({ error: err.message });
+  }
+});
+
+// List saved shapes
+app.get('/api/shape/list', async (req, res) => {
+  try {
+    const files = await fs.readdir(SHAPES_DIR);
+    const shapes = [];
+    
+    for (const file of files) {
+      if (file.endsWith('.json')) {
+        const data = await fs.readFile(path.join(SHAPES_DIR, file), 'utf-8');
+        shapes.push(JSON.parse(data));
+      }
+    }
+    
+    res.json(shapes);
+  } catch (err) {
+    res.json([]);
+  }
+});
+
+// Get a specific shape
+app.get('/api/shape/:id', async (req, res) => {
+  try {
+    const shapeFile = path.join(SHAPES_DIR, `${req.params.id}.json`);
+    const data = await fs.readFile(shapeFile, 'utf-8');
+    const shape = JSON.parse(data);
+    
+    // Check if STL/G-code files exist
+    shape.hasStl = fsSync.existsSync(path.join(SHAPES_DIR, `${req.params.id}.stl`));
+    shape.hasGcode = fsSync.existsSync(path.join(SHAPES_DIR, `${req.params.id}.gcode`));
+    
+    res.json(shape);
+  } catch (err) {
+    res.status(404).json({ error: 'Shape not found' });
+  }
+});
+
+// Download shape STL
+app.get('/api/shape/:id/stl', async (req, res) => {
+  try {
+    const stlFile = path.join(SHAPES_DIR, `${req.params.id}.stl`);
+    const shapeFile = path.join(SHAPES_DIR, `${req.params.id}.json`);
+    const shapeData = JSON.parse(await fs.readFile(shapeFile, 'utf-8'));
+    
+    res.setHeader('Content-Type', 'application/octet-stream');
+    res.setHeader('Content-Disposition', `attachment; filename="${shapeData.name.replace(/[^a-z0-9]/gi, '_')}.stl"`);
+    res.sendFile(stlFile);
+  } catch (err) {
+    res.status(404).json({ error: 'STL not found' });
+  }
+});
+
+// Download shape G-code
+app.get('/api/shape/:id/gcode', async (req, res) => {
+  try {
+    const gcodeFile = path.join(SHAPES_DIR, `${req.params.id}.gcode`);
+    const shapeFile = path.join(SHAPES_DIR, `${req.params.id}.json`);
+    const shapeData = JSON.parse(await fs.readFile(shapeFile, 'utf-8'));
+    
+    res.setHeader('Content-Type', 'text/plain');
+    res.setHeader('Content-Disposition', `attachment; filename="${shapeData.name.replace(/[^a-z0-9]/gi, '_')}.gcode"`);
+    res.sendFile(gcodeFile);
+  } catch (err) {
+    res.status(404).json({ error: 'G-code not found' });
+  }
+});
+
+// =====================
 // Catch-all for React routing
 // =====================
 
@@ -425,7 +736,7 @@ if (process.env.NODE_ENV === 'production') {
 }
 
 // Start server
-initDataFile().then(() => {
+Promise.all([initDataFile(), initShapeDirectories()]).then(() => {
   app.listen(PORT, () => {
     console.log(`Printer Designer server running on http://localhost:${PORT}`);
     if (PUBLISHER_PASSWORD) {
@@ -433,5 +744,6 @@ initDataFile().then(() => {
     } else {
       console.log('Publisher mode: Open (no password set)');
     }
+    console.log('Shape Designer: Ready');
   });
 });

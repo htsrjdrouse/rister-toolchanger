@@ -4,6 +4,7 @@ import DesignList from './components/DesignList';
 import ObjectEditor from './components/ObjectEditor';
 import TipManagement from './components/TipManagement';
 import GcodeBuilder from './components/GcodeBuilder';
+import ShapeDesigner from './components/ShapeDesigner';
 import LoginModal from './components/LoginModal';
 
 function AppContent() {
@@ -191,6 +192,12 @@ function AppContent() {
         >
           ⚙️ G-code Builder
         </button>
+        <button 
+          className={`tab-btn ${activeTab === 'shapes' ? 'active' : ''}`}
+          onClick={() => setActiveTab('shapes')}
+        >
+          🔬 Shape Designer
+        </button>
       </nav>
 
       <main className="main-content">
@@ -235,6 +242,13 @@ function AppContent() {
             )}
             {activeTab === 'gcode' && currentDesign && (
               <GcodeBuilder 
+                design={currentDesign}
+                onSave={saveDesign}
+                isPublisher={isPublisher}
+              />
+            )}
+            {activeTab === 'shapes' && (
+              <ShapeDesigner 
                 design={currentDesign}
                 onSave={saveDesign}
                 isPublisher={isPublisher}
