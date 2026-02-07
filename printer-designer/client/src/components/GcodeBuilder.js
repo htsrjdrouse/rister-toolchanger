@@ -8,6 +8,10 @@ function GcodeBuilder({ design, onSave, isPublisher = true }) {
   const [macroName, setMacroName] = useState('');
   const [macroOutput, setMacroOutput] = useState('');
   const [selectedMacroIndices, setSelectedMacroIndices] = useState([]);
+  
+  // Z Height settings
+  const [zDispense, setZDispense] = useState(design.zDispense || 0.5);
+  const [zTravel, setZTravel] = useState(design.zTravel || 10);
 
   const objects = design.objects || [];
   const tips = design.tips || [];
@@ -17,7 +21,14 @@ function GcodeBuilder({ design, onSave, isPublisher = true }) {
   // Sync with design prop
   useEffect(() => {
     setSavedMacros(design.savedMacros || []);
+    setZDispense(design.zDispense || 0.5);
+    setZTravel(design.zTravel || 10);
   }, [design]);
+  
+  // Save Z settings to design
+  const saveZSettings = () => {
+    onSave({ zDispense, zTravel });
+  };
 
   const saveToServer = (updatedMacros) => {
     onSave({ savedMacros: updatedMacros });
@@ -93,8 +104,9 @@ function GcodeBuilder({ design, onSave, isPublisher = true }) {
     const newCommand = 
       `; Move to ${obj.name}\n` +
       `G90  ; Absolute positioning\n` +
+      `G1 Z${zTravel} F1500  ; Lift to travel height\n` +
       `G1 X${obj.posx} Y${obj.posy} F3000  ; Move to object position\n` +
-      (obj.ztrav !== "0" ? `G1 Z${obj.ztrav} F1500  ; Move to Z height\n` : '') +
+      `G1 Z${zDispense} F500  ; Lower to dispense height\n` +
       `G4 P500  ; Pause 500ms for stabilization\n\n`;
 
     appendGcode(newCommand);
@@ -144,8 +156,9 @@ function GcodeBuilder({ design, onSave, isPublisher = true }) {
     const newCommand = 
       `; Move to ${obj.name} array ${arrayName}\n` +
       `G90  ; Absolute positioning\n` +
+      `G1 Z${zTravel} F1500  ; Lift to travel height\n` +
       `G1 X${arrayX.toFixed(2)} Y${arrayY.toFixed(2)} F3000  ; Move to array position\n` +
-      (obj.ztrav !== "0" ? `G1 Z${obj.ztrav} F1500  ; Move to Z height\n` : '') +
+      `G1 Z${zDispense} F500  ; Lower to dispense height\n` +
       `G4 P500  ; Pause 500ms for stabilization\n\n`;
 
     appendGcode(newCommand);
@@ -320,6 +333,45 @@ function GcodeBuilder({ design, onSave, isPublisher = true }) {
 
   return (
     <div>
+      {/* Z Height Settings */}
+      <div className="section">
+        <h3 className="section-title">📏 Z Height Settings</h3>
+        <p style={{ fontSize: '12px', color: '#666', marginBottom: '10px' }}>
+          Configure Z heights for dispensing and travel moves
+        </p>
+        <div className="form-row cols-2">
+          <div>
+            <label>Z Dispense (mm):</label>
+            <input 
+              type="number" 
+              step="0.1"
+              min="0.1"
+              value={zDispense}
+              onChange={(e) => setZDispense(parseFloat(e.target.value) || 0.5)}
+              disabled={!isPublisher}
+            />
+            <small style={{ color: '#888', fontSize: '10px' }}>Height while dispensing</small>
+          </div>
+          <div>
+            <label>Z Travel (mm):</label>
+            <input 
+              type="number" 
+              step="1"
+              min="1"
+              value={zTravel}
+              onChange={(e) => setZTravel(parseFloat(e.target.value) || 10)}
+              disabled={!isPublisher}
+            />
+            <small style={{ color: '#888', fontSize: '10px' }}>Height for travel moves</small>
+          </div>
+        </div>
+        {isPublisher && (
+          <button className="btn btn-secondary" onClick={saveZSettings} style={{ marginTop: '10px' }}>
+            💾 Save Z Settings
+          </button>
+        )}
+      </div>
+
       {/* Position to Tip Stations */}
       <div className="section">
         <h3 className="section-title">🔸 Position to Tip Stations</h3>

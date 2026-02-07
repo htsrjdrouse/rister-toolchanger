@@ -455,13 +455,23 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
                 />
               </label>
               <label>
-                <span>Z Height (mm)</span>
+                <span>Z Dispense (mm)</span>
                 <input
                   type="number"
                   step="0.1"
                   min="0.1"
                   value={settings.zHeight}
                   onChange={(e) => updateSetting('zHeight', parseFloat(e.target.value) || 0.5)}
+                />
+              </label>
+              <label>
+                <span>Z Travel (mm)</span>
+                <input
+                  type="number"
+                  step="1"
+                  min="1"
+                  value={settings.zTravel}
+                  onChange={(e) => updateSetting('zTravel', parseFloat(e.target.value) || 5)}
                 />
               </label>
             </div>
