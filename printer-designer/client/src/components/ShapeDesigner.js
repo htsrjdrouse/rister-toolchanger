@@ -4,38 +4,40 @@ import { STLLoader } from 'three/examples/jsm/loaders/STLLoader';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
 
 // Default JSCAD template for nanoarray lines
-const DEFAULT_CODE = `// Nanoarray Line Generator
-// Creates parallel lines for perovskite deposition on 100x100mm substrate
+// Lines rotated 90° around Y-axis - lines run along Z-direction for dispensing
+const DEFAULT_CODE = `// Nanoarray Line Generator – lines rotated 90° around Y-axis
+// Lines now run along Z-direction, spaced along X
+// This orientation matches dispenser toolhead movement
 
 const jscad = require('@jscad/modeling');
 const { cuboid } = jscad.primitives;
-const { translate, rotateZ } = jscad.transforms;
+const { translate } = jscad.transforms;
 const { union } = jscad.booleans;
 
-// Parameters - adjust these values
-const LINE_LENGTH = 50;       // Line length in mm
-const LINE_WIDTH = 0.1;       // Line width in mm (100 microns)
-const LINE_HEIGHT = 0.05;     // Line height in mm (50 microns)
-const LINE_SPACING = 1.0;     // Spacing between lines in mm
-const NUM_LINES = 10;         // Number of lines
+// Parameters – adjust these values
+const LINE_LENGTH = 50;       // Length along Z-axis in mm
+const LINE_WIDTH = 0.1;       // Thickness in X direction (100 µm)
+const LINE_HEIGHT = 0.05;     // Thickness in Y direction (50 µm)
+const LINE_SPACING = 1.0;     // Spacing between lines along X
+const NUM_LINES = 10;         // Number of parallel lines
 
-// Substrate dimensions (for reference)
-const SUBSTRATE_SIZE = 100;   // 100mm x 100mm
+// Substrate dimensions (for reference / visualization)
+const SUBSTRATE_SIZE = 100;   // 100 × 100 mm
 
 // Calculate starting position to center the pattern
 const patternWidth = (NUM_LINES - 1) * LINE_SPACING;
-const startY = -patternWidth / 2;
-const startX = -LINE_LENGTH / 2;
+const startX = -patternWidth / 2;  // Spacing direction is now X
 
 function main() {
   const lines = [];
   
   for (let i = 0; i < NUM_LINES; i++) {
-    const y = startY + (i * LINE_SPACING);
-    const line = translate(
-      [startX + LINE_LENGTH/2, y, LINE_HEIGHT/2],
-      cuboid({ size: [LINE_LENGTH, LINE_WIDTH, LINE_HEIGHT] })
-    );
+    const x = startX + (i * LINE_SPACING);
+    // Create thin cuboid lying along Z-axis
+    const line = cuboid({
+      size: [LINE_WIDTH, LINE_HEIGHT, LINE_LENGTH],  // [X, Y, Z]
+      center: [x, 0, 0]
+    });
     lines.push(line);
   }
   
@@ -44,6 +46,29 @@ function main() {
 
 module.exports = { main };
 `;
+
+// Needle gauge to inner diameter (mm)
+const NEEDLE_GAUGES = {
+  '18G': 0.838,
+  '20G': 0.603,
+  '21G': 0.514,
+  '22G': 0.413,
+  '23G': 0.337,
+  '25G': 0.260,
+  '27G': 0.210,
+  '30G': 0.159,
+  '32G': 0.108,
+  '34G': 0.082,
+};
+
+// Common syringe sizes - inner diameter (mm)
+const SYRINGE_SIZES = {
+  '1ml': 4.78,
+  '3ml': 8.66,
+  '5ml': 12.06,
+  '10ml': 14.5,
+  '20ml': 19.13,
+};
 
 function ShapeDesigner({ design, onSave, isPublisher }) {
   const [code, setCode] = useState(DEFAULT_CODE);
@@ -54,6 +79,36 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
   const [logs, setLogs] = useState('');
   const [error, setError] = useState('');
   const [gcodeStats, setGcodeStats] = useState(null);
+  
+  // Dispenser settings (replaces slicer for liquid dispensing)
+  const [dispenserSettings, setDispenserSettings] = useState({
+    // Line pattern
+    lineLength: 70,        // mm - length of each line
+    lineSpacing: 1.0,      // mm - spacing between lines
+    numLines: 10,          // number of parallel lines
+    lineWidth: 0.3,        // mm - target line width on substrate
+    lineHeight: 0.05,      // mm - target line height/thickness
+    
+    // Dispenser hardware
+    needleGauge: '25G',    // needle size
+    syringeSize: '1ml',    // syringe volume
+    
+    // Motion
+    feedrate: 300,         // mm/min - travel speed while dispensing
+    travelFeedrate: 3000,  // mm/min - travel speed (no dispensing)
+    zHeight: 0.5,          // mm - nozzle height above substrate
+    zTravel: 5,            // mm - Z height for travel moves
+    
+    // Substrate position (centered on 200x200 bed)
+    substrateX: 100,       // mm - substrate center X
+    substrateY: 100,       // mm - substrate center Y
+    
+    // Extruder settings
+    extruderIndex: 2,      // T2 for syringe pump
+    eMultiplier: 1.0,      // extrusion multiplier for tuning
+  });
+  
+  // Legacy slicer settings (kept for compatibility)
   const [slicerSettings, setSlicerSettings] = useState({
     layerHeight: 0.05,
     extrusionWidth: 0.1,
@@ -282,7 +337,125 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     }
   };
 
-  // Slice STL to G-code
+  // Generate G-code directly for dispenser (no slicer needed)
+  const generateDispenserGcode = () => {
+    const s = dispenserSettings;
+    const syringeDiameter = SYRINGE_SIZES[s.syringeSize] || 4.78;
+    const needleDiameter = NEEDLE_GAUGES[s.needleGauge] || 0.260;
+    
+    // Calculate extrusion: E per mm of line
+    // Volume of line per mm = lineWidth × lineHeight × 1mm
+    // E = volume / plunger_area (how far plunger must move)
+    const plungerArea = Math.PI * Math.pow(syringeDiameter / 2, 2);
+    const lineVolumePerMm = s.lineWidth * s.lineHeight; // mm³ per mm of line
+    const ePerMm = (lineVolumePerMm / plungerArea) * s.eMultiplier;
+    
+    // Calculate pattern dimensions
+    const patternWidth = (s.numLines - 1) * s.lineSpacing;
+    const startX = s.substrateX - patternWidth / 2;
+    const startY = s.substrateY - s.lineLength / 2;
+    const endY = s.substrateY + s.lineLength / 2;
+    
+    // Build G-code
+    const lines = [];
+    const timestamp = new Date().toISOString();
+    
+    // Header
+    lines.push('; Nanoarray Dispenser G-code');
+    lines.push(`; Generated: ${timestamp}`);
+    lines.push(';');
+    lines.push('; === Pattern Parameters ===');
+    lines.push(`; Lines: ${s.numLines}`);
+    lines.push(`; Line length: ${s.lineLength} mm`);
+    lines.push(`; Line spacing: ${s.lineSpacing} mm`);
+    lines.push(`; Line width: ${s.lineWidth} mm`);
+    lines.push(`; Line height: ${s.lineHeight} mm`);
+    lines.push(';');
+    lines.push('; === Dispenser Settings ===');
+    lines.push(`; Needle: ${s.needleGauge} (ID: ${needleDiameter.toFixed(3)} mm)`);
+    lines.push(`; Syringe: ${s.syringeSize} (ID: ${syringeDiameter.toFixed(2)} mm)`);
+    lines.push(`; Plunger area: ${plungerArea.toFixed(3)} mm²`);
+    lines.push(`; E per mm: ${ePerMm.toFixed(6)} mm`);
+    lines.push(`; Feedrate: ${s.feedrate} mm/min`);
+    lines.push(`; Z height: ${s.zHeight} mm`);
+    lines.push(';');
+    lines.push('; === Calculated Values ===');
+    lines.push(`; Total line length: ${(s.lineLength * s.numLines).toFixed(1)} mm`);
+    lines.push(`; Total E: ${(ePerMm * s.lineLength * s.numLines).toFixed(4)} mm`);
+    lines.push(`; Approx volume: ${(lineVolumePerMm * s.lineLength * s.numLines).toFixed(4)} mm³`);
+    lines.push(';');
+    lines.push('');
+    
+    // Setup
+    lines.push('; === Setup ===');
+    lines.push('G21 ; mm units');
+    lines.push('G90 ; absolute positioning');
+    lines.push('M83 ; relative extrusion');
+    lines.push(`T${s.extruderIndex} ; select syringe pump extruder`);
+    lines.push('');
+    
+    // Move to start position
+    lines.push('; === Move to start ===');
+    lines.push(`G1 Z${s.zTravel} F1000 ; raise Z for travel`);
+    lines.push(`G1 X${startX.toFixed(3)} Y${startY.toFixed(3)} F${s.travelFeedrate} ; move to first line start`);
+    lines.push(`G1 Z${s.zHeight} F500 ; lower to dispense height`);
+    lines.push('');
+    
+    // Generate lines
+    lines.push('; === Dispense Lines ===');
+    let totalE = 0;
+    
+    for (let i = 0; i < s.numLines; i++) {
+      const x = startX + i * s.lineSpacing;
+      const eForLine = ePerMm * s.lineLength;
+      totalE += eForLine;
+      
+      lines.push(`; Line ${i + 1}/${s.numLines}`);
+      
+      if (i > 0) {
+        // Travel to next line start (at travel Z)
+        lines.push(`G1 Z${s.zTravel} F500 ; raise for travel`);
+        lines.push(`G1 X${x.toFixed(3)} Y${startY.toFixed(3)} F${s.travelFeedrate} ; move to line start`);
+        lines.push(`G1 Z${s.zHeight} F500 ; lower to dispense`);
+      }
+      
+      // Dispense line (Y direction)
+      lines.push(`G1 Y${endY.toFixed(3)} E${eForLine.toFixed(6)} F${s.feedrate} ; dispense line`);
+    }
+    
+    lines.push('');
+    
+    // End
+    lines.push('; === Finish ===');
+    lines.push(`G1 Z${s.zTravel} F500 ; raise Z`);
+    lines.push(`G1 X${s.substrateX} Y${s.substrateY} F${s.travelFeedrate} ; move to center`);
+    lines.push('');
+    lines.push(`; Total E: ${totalE.toFixed(6)} mm`);
+    lines.push('; Done');
+    
+    const gcodeText = lines.join('\n');
+    
+    // Update state
+    setGcode(gcodeText);
+    setGcodeStats({
+      totalLines: lines.length,
+      moveCount: s.numLines * 2 + 4, // approximate
+      layerCount: 1,
+      bounds: {
+        x: { min: startX, max: startX + patternWidth },
+        y: { min: startY, max: endY },
+        z: { min: s.zHeight, max: s.zTravel }
+      },
+      // Additional dispenser stats
+      totalE: totalE,
+      volumeMm3: lineVolumePerMm * s.lineLength * s.numLines,
+      ePerMm: ePerMm,
+    });
+    setLogs(prev => prev + `\nGenerated dispenser G-code: ${s.numLines} lines, total E: ${totalE.toFixed(4)} mm`);
+    setError('');
+  };
+
+  // Slice STL to G-code (legacy - use slicer)
   const handleSlice = async () => {
     if (!stlData) {
       setError('No STL to slice. Compile first.');
@@ -427,65 +600,229 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
           </div>
         </div>
         
-        {/* Right Panel - Slicer & G-code */}
+        {/* Right Panel - Dispenser G-code Generator */}
         <div className="shape-panel gcode-panel">
           <div className="panel-header">
-            <h3>⚙️ Slicer</h3>
+            <h3>💧 Dispenser G-code</h3>
             <div className="panel-actions">
               <button 
                 className="btn btn-primary" 
-                onClick={handleSlice}
-                disabled={slicing || !stlData}
+                onClick={generateDispenserGcode}
               >
-                {slicing ? '⏳ Slicing...' : '🔪 Slice'}
+                🔧 Generate G-code
               </button>
               {gcode && (
                 <button className="btn btn-success" onClick={downloadGcode}>
-                  💾 Download G-code
+                  💾 Download
                 </button>
               )}
             </div>
           </div>
           
-          {/* Slicer Settings */}
-          <div className="slicer-settings">
-            <label>
-              Layer Height (mm):
-              <input
-                type="number"
-                step="0.01"
-                value={slicerSettings.layerHeight}
-                onChange={(e) => setSlicerSettings(s => ({ ...s, layerHeight: parseFloat(e.target.value) }))}
-              />
-            </label>
-            <label>
-              Extrusion Width (mm):
-              <input
-                type="number"
-                step="0.01"
-                value={slicerSettings.extrusionWidth}
-                onChange={(e) => setSlicerSettings(s => ({ ...s, extrusionWidth: parseFloat(e.target.value) }))}
-              />
-            </label>
-            <label>
-              Speed (mm/s):
-              <input
-                type="number"
-                step="1"
-                value={slicerSettings.perimeterSpeed}
-                onChange={(e) => setSlicerSettings(s => ({ ...s, perimeterSpeed: parseInt(e.target.value) }))}
-              />
-            </label>
+          {/* Dispenser Settings */}
+          <div className="slicer-settings dispenser-settings">
+            <h4>📏 Line Pattern</h4>
+            <div className="settings-row">
+              <label>
+                Lines:
+                <input
+                  type="number"
+                  min="1"
+                  max="100"
+                  value={dispenserSettings.numLines}
+                  onChange={(e) => setDispenserSettings(s => ({ ...s, numLines: parseInt(e.target.value) || 1 }))}
+                />
+              </label>
+              <label>
+                Length (mm):
+                <input
+                  type="number"
+                  step="1"
+                  min="1"
+                  value={dispenserSettings.lineLength}
+                  onChange={(e) => setDispenserSettings(s => ({ ...s, lineLength: parseFloat(e.target.value) || 10 }))}
+                />
+              </label>
+              <label>
+                Spacing (mm):
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  value={dispenserSettings.lineSpacing}
+                  onChange={(e) => setDispenserSettings(s => ({ ...s, lineSpacing: parseFloat(e.target.value) || 0.5 }))}
+                />
+              </label>
+            </div>
+            <div className="settings-row">
+              <label>
+                Width (mm):
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={dispenserSettings.lineWidth}
+                  onChange={(e) => setDispenserSettings(s => ({ ...s, lineWidth: parseFloat(e.target.value) || 0.1 }))}
+                />
+              </label>
+              <label>
+                Height (mm):
+                <input
+                  type="number"
+                  step="0.01"
+                  min="0.01"
+                  value={dispenserSettings.lineHeight}
+                  onChange={(e) => setDispenserSettings(s => ({ ...s, lineHeight: parseFloat(e.target.value) || 0.05 }))}
+                />
+              </label>
+            </div>
+            
+            <h4>🔧 Hardware</h4>
+            <div className="settings-row">
+              <label>
+                Needle:
+                <select
+                  value={dispenserSettings.needleGauge}
+                  onChange={(e) => setDispenserSettings(s => ({ ...s, needleGauge: e.target.value }))}
+                >
+                  {Object.entries(NEEDLE_GAUGES).map(([gauge, id]) => (
+                    <option key={gauge} value={gauge}>{gauge} ({id}mm)</option>
+                  ))}
+                </select>
+              </label>
+              <label>
+                Syringe:
+                <select
+                  value={dispenserSettings.syringeSize}
+                  onChange={(e) => setDispenserSettings(s => ({ ...s, syringeSize: e.target.value }))}
+                >
+                  {Object.entries(SYRINGE_SIZES).map(([size, id]) => (
+                    <option key={size} value={size}>{size} (⌀{id}mm)</option>
+                  ))}
+                </select>
+              </label>
+            </div>
+            
+            <h4>🚀 Motion</h4>
+            <div className="settings-row">
+              <label>
+                Feedrate (mm/min):
+                <input
+                  type="number"
+                  step="10"
+                  min="10"
+                  value={dispenserSettings.feedrate}
+                  onChange={(e) => setDispenserSettings(s => ({ ...s, feedrate: parseInt(e.target.value) || 100 }))}
+                />
+              </label>
+              <label>
+                Z Height (mm):
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  value={dispenserSettings.zHeight}
+                  onChange={(e) => setDispenserSettings(s => ({ ...s, zHeight: parseFloat(e.target.value) || 0.5 }))}
+                />
+              </label>
+            </div>
+            <div className="settings-row">
+              <label>
+                E Multiplier:
+                <input
+                  type="number"
+                  step="0.1"
+                  min="0.1"
+                  value={dispenserSettings.eMultiplier}
+                  onChange={(e) => setDispenserSettings(s => ({ ...s, eMultiplier: parseFloat(e.target.value) || 1.0 }))}
+                />
+              </label>
+              <label>
+                Extruder (T):
+                <input
+                  type="number"
+                  min="0"
+                  max="5"
+                  value={dispenserSettings.extruderIndex}
+                  onChange={(e) => setDispenserSettings(s => ({ ...s, extruderIndex: parseInt(e.target.value) || 0 }))}
+                />
+              </label>
+            </div>
+            
+            <h4>📍 Position</h4>
+            <div className="settings-row">
+              <label>
+                Center X (mm):
+                <input
+                  type="number"
+                  step="1"
+                  value={dispenserSettings.substrateX}
+                  onChange={(e) => setDispenserSettings(s => ({ ...s, substrateX: parseFloat(e.target.value) || 100 }))}
+                />
+              </label>
+              <label>
+                Center Y (mm):
+                <input
+                  type="number"
+                  step="1"
+                  value={dispenserSettings.substrateY}
+                  onChange={(e) => setDispenserSettings(s => ({ ...s, substrateY: parseFloat(e.target.value) || 100 }))}
+                />
+              </label>
+            </div>
           </div>
+          
+          {/* Legacy Slicer Settings - collapsed */}
+          <details className="legacy-slicer">
+            <summary>🔪 PrusaSlicer (for complex shapes)</summary>
+            <div className="slicer-settings">
+              <button 
+                className="btn btn-secondary btn-sm" 
+                onClick={handleSlice}
+                disabled={slicing || !stlData}
+              >
+                {slicing ? '⏳ Slicing...' : 'Slice with PrusaSlicer'}
+              </button>
+              <label>
+                Layer Height (mm):
+                <input
+                  type="number"
+                  step="0.01"
+                  value={slicerSettings.layerHeight}
+                  onChange={(e) => setSlicerSettings(s => ({ ...s, layerHeight: parseFloat(e.target.value) }))}
+                />
+              </label>
+              <label>
+                Extrusion Width (mm):
+                <input
+                  type="number"
+                  step="0.01"
+                  value={slicerSettings.extrusionWidth}
+                  onChange={(e) => setSlicerSettings(s => ({ ...s, extrusionWidth: parseFloat(e.target.value) }))}
+                />
+              </label>
+              <label>
+                Speed (mm/s):
+                <input
+                  type="number"
+                  step="1"
+                  value={slicerSettings.perimeterSpeed}
+                  onChange={(e) => setSlicerSettings(s => ({ ...s, perimeterSpeed: parseInt(e.target.value) }))}
+                />
+              </label>
+            </div>
+          </details>
           
           {/* G-code Stats */}
           {gcodeStats && (
             <div className="gcode-stats">
               <h4>📊 Statistics</h4>
               <div className="stats-grid">
-                <span>Lines: {gcodeStats.totalLines}</span>
+                <span>G-code Lines: {gcodeStats.totalLines}</span>
                 <span>Moves: {gcodeStats.moveCount}</span>
-                <span>Layers: {gcodeStats.layerCount}</span>
+                {gcodeStats.totalE && <span>Total E: {gcodeStats.totalE.toFixed(4)} mm</span>}
+                {gcodeStats.volumeMm3 && <span>Volume: {gcodeStats.volumeMm3.toFixed(4)} mm³</span>}
+                {gcodeStats.ePerMm && <span>E/mm: {gcodeStats.ePerMm.toFixed(6)}</span>}
                 <span>X: {gcodeStats.bounds.x.min.toFixed(2)} → {gcodeStats.bounds.x.max.toFixed(2)}</span>
                 <span>Y: {gcodeStats.bounds.y.min.toFixed(2)} → {gcodeStats.bounds.y.max.toFixed(2)}</span>
                 <span>Z: {gcodeStats.bounds.z.min.toFixed(2)} → {gcodeStats.bounds.z.max.toFixed(2)}</span>
@@ -500,7 +837,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
               className="gcode-output"
               value={gcode}
               readOnly
-              placeholder="G-code will appear here after slicing..."
+              placeholder="Click 'Generate G-code' to create dispenser commands..."
             />
           </div>
         </div>

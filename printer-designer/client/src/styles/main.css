@@ -679,3 +679,82 @@ canvas {
     min-height: 300px;
   }
 }
+
+/* Dispenser Settings */
+.dispenser-settings h4 {
+  margin: 12px 0 8px 0;
+  font-size: 13px;
+  color: #00d9ff;
+  border-bottom: 1px solid #333;
+  padding-bottom: 4px;
+}
+
+.dispenser-settings h4:first-child {
+  margin-top: 0;
+}
+
+.settings-row {
+  display: flex;
+  gap: 10px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.settings-row label {
+  flex: 1;
+  min-width: 120px;
+}
+
+.dispenser-settings select {
+  padding: 4px;
+  background: #1a1a2e;
+  border: 1px solid #333;
+  color: #fff;
+  border-radius: 4px;
+  width: 100%;
+  font-size: 12px;
+}
+
+.dispenser-settings select:focus {
+  border-color: #00d9ff;
+  outline: none;
+}
+
+/* Legacy Slicer Section */
+.legacy-slicer {
+  margin-top: 15px;
+  border-top: 1px solid #333;
+  padding-top: 10px;
+}
+
+.legacy-slicer summary {
+  cursor: pointer;
+  color: #888;
+  font-size: 12px;
+}
+
+.legacy-slicer summary:hover {
+  color: #aaa;
+}
+
+.legacy-slicer .slicer-settings {
+  margin-top: 10px;
+}
+
+.btn-sm {
+  padding: 4px 8px;
+  font-size: 11px;
+  margin-bottom: 8px;
+}
+
+/* Enhanced stats grid */
+.stats-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+  gap: 5px;
+}
+
+.gcode-stats span {
+  font-size: 11px;
+  color: #aaa;
+}
