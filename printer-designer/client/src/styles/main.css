@@ -758,3 +758,118 @@ canvas {
   font-size: 11px;
   color: #aaa;
 }
+
+/* Updated Shape Designer Styles */
+.settings-panel {
+  flex: 0.9;
+  min-width: 280px;
+  max-width: 320px;
+}
+
+.settings-section {
+  padding: 10px 15px;
+  border-bottom: 1px solid #333;
+}
+
+.settings-group {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 10px;
+}
+
+.settings-group:last-child {
+  margin-bottom: 0;
+}
+
+.settings-group.horizontal {
+  flex-direction: row;
+}
+
+.settings-group.horizontal label {
+  flex: 1;
+}
+
+.settings-group label {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-size: 12px;
+}
+
+.settings-group label span {
+  color: #888;
+  font-size: 11px;
+}
+
+.settings-group input,
+.settings-group select {
+  padding: 8px 10px;
+  background: #1a1a2e;
+  border: 1px solid #333;
+  color: #fff;
+  border-radius: 4px;
+  font-size: 13px;
+  width: 100%;
+}
+
+.settings-group input:focus,
+.settings-group select:focus {
+  border-color: #00d9ff;
+  outline: none;
+}
+
+.generate-button {
+  padding: 15px;
+}
+
+.btn-large {
+  width: 100%;
+  padding: 12px 20px;
+  font-size: 14px;
+}
+
+.viewer-info {
+  display: flex;
+  gap: 20px;
+  justify-content: center;
+  padding: 8px;
+  font-size: 11px;
+  color: #666;
+  background: rgba(0,0,0,0.2);
+}
+
+.gcode-stats {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 5px;
+  padding: 10px 15px;
+  background: rgba(0, 212, 255, 0.05);
+  border-bottom: 1px solid #333;
+}
+
+.gcode-stats .stat {
+  font-size: 11px;
+  color: #888;
+}
+
+.gcode-stats .stat span {
+  color: #00d9ff;
+  margin-right: 4px;
+}
+
+.shape-status {
+  margin-top: 10px;
+  padding: 8px 15px;
+  background: #16213e;
+  border-radius: 6px;
+  font-size: 12px;
+}
+
+.status-error {
+  color: #f56565;
+}
+
+.status-info {
+  color: #888;
+}
