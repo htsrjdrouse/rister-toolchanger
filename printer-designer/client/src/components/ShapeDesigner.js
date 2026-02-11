@@ -25,39 +25,71 @@ const SYRINGE_SIZES = {
   '20ml': 19.13,
 };
 
+// Default settings
+const DEFAULT_SETTINGS = {
+  // Line pattern
+  numLines: 10,          // number of parallel lines
+  lineLength: 70,        // mm - length of each line
+  lineSpacing: 1.0,      // mm - spacing between lines
+  
+  // Volume settings (calibrated: 1 E unit = 1 µL)
+  volumePerLine: 5,      // µL - total volume to dispense per line
+  
+  // Start position (G-code coordinates)
+  startX: 65,            // mm - X position of first line
+  startY: 65,            // mm - Y position where lines start
+  startZ: 5,             // mm - Z starting height
+  startE: 100,           // µL - E starting position (syringe volume remaining)
+  
+  // Dispenser hardware
+  needleGauge: '25G',    // needle size
+  syringeSize: '1ml',    // syringe volume
+  
+  // Motion
+  feedrate: 300,         // mm/min - travel speed while dispensing
+  travelFeedrate: 3000,  // mm/min - travel speed (no dispensing)
+  zHeight: 0.5,          // mm - nozzle height above substrate
+  zTravel: 5,            // mm - Z height for travel moves
+  
+  // Extruder settings
+  eMultiplier: 1.0,      // fine-tune multiplier (1.0 = calibrated)
+  eUnits: 'calibrated',  // 'calibrated' = 1 E = 1 µL (firmware calibrated), 'mm' = raw mm (use syringe area)
+};
+
+const STORAGE_KEY = 'shapeDesignerSettings';
+
+// Load settings from localStorage
+const loadSettings = () => {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const parsed = JSON.parse(saved);
+      // Merge with defaults to handle any new settings added later
+      return { ...DEFAULT_SETTINGS, ...parsed };
+    }
+  } catch (e) {
+    console.warn('Failed to load settings from localStorage:', e);
+  }
+  return DEFAULT_SETTINGS;
+};
+
 function ShapeDesigner({ design, onSave, isPublisher }) {
   const [gcode, setGcode] = useState('');
   const [logs, setLogs] = useState('Ready');
   const [error, setError] = useState('');
   const [gcodeStats, setGcodeStats] = useState(null);
   
-  // Dispenser settings
-  const [settings, setSettings] = useState({
-    // Line pattern
-    numLines: 10,          // number of parallel lines
-    lineLength: 70,        // mm - length of each line
-    lineSpacing: 1.0,      // mm - spacing between lines
-    lineWidth: 0.3,        // mm - target line width on substrate
-    lineHeight: 0.05,      // mm - target line height/thickness
-    
-    // Start position (G-code coordinates)
-    startX: 65,            // mm - X position of first line
-    startY: 65,            // mm - Y position where lines start
-    
-    // Dispenser hardware
-    needleGauge: '25G',    // needle size
-    syringeSize: '1ml',    // syringe volume
-    
-    // Motion
-    feedrate: 300,         // mm/min - travel speed while dispensing
-    travelFeedrate: 3000,  // mm/min - travel speed (no dispensing)
-    zHeight: 0.5,          // mm - nozzle height above substrate
-    zTravel: 5,            // mm - Z height for travel moves
-    
-    // Extruder settings
-    extruderIndex: 2,      // T2 for syringe pump
-    eMultiplier: 1.0,      // extrusion multiplier for tuning
-  });
+  // Dispenser settings - load from localStorage
+  const [settings, setSettings] = useState(loadSettings);
+  
+  // Save settings to localStorage whenever they change
+  useEffect(() => {
+    try {
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(settings));
+    } catch (e) {
+      console.warn('Failed to save settings to localStorage:', e);
+    }
+  }, [settings]);
   
   // Build plate size for preview
   const [buildPlate, setBuildPlate] = useState({ width: 200, height: 200 });
@@ -171,14 +203,18 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     const s = settings;
     const endY = s.startY + s.lineLength;
     
+    // Display dimensions for preview (visual only, not actual line size)
+    const displayWidth = Math.max(0.3, s.lineSpacing * 0.3);  // Scale with spacing
+    const displayHeight = 0.5;  // Fixed visual height
+    
     // Create line meshes
     for (let i = 0; i < s.numLines; i++) {
       const x = s.startX + i * s.lineSpacing;
       
       // Line geometry (thin box along Y axis)
       const geometry = new THREE.BoxGeometry(
-        s.lineWidth,      // X
-        s.lineHeight,     // Y (height)
+        displayWidth,     // X (visual width)
+        displayHeight,    // Y (visual height)
         s.lineLength      // Z (length in Y direction shown as Z in 3D)
       );
       
@@ -190,7 +226,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
       
       const line = new THREE.Mesh(geometry, material);
       // Position: X as specified, Y at half height, Z centered on line
-      line.position.set(x, s.zHeight + s.lineHeight / 2, s.startY + s.lineLength / 2);
+      line.position.set(x, s.zHeight + displayHeight / 2, s.startY + s.lineLength / 2);
       
       linesGroupRef.current.add(line);
     }
@@ -212,13 +248,36 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
   // Generate G-code
   const generateGcode = useCallback(() => {
     const s = settings;
-    const syringeDiameter = SYRINGE_SIZES[s.syringeSize] || 4.78;
     const needleDiameter = NEEDLE_GAUGES[s.needleGauge] || 0.260;
+    const syringeDiameter = SYRINGE_SIZES[s.syringeSize] || 4.78;  // mm
     
-    // Calculate extrusion: E per mm of line
-    const plungerArea = Math.PI * Math.pow(syringeDiameter / 2, 2);
-    const lineVolumePerMm = s.lineWidth * s.lineHeight;
-    const ePerMm = (lineVolumePerMm / plungerArea) * s.eMultiplier;
+    // Calculate syringe cross-sectional area (mm²) - only used in 'mm' mode
+    const syringeArea = Math.PI * Math.pow(syringeDiameter / 2, 2);  // mm²
+    
+    // Ensure eMultiplier is a valid number
+    const eMultiplier = parseFloat(s.eMultiplier) || 1.0;
+    
+    // E units mode:
+    // 'calibrated' = firmware already calibrated so 1 E = 1 µL (no area math needed)
+    // 'mm' = E is raw mm of plunger travel, need syringe area to convert
+    // Default to calibrated if eUnits is undefined (old localStorage)
+    const isCalibrated = (s.eUnits || 'calibrated') === 'calibrated';
+    
+    // Volume calculation depends on E units mode
+    const volumePerLine = s.volumePerLine;  // µL per line (requested)
+    let eDisplacementPerLine;
+    let actualVolumePerLine;
+    
+    if (isCalibrated) {
+      // Calibrated mode: 1 E = 1 µL, so E displacement = volume directly
+      eDisplacementPerLine = volumePerLine * eMultiplier;  // E units (= µL)
+      actualVolumePerLine = eDisplacementPerLine;          // µL dispensed
+    } else {
+      // Raw mm mode: E is in mm, need syringe area to calculate volume
+      eDisplacementPerLine = (volumePerLine / syringeArea) * eMultiplier;  // mm of E movement
+      actualVolumePerLine = eDisplacementPerLine * syringeArea;            // µL dispensed
+    }
+    const flowRate = actualVolumePerLine / s.lineLength;            // µL per mm
     
     const endY = s.startY + s.lineLength;
     
@@ -229,66 +288,81 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     // Header
     lines.push('; Nanoarray Dispenser G-code');
     lines.push(`; Generated: ${timestamp}`);
-    lines.push(';');
+    lines.push(`; Syringe: ${s.syringeSize} (${syringeDiameter.toFixed(2)}mm ID${isCalibrated ? '' : `, area: ${syringeArea.toFixed(2)} mm²`})`);
+    lines.push(`; E Units: ${isCalibrated ? 'Calibrated (1 E = 1 µL)' : 'Raw mm (using syringe area)'}`);
+    lines.push(`;`);
     lines.push('; === Pattern ===');
     lines.push(`; Lines: ${s.numLines} × ${s.lineLength}mm`);
     lines.push(`; Spacing: ${s.lineSpacing}mm`);
     lines.push(`; Start: X${s.startX} Y${s.startY}`);
     lines.push(';');
-    lines.push('; === Hardware ===');
+    lines.push('; === Volume ===');
+    lines.push(`; Per line: ${actualVolumePerLine.toFixed(2)} µL (E: ${eDisplacementPerLine.toFixed(3)}${isCalibrated ? ' µL' : ' mm'})`);
+    lines.push(`; Flow rate: ${flowRate.toFixed(4)} µL/mm`);
     lines.push(`; Needle: ${s.needleGauge} (${needleDiameter}mm ID)`);
-    lines.push(`; Syringe: ${s.syringeSize} (${syringeDiameter}mm plunger)`);
-    lines.push(`; E/mm: ${ePerMm.toFixed(6)}`);
+    lines.push(`; E Multiplier: ${eMultiplier}`);
     lines.push(';');
     lines.push('');
     
     // Setup
     lines.push('G21 ; mm units');
-    lines.push('G90 ; absolute positioning');
-    lines.push('M83 ; relative extrusion');
-    lines.push(`T${s.extruderIndex} ; select extruder`);
+    lines.push('G90 ; absolute positioning (XYZ)');
+    lines.push('M82 ; absolute extrusion mode');
+    lines.push(`G92 E${s.startE} ; set extruder position`);
     lines.push('');
     
     // Move to start
-    lines.push(`G1 Z${s.zTravel} F1000`);
-    lines.push(`G1 X${s.startX.toFixed(3)} Y${s.startY.toFixed(3)} F${s.travelFeedrate}`);
-    lines.push(`G1 Z${s.zHeight} F500`);
+    lines.push(`G1 Z${s.startZ} F1000 ; move to start Z`);
+    lines.push(`G1 X${s.startX.toFixed(3)} Y${s.startY.toFixed(3)} F${s.travelFeedrate} ; move to start XY`);
+    lines.push(`G1 Z${s.zHeight} F500 ; lower to dispense height`);
     lines.push('');
     
-    // Dispense lines
-    let totalE = 0;
+    // Dispense lines (absolute E positions - DECREASING for syringe pump)
+    // Syringe pump: aspirate = E increases, dispense = E decreases
+    let currentE = s.startE;
     for (let i = 0; i < s.numLines; i++) {
       const x = s.startX + i * s.lineSpacing;
-      const eForLine = ePerMm * s.lineLength;
-      totalE += eForLine;
+      currentE -= eDisplacementPerLine;  // SUBTRACT mm for dispensing
       
-      lines.push(`; Line ${i + 1}`);
+      lines.push(`; Line ${i + 1} (${actualVolumePerLine.toFixed(2)} µL)`);
       if (i > 0) {
         lines.push(`G1 Z${s.zTravel} F500`);
         lines.push(`G1 X${x.toFixed(3)} Y${s.startY.toFixed(3)} F${s.travelFeedrate}`);
         lines.push(`G1 Z${s.zHeight} F500`);
       }
-      lines.push(`G1 Y${endY.toFixed(3)} E${eForLine.toFixed(6)} F${s.feedrate}`);
+      lines.push(`G1 Y${endY.toFixed(3)} E${currentE.toFixed(2)} F${s.feedrate}`);
     }
     
+    // Total volume calculation depends on E units mode
+    const totalEDisplacement = s.startE - currentE;  // E units moved
+    const totalVolume = isCalibrated 
+      ? totalEDisplacement                       // Calibrated: E = µL directly
+      : totalEDisplacement * syringeArea;        // Raw mm: need area conversion
+    
     lines.push('');
-    lines.push(`G1 Z${s.zTravel} F500`);
-    lines.push(`; Total E: ${totalE.toFixed(6)}mm`);
+    lines.push(`G1 Z${s.zTravel} F500 ; lift to travel height`);
+    lines.push(`; Total dispensed: ${totalVolume.toFixed(2)} µL (E: ${s.startE} -> ${currentE.toFixed(2)}, Δ${totalEDisplacement.toFixed(2)}${isCalibrated ? ' µL' : ' mm'})`);
     
     const gcodeText = lines.join('\n');
     setGcode(gcodeText);
     setGcodeStats({
       lines: s.numLines,
       totalLength: s.lineLength * s.numLines,
-      totalE: totalE,
-      ePerMm: ePerMm,
-      volume: lineVolumePerMm * s.lineLength * s.numLines,
+      totalVolume: totalVolume,
+      volumePerLine: actualVolumePerLine,
+      flowRate: flowRate,
+      startE: s.startE,
+      finalE: currentE,
+      eDisplacement: totalEDisplacement,
+      syringeArea: syringeArea,
+      eMultiplier: eMultiplier,
+      eUnits: isCalibrated ? 'µL' : 'mm',
       bounds: {
         x: { min: s.startX, max: s.startX + (s.numLines - 1) * s.lineSpacing },
         y: { min: s.startY, max: endY },
       }
     });
-    setLogs(`Generated ${s.numLines} lines, Total E: ${totalE.toFixed(4)}mm`);
+    setLogs(`Generated ${s.numLines} lines, Total: ${totalVolume.toFixed(2)} µL (ΔE: ${totalEDisplacement.toFixed(2)} ${isCalibrated ? 'µL' : 'mm'})`);
     setError('');
   }, [settings]);
 
@@ -359,27 +433,51 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
               </label>
             </div>
             
+          </div>
+          
+          <div className="panel-header">
+            <h3>💧 Volume Settings</h3>
+          </div>
+          <div className="settings-section">
             <div className="settings-group">
               <label>
-                <span>Line Width (mm)</span>
+                <span>Volume per Line (µL)</span>
                 <input
                   type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={settings.lineWidth}
-                  onChange={(e) => updateSetting('lineWidth', parseFloat(e.target.value) || 0.1)}
+                  step="0.5"
+                  min="0.1"
+                  value={settings.volumePerLine}
+                  onChange={(e) => updateSetting('volumePerLine', parseFloat(e.target.value) || 1)}
                 />
               </label>
-              <label>
-                <span>Line Height (mm)</span>
-                <input
-                  type="number"
-                  step="0.01"
-                  min="0.01"
-                  value={settings.lineHeight}
-                  onChange={(e) => updateSetting('lineHeight', parseFloat(e.target.value) || 0.05)}
-                />
-              </label>
+              {(() => {
+                const eMultiplier = parseFloat(settings.eMultiplier) || 1.0;
+                const isCalibrated = (settings.eUnits || 'calibrated') === 'calibrated';
+                const syringeDia = SYRINGE_SIZES[settings.syringeSize] || 4.78;
+                const syringeArea = Math.PI * Math.pow(syringeDia / 2, 2);
+                
+                // E per line depends on mode
+                const ePerLine = isCalibrated 
+                  ? settings.volumePerLine * eMultiplier  // calibrated: E = µL
+                  : (settings.volumePerLine / syringeArea) * eMultiplier;  // raw mm
+                
+                const totalVol = settings.volumePerLine * settings.numLines * eMultiplier;
+                const totalE = ePerLine * settings.numLines;
+                
+                return (
+                  <>
+                    <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
+                      Flow rate: {(settings.volumePerLine * eMultiplier / settings.lineLength).toFixed(4)} µL/mm
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#888' }}>
+                      E per line: {ePerLine.toFixed(3)} {isCalibrated ? 'µL' : 'mm'}
+                    </div>
+                    <div style={{ fontSize: '11px', color: '#4CAF50', fontWeight: 'bold' }}>
+                      Total: {totalVol.toFixed(2)} µL ({totalE.toFixed(2)} {isCalibrated ? 'µL' : 'mm'} E)
+                    </div>
+                  </>
+                );
+              })()}
             </div>
           </div>
           
@@ -407,6 +505,28 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
                 />
               </label>
             </div>
+            <div className="settings-group horizontal">
+              <label>
+                <span>Z (mm)</span>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={settings.startZ}
+                  onChange={(e) => updateSetting('startZ', parseFloat(e.target.value) || 0)}
+                />
+              </label>
+              <label>
+                <span>E (µL remaining)</span>
+                <input
+                  type="number"
+                  step="1"
+                  min="0"
+                  value={settings.startE}
+                  onChange={(e) => updateSetting('startE', parseFloat(e.target.value) || 0)}
+                />
+              </label>
+            </div>
           </div>
           
           <div className="panel-header">
@@ -414,6 +534,21 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
           </div>
           <div className="settings-section">
             <div className="settings-group">
+              <label>
+                <span>E Units Mode</span>
+                <select
+                  value={settings.eUnits || 'calibrated'}
+                  onChange={(e) => updateSetting('eUnits', e.target.value)}
+                >
+                  <option value="calibrated">Calibrated (1 E = 1 µL)</option>
+                  <option value="mm">Raw mm (use syringe area)</option>
+                </select>
+                <small style={{ color: '#888', fontSize: '10px' }}>
+                  {settings.eUnits === 'mm' 
+                    ? 'E is raw plunger mm, converted via syringe area' 
+                    : 'Firmware calibrated: 1 E unit = 1 µL directly'}
+                </small>
+              </label>
               <label>
                 <span>Needle Gauge</span>
                 <select
@@ -475,26 +610,38 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
                 />
               </label>
             </div>
-            <div className="settings-group horizontal">
+            <div className="settings-group">
               <label>
                 <span>E Multiplier</span>
                 <input
-                  type="number"
-                  step="0.1"
-                  min="0.1"
+                  type="text"
+                  inputMode="decimal"
+                  pattern="[0-9]*\.?[0-9]*"
                   value={settings.eMultiplier}
-                  onChange={(e) => updateSetting('eMultiplier', parseFloat(e.target.value) || 1.0)}
+                  onChange={(e) => {
+                    const val = e.target.value;
+                    // Allow empty or partial input while typing
+                    if (val === '' || val === '.' || val === '0.' || val === '0.0') {
+                      updateSetting('eMultiplier', val);
+                    } else {
+                      const num = parseFloat(val);
+                      if (!isNaN(num) && num >= 0) {
+                        updateSetting('eMultiplier', val);
+                      }
+                    }
+                  }}
+                  onBlur={(e) => {
+                    // On blur, ensure valid number
+                    const num = parseFloat(e.target.value);
+                    if (isNaN(num) || num <= 0) {
+                      updateSetting('eMultiplier', 1.0);
+                    } else {
+                      updateSetting('eMultiplier', num);
+                    }
+                  }}
+                  style={{ width: '80px' }}
                 />
-              </label>
-              <label>
-                <span>Extruder (T)</span>
-                <input
-                  type="number"
-                  min="0"
-                  max="5"
-                  value={settings.extruderIndex}
-                  onChange={(e) => updateSetting('extruderIndex', parseInt(e.target.value) || 0)}
-                />
+                <small style={{ color: '#888', fontSize: '10px' }}>1.0 = 100%, 0.1 = 10%, 0.01 = 1%</small>
               </label>
             </div>
           </div>
@@ -533,8 +680,10 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
             <div className="gcode-stats">
               <div className="stat"><span>Lines:</span> {gcodeStats.lines}</div>
               <div className="stat"><span>Length:</span> {gcodeStats.totalLength.toFixed(1)}mm</div>
-              <div className="stat"><span>Total E:</span> {gcodeStats.totalE.toFixed(4)}mm</div>
-              <div className="stat"><span>Volume:</span> {gcodeStats.volume.toFixed(4)}mm³</div>
+              <div className="stat"><span>Total Volume:</span> {gcodeStats.totalVolume.toFixed(2)} µL</div>
+              <div className="stat"><span>Per Line:</span> {gcodeStats.volumePerLine.toFixed(2)} µL</div>
+              <div className="stat"><span>Flow Rate:</span> {gcodeStats.flowRate.toFixed(4)} µL/mm</div>
+              <div className="stat"><span>E:</span> {gcodeStats.startE} → {gcodeStats.finalE.toFixed(2)} µL</div>
               <div className="stat"><span>X:</span> {gcodeStats.bounds.x.min.toFixed(1)} → {gcodeStats.bounds.x.max.toFixed(1)}</div>
               <div className="stat"><span>Y:</span> {gcodeStats.bounds.y.min.toFixed(1)} → {gcodeStats.bounds.y.max.toFixed(1)}</div>
             </div>
