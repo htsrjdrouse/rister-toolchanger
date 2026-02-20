@@ -38,7 +38,9 @@ function GcodeBuilder({ design, onSave, isPublisher = true }) {
     const sequenceName = macroName || 'automation_sequence';
     return `; G-code Sequence: ${sequenceName}\n` +
            `; Generated: ${new Date().toISOString()}\n` +
-           `; Ready to execute in Mainsail console\n\n`;
+           `; Ready to execute in Mainsail console\n\n` +
+           `G21 ; mm units\n` +
+           `G90 ; absolute positioning (XYZ)\n\n`;
   };
 
   const appendGcode = (newCode) => {

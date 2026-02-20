@@ -54,6 +54,10 @@ const DEFAULT_SETTINGS = {
   // Extruder settings
   eMultiplier: 1.0,      // fine-tune multiplier (1.0 = calibrated)
   eUnits: 'calibrated',  // 'calibrated' = 1 E = 1 µL (firmware calibrated), 'mm' = raw mm (use syringe area)
+  
+  // Prime and post-dispense G-code
+  primeGcode: '',        // G-code to insert before each dispense line
+  postDispenseGcode: '', // G-code to insert after each dispense line
 };
 
 const STORAGE_KEY = 'shapeDesignerSettings';
@@ -277,7 +281,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
       eDisplacementPerLine = (volumePerLine / syringeArea) * eMultiplier;  // mm of E movement
       actualVolumePerLine = eDisplacementPerLine * syringeArea;            // µL dispensed
     }
-    const flowRate = actualVolumePerLine / s.lineLength;            // µL per mm
+    const flowRate = (actualVolumePerLine / s.lineLength) * (s.feedrate / 60);  // µL per second
     
     const endY = s.startY + s.lineLength;
     
@@ -298,7 +302,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     lines.push(';');
     lines.push('; === Volume ===');
     lines.push(`; Per line: ${actualVolumePerLine.toFixed(2)} µL (E: ${eDisplacementPerLine.toFixed(3)}${isCalibrated ? ' µL' : ' mm'})`);
-    lines.push(`; Flow rate: ${flowRate.toFixed(4)} µL/mm`);
+    lines.push(`; Flow rate: ${flowRate.toFixed(4)} µL/s`);
     lines.push(`; Needle: ${s.needleGauge} (${needleDiameter}mm ID)`);
     lines.push(`; E Multiplier: ${eMultiplier}`);
     lines.push(';');
@@ -307,8 +311,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     // Setup
     lines.push('G21 ; mm units');
     lines.push('G90 ; absolute positioning (XYZ)');
-    lines.push('M82 ; absolute extrusion mode');
-    lines.push(`G92 E${s.startE} ; set extruder position`);
+    lines.push('G92 E0 ; reset extruder position to zero');
     lines.push('');
     
     // Move to start
@@ -317,12 +320,12 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     lines.push(`G1 Z${s.zHeight} F500 ; lower to dispense height`);
     lines.push('');
     
-    // Dispense lines (absolute E positions - DECREASING for syringe pump)
-    // Syringe pump: aspirate = E increases, dispense = E decreases
-    let currentE = s.startE;
+    // Dispense lines (absolute E positions - POSITIVE for dispensing)
+    // Syringe pump: dispense = positive E (pushes plunger down)
+    let currentE = 0;
     for (let i = 0; i < s.numLines; i++) {
       const x = s.startX + i * s.lineSpacing;
-      currentE -= eDisplacementPerLine;  // SUBTRACT mm for dispensing
+      currentE += eDisplacementPerLine;  // Increase E for each dispense
       
       lines.push(`; Line ${i + 1} (${actualVolumePerLine.toFixed(2)} µL)`);
       if (i > 0) {
@@ -330,18 +333,29 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
         lines.push(`G1 X${x.toFixed(3)} Y${s.startY.toFixed(3)} F${s.travelFeedrate}`);
         lines.push(`G1 Z${s.zHeight} F500`);
       }
+      
+      // Insert prime G-code before dispense
+      if (s.primeGcode && s.primeGcode.trim()) {
+        lines.push(s.primeGcode.trim());
+      }
+      
       lines.push(`G1 Y${endY.toFixed(3)} E${currentE.toFixed(2)} F${s.feedrate}`);
+      
+      // Insert post-dispense G-code after dispense
+      if (s.postDispenseGcode && s.postDispenseGcode.trim()) {
+        lines.push(s.postDispenseGcode.trim());
+      }
     }
     
     // Total volume calculation depends on E units mode
-    const totalEDisplacement = s.startE - currentE;  // E units moved
+    const totalEDisplacement = currentE;  // Total E moved (positive = dispensed)
     const totalVolume = isCalibrated 
       ? totalEDisplacement                       // Calibrated: E = µL directly
       : totalEDisplacement * syringeArea;        // Raw mm: need area conversion
     
     lines.push('');
     lines.push(`G1 Z${s.zTravel} F500 ; lift to travel height`);
-    lines.push(`; Total dispensed: ${totalVolume.toFixed(2)} µL (E: ${s.startE} -> ${currentE.toFixed(2)}, Δ${totalEDisplacement.toFixed(2)}${isCalibrated ? ' µL' : ' mm'})`);
+    lines.push(`; Total dispensed: ${totalVolume.toFixed(2)} µL (E: 0 -> ${currentE.toFixed(2)}, Δ${totalEDisplacement.toFixed(2)}${isCalibrated ? ' µL' : ' mm'})`);
     
     const gcodeText = lines.join('\n');
     setGcode(gcodeText);
@@ -351,7 +365,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
       totalVolume: totalVolume,
       volumePerLine: actualVolumePerLine,
       flowRate: flowRate,
-      startE: s.startE,
+      startE: 0,
       finalE: currentE,
       eDisplacement: totalEDisplacement,
       syringeArea: syringeArea,
@@ -467,7 +481,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
                 return (
                   <>
                     <div style={{ fontSize: '11px', color: '#888', marginTop: '4px' }}>
-                      Flow rate: {(settings.volumePerLine * eMultiplier / settings.lineLength).toFixed(4)} µL/mm
+                      Flow rate: {((settings.volumePerLine * eMultiplier / settings.lineLength) * (settings.feedrate / 60)).toFixed(4)} µL/s
                     </div>
                     <div style={{ fontSize: '11px', color: '#888' }}>
                       E per line: {ePerLine.toFixed(3)} {isCalibrated ? 'µL' : 'mm'}
@@ -646,6 +660,34 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
             </div>
           </div>
           
+          <div className="panel-header">
+            <h3>🔧 Prime & Post-Dispense</h3>
+          </div>
+          <div className="settings-section">
+            <div className="settings-group">
+              <label>
+                <span>Prime G-code (before each line)</span>
+                <textarea
+                  rows="4"
+                  placeholder="G4 P10  ; Pause 50ms&#10; Prime&#10;VALVE_OUTPUT MASK=1111; G4 P10"
+                  value={settings.primeGcode}
+                  onChange={(e) => updateSetting('primeGcode', e.target.value)}
+                  style={{ fontFamily: 'monospace', fontSize: '11px', width: '100%' }}
+                />
+              </label>
+              <label>
+                <span>Post-Dispense G-code (after each line)</span>
+                <textarea
+                  rows="4"
+                  placeholder="G4 P10  ; Pause 10ms&#10;VALVE_BYPASS MASK=1111&#10;G4 P10  ; Pause 10ms"
+                  value={settings.postDispenseGcode}
+                  onChange={(e) => updateSetting('postDispenseGcode', e.target.value)}
+                  style={{ fontFamily: 'monospace', fontSize: '11px', width: '100%' }}
+                />
+              </label>
+            </div>
+          </div>
+          
           <div className="generate-button">
             <button className="btn btn-primary btn-large" onClick={generateGcode}>
               ⚡ Generate G-code
@@ -682,7 +724,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
               <div className="stat"><span>Length:</span> {gcodeStats.totalLength.toFixed(1)}mm</div>
               <div className="stat"><span>Total Volume:</span> {gcodeStats.totalVolume.toFixed(2)} µL</div>
               <div className="stat"><span>Per Line:</span> {gcodeStats.volumePerLine.toFixed(2)} µL</div>
-              <div className="stat"><span>Flow Rate:</span> {gcodeStats.flowRate.toFixed(4)} µL/mm</div>
+              <div className="stat"><span>Flow Rate:</span> {gcodeStats.flowRate.toFixed(4)} µL/s</div>
               <div className="stat"><span>E:</span> {gcodeStats.startE} → {gcodeStats.finalE.toFixed(2)} µL</div>
               <div className="stat"><span>X:</span> {gcodeStats.bounds.x.min.toFixed(1)} → {gcodeStats.bounds.x.max.toFixed(1)}</div>
               <div className="stat"><span>Y:</span> {gcodeStats.bounds.y.min.toFixed(1)} → {gcodeStats.bounds.y.max.toFixed(1)}</div>
