@@ -189,7 +189,7 @@
           "drypad_servo_touch": 150,
           "drypad_time": 3000,
           "drypad_x": 137,
-          "drypad_y": 302,
+          "drypad_y": 295,
           "drypad_z": 53,
           "eject_macro": "eject",
           "eject_servo_eject": 150,
@@ -202,20 +202,20 @@
           "wash_servo_move": 0,
           "wash_servo_wash": 150,
           "wash_x": 172,
-          "wash_y": 347.5,
+          "wash_y": 340.5,
           "wash_z": 52,
           "waste_macro": "",
           "waste_servo_move": 0,
           "waste_servo_waste": 150,
-          "waste_x": 206,
-          "waste_y": 347.5,
+          "waste_x": 207,
+          "waste_y": 340.5,
           "waste_z": 58
         },
         {
-          "drypad_delay": 2000,
+          "drypad_delay": 100,
           "drypad_servo_move": 0,
           "drypad_servo_touch": 30,
-          "drypad_time": 1000,
+          "drypad_time": 100,
           "drypad_x": 139,
           "drypad_y": 302,
           "drypad_z": 62,
@@ -230,13 +230,13 @@
           "wash_servo_move": 0,
           "wash_servo_wash": 30,
           "wash_x": 174,
-          "wash_y": 350,
+          "wash_y": 345.5,
           "wash_z": 62,
           "waste_macro": "",
           "waste_servo_move": 0,
           "waste_servo_waste": 30,
           "waste_x": 207,
-          "waste_y": 350,
+          "waste_y": 345.5,
           "waste_z": 67
         },
         {
@@ -287,15 +287,15 @@
           "name": "load_dispense_sequence_910"
         },
         {
-          "content": "; G-code Sequence: Sample_Collection_Sequence\n; Generated: 2025-12-04T22:05:52.333Z\n; Ready to execute in Mainsail console\n\n;X:59.000 Y:347.000 Z:9.4 E:0.000\n;ENABLE_LINEARACTUATOR_SERVO_L0\n;SET_SERVO SERVO=linearactuator_servo_l0 ANGLE=130\n;X:59.000 Y:355.000 Z:9.4 E:0.000\n\nG90  ; Absolute positioning\nG1 Z100 F1500\nG1 X65 F3000  \nG4 P500\nG1 Y340 F3000\nENABLE_LINEARACTUATOR_SERVO_L0\nSET_SERVO SERVO=linearactuator_servo_l0 ANGLE=150\nG4 P500\nG1 Z40 F1500\nG1 Y358 F3000\nG4 P500\nG1 X57 F1000\nG1 Z47 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X77 F1000\nG1 Z50 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X57 F1000\nG1 Z52 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X77 F1000\nG1 Z53 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X57 F1000\nG1 Z55 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG4 P500\nG1 Z100 F1000\nG4 P500\nENABLE_LINEARACTUATOR_SERVO_L0\nG4 P500\nDISABLE_LINEARACTUATOR_SERVO_L0\nG4 P500",
+          "content": "; G-code Sequence: Sample_Collection_Sequence\n; Generated: 2025-12-04T22:05:52.333Z\n; Ready to execute in Mainsail console\n\n;X:59.000 Y:347.000 Z:9.4 E:0.000\n;ENABLE_LINEARACTUATOR_SERVO_L0\n;SET_SERVO SERVO=linearactuator_servo_l0 ANGLE=130\n;X:59.000 Y:355.000 Z:9.4 E:0.000\n\nG90  ; Absolute positioning\nG1 Z150 F1500\nG1 X64 F3000  \nG4 P500\nG1 Y340 F3000\nLINEARACTSERVOMOVE ANGLE=90 HOLD=1000\nG4 P500\nLINEARACTSERVOON\nG4 P500\nG1 Z39 F1500\nG1 Y347 F3000\nG4 P500\nG1 X57 F1000\nG4 P500\nG1 Z44 F1000\nG4 P500\nG1 Z38 F1000\nG4 P500\nG1 X70 F1000\nG4 P500\nG1 Z43 F1000\nG4 P500\nG1 X64 F3000\nG4 P500\nG1 Z120 F3000\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500\nLINEARACTSERVOOFF\nG4 P500\nSELECT_TIP TIP=0\nG4 P500",
           "name": "eject"
         },
         {
-          "name": "aspirate_sample",
-          "content": "; G-code Sequence: aspirate_sample\n; Generated: 2026-02-02T03:59:42.847Z\n; Ready to execute in Mainsail console\n\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG90  ; Absolute positioning\n; Move to sample_wells array A1\nG90  ; Absolute positioning\nG1 Z130 F2000\nG1 X103.00 Y94 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nG1 Z68 F2000\nG1 Z64 F500\nG4 P500  ; Pause 500ms for stabilization\nVALVE_OUTPUT MASK=1111\nG4 P500  ; Pause 500ms for stabilization\nG1 E-250 F1000\nG4 P500  ; Pause 500ms for stabilization\nG1 E-200 F1000\nVALVE_BYPASS MASK=1111\nG4 P500  ; Pause 500ms for stabilization\nG1 Z130 F2000"
+          "content": "; G-code Sequence: aspirate_sample\n; Generated: 2026-02-02T03:59:42.847Z\n; Ready to execute in Mainsail console\n\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG90  ; Absolute positioning\n; Move to sample_wells array A1\nG90  ; Absolute positioning\nG1 Z130 F2000\nG1 X103.00 Y94 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nG1 Z68 F2000\nG1 Z64 F500\nG4 P500  ; Pause 500ms for stabilization\nVALVE_OUTPUT MASK=1111\nG4 P500  ; Pause 500ms for stabilization\nG1 E-550 F2000\nG4 P10 \n;G1 E300 F2000\n;G4 P10 \nVALVE_BYPASS MASK=1111\nG1 Z75 F500\nG1 Z64 F1500\nG4 P50  ; Pause 50ms for stabilization\nG1 Z130 F2000",
+          "name": "aspirate_sample"
         },
         {
-          "content": "; G-code Sequence: Sample_Collection_Sequence\n; Generated: 2025-12-04T22:05:52.333Z\n; Ready to execute in Mainsail console\n\n; Move to small_dispenser_box array A1\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nG90  ; Absolute positioning\nG1 Z130 F1500\nG1 X331.00 Y109.80 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=90 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOON\nG4 P500  ; Pause 500ms for stabilization\nG1 Z94 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z101 F500\nG4 P500  ; Pause 500ms for stabilization\nG1 Z91 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z101 F500\nG4 P500  ; Pause 500ms for stabilization\nG1 Z89 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z150 F2000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOOFF\nG4 P500  ; Pause 500ms for stabilization\nSELECT_TIP TIP=1\nG4 P500  ; Pause 500ms for stabilization",
+          "content": "; G-code Sequence: Sample_Collection_Sequence\n; Generated: 2025-12-04T22:05:52.333Z\n; Ready to execute in Mainsail console\n\n; Move to small_dispenser_box array A1\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nG90  ; Absolute positioning\nG1 Z130 F1500\nG1 X331.00 Y108.80 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=90 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOON\nG4 P500  ; Pause 500ms for stabilization\nG1 Z83 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z100 F500\nG4 P500  ; Pause 500ms for stabilization\nG1 Z83 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z100 F500\nG4 P500  ; Pause 500ms for stabilization\nG1 Z100 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z150 F2000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOOFF\nG4 P500  ; Pause 500ms for stabilization\nSELECT_TIP TIP=1\nG4 P500  ; Pause 500ms for stabilization",
           "name": "Dispenser_25_load_1"
         },
         {
@@ -303,24 +303,48 @@
           "name": "Dispenser_14_load_1"
         },
         {
-          "name": "line_spotter",
-          "content": "; G-code Sequence: automation_sequence\n; Generated: 2026-02-02T23:14:09.738Z\n; Ready to execute in Mainsail console\n\n; Move to nanoarray array A1\nG90  ; Absolute positioning\nG1 Z100 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 X106.00 Y117.00 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nG1 Z65 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z61 F500\nG4 P500  ; Pause 500ms for stabilization\nVALVE_OUTPUT MASK=1111\nM82\n\n; begin line segment\n\n; Nanoarray Dispenser G-code\n; Generated: 2026-02-11T18:08:28.635Z\n; Syringe: 1ml (4.78mm ID)\n; E Units: Calibrated (1 E = 1 µL)\n;\n; === Pattern ===\n; Lines: 1 × 70mm\n; Spacing: 1mm\n; Start: X106 Y117\n;\n; === Volume ===\n; Per line: 25.00 µL (E: 25.000 µL)\n; Flow rate: 0.3571 µL/mm\n; Needle: 25G (0.26mm ID)\n; E Multiplier: 5\n;\n\nG21 ; mm units\nG90 ; absolute positioning\nG92 E100 ; set extruder position\n\nG1 Z59.5 F1000 ; move to start Z\nG1 X106.000 Y117.000 F3000 ; move to start XY\nG1 Z59 F500 ; lower to dispense height\n\n; Line 1 (25.00 µL)\nG1 Y187.000 E75.00 F500\n\nG1 Z65 F500 ; lift to travel height\n; Total dispensed: 25.00 µL (E: 100 -> 75.00, Δ25.00 µL)\n\n\n\n; end line segment\n\nG1 X106.00 Y187.00 F3000   ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111\nG4 P500  ; Pause 500ms for stabilization\nG1 Z100 F2000"
+          "content": "; G-code Sequence: automation_sequence\n; Generated: 2026-02-02T23:14:09.738Z\n; Ready to execute in Mainsail console\n\n; Move to nanoarray array A1\nG90  ; Absolute positioning\nG1 Z100 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 X106.00 Y117.00 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nG1 Z65 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z61 F500\nG4 P500  ; Pause 500ms for stabilization\nVALVE_OUTPUT MASK=1111\nM82\n\n; begin line segment\n\n; Nanoarray Dispenser G-code\n; Generated: 2026-02-11T18:08:28.635Z\n; Syringe: 1ml (4.78mm ID)\n; E Units: Calibrated (1 E = 1 µL)\n;\n; === Pattern ===\n; Lines: 1 × 70mm\n; Spacing: 1mm\n; Start: X106 Y117\n;\n; === Volume ===\n; Per line: 25.00 µL (E: 25.000 µL)\n; Flow rate: 0.3571 µL/mm\n; Needle: 25G (0.26mm ID)\n; E Multiplier: 5\n;\n\nG21 ; mm units\nG90 ; absolute positioning\nG92 E100 ; set extruder position\n\nG1 Z59.5 F1000 ; move to start Z\nG1 X106.000 Y117.000 F3000 ; move to start XY\nG1 Z59 F500 ; lower to dispense height\n\n; Line 1 (25.00 µL)\nG1 Y187.000 E75.00 F500\n\nG1 Z65 F500 ; lift to travel height\n; Total dispensed: 25.00 µL (E: 100 -> 75.00, Δ25.00 µL)\n\n\n\n; end line segment\n\nG1 X106.00 Y187.00 F3000   ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111\nG4 P500  ; Pause 500ms for stabilization\nG1 Z100 F2000",
+          "name": "line_spotter"
         },
         {
           "content": "; Waste Routine\n; Generated for waste station operations\n\nG90  ; Absolute positioning\nG1 Z100 F1500  ; Lift to safe height\nG1 X170 Y373 F3000  ; Move to waste station\nG1 Z92 F1500  ; Lower to waste height\nG4 P1000  ; Dwell 1 second\n; Add your waste disposal commands here\nG1 Z100 F1500  ; Lift back up",
           "name": "waste_test"
         },
         {
-          "name": "line_spotter_titration",
-          "content": "; G-code Sequence: automation_sequence\n; Generated: 2026-02-02T23:14:09.738Z\n; Ready to execute in Mainsail console\nM82\n; Move to nanoarray array A1\nG90  ; Absolute positioning\nG1 Z100 F2000\nLINEARACTSERVOON\nG4 P500  ; Pause 500ms for stabilization\nG1 X106.00 Y117.00 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nG1 Z65 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z61 F500\nG4 P500  ; Pause 500ms for stabilization\n\n; Nanoarray Dispenser G-code\n; Generated: 2026-02-11T22:08:25.530Z\n; Syringe: 1ml (4.78mm ID)\n; E Units: Calibrated (1 E = 1 µL)\n;\n; === Pattern ===\n; Lines: 1 × 70mm\n; Spacing: 2.5mm\n; Start: X107.5 Y117\n;\n; === Volume ===\n; Per line: 200.00 µL (E: 200.000 µL)\n; Flow rate: 2.8571 µL/mm\n; Needle: 25G (0.26mm ID)\n; E Multiplier: 10\n;\n\nG21 ; mm units\nG90 ; absolute positioning (XYZ)\nM82 ; absolute extrusion mode\nG92 E0 ; reset extruder position to zero\n\nG1 Z59.5 F1000 ; move to start Z\nG1 X107.500 Y117.000 F3000 ; move to start XY\nG1 Z58.3 F500 ; lower to dispense height\nG4 P50  ; Pause 500ms for stabilization\n; Line 1 (200.00 µL)\nG1 E2 F2000 ; for priming\nVALVE_OUTPUT MASK=1111\nG4 P10  ; Pause 500ms for stabilization\nG1 Y187.000 E15.00 F2000\n\nG1 Z65 F500 ; lift to travel height\n; Total dispensed: 200.00 µL (E: 0 -> 200.00, Δ200.00 µL\n\n\n\n\nG4 P100  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111\n\nG1 Z65 F500 ; lift to travel height\n\n\n\nG1 X106.00 Y187.00 F3000   ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111\nG4 P500  ; Pause 500ms for stabilization\nG1 Z100 F2000\nLINEARACTSERVOOFF\nG4 P500"
+          "content": "; G-code Sequence: automation_sequence\n; Generated: 2026-02-02T23:14:09.738Z\n; Ready to execute in Mainsail console\n;M82\n; Move to nanoarray array A1\nG90  ; Absolute positioning\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P50  ; Pause 50ms for stabilization\nG1 Z100 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 X106.00 Y117.00 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nG1 Z65 F2000\nG4 P50  ; Pause 500ms for stabilization\nG1 Z62 F500\nG4 P50  ; Pause 500ms for stabilization\n\n; Nanoarray Dispenser G-code\n; Generated: 2026-02-11T22:08:25.530Z\n; Syringe: 1ml (4.78mm ID)\n; E Units: Calibrated (1 E = 1 µL)\n;\n; === Pattern ===\n; Lines: 1 × 70mm\n; Spacing: 2.5mm\n; Start: X107.5 Y117\n;\n; === Volume ===\n; Per line: 200.00 µL (E: 200.000 µL)\n; Flow rate: 2.8571 µL/mm\n; Needle: 25G (0.26mm ID)\n; E Multiplier: 10\n;\n\nG21 ; mm units\nG90 ; absolute positioning (XYZ)\n;M82 ; absolute extrusion mode\nG92 E0 ; reset extruder position to zero\n\nG1 Z54.5 F1000 ; move to start Z\nG1 X107.500 Y117.000 F3000 ; move to start XY\nG4 P50  ; Pause 50ms for stabilization\n; Line 1 (200.00 µL)\n;G1 E2 F2000 ; for priming\nVALVE_OUTPUT MASK=1111\n;G4 P10  ; Pause 500ms for stabilization\n;G1 E100 F2000\nG4 P10  ; Pause 500ms for stabilization\nLINEARACTSERVOON\nG4 P10  ; Pause 500ms for stabilization\nG1 Z51 F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\n\nG1 Y187.000 E10.00 F4000\n\nG1 Z53 F500 ; lift to travel height\n; Total dispensed: 200.00 µL (E: 0 -> 200.00, Δ200.00 µL\n\nG4 P100  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111\n\nG1 Z65 F500 ; lift to travel height\nG1 X106.00 Y187.00 F3000   ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111\nG4 P50  ; Pause 50ms for stabilization\nG1 Z100 F2000\nLINEARACTSERVOOFF\nG4 P50",
+          "name": "line_spotter_titration"
+        },
+        {
+          "content": "; G-code Sequence: aspirate_sample\n; Generated: 2026-02-02T03:59:42.847Z\n; Ready to execute in Mainsail console\n\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG90  ; Absolute positioning\n; Move to sample_wells array A1\nG90  ; Absolute positioning\nG1 Z130 F2000\nG1 X103.00 Y94 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nG1 Z73 F2000",
+          "name": "aspirate_gotowell"
+        },
+        {
+          "content": "VALVE_OUTPUT MASK=1111\n;prime step\n;G4 P10  ; Pause 10ms for stabilization\n;G1 E100 F3000\nG4 P10  ; Pause 10ms for stabilization\nG1 E100 F5000\nG4 P10  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111",
+          "name": "dispenser"
+        },
+        {
+          "content": "G1 Z150 F1000\nG4 P50  ;\nG1 X188 F2000\nG4 P50  ;\nG1 Y105 F2000\nG4 P50  ;\nG1 Z52 F1000\nG4 P50  ;",
+          "name": "fiducial"
+        },
+        {
+          "content": "; G-code Sequence: prime_pipettes\n; Generated: 2026-03-03T00:32:43.042Z\n; Active Tip: L0Tip1_15awg\n; Ready to execute in Mainsail console\n\n; Move to WASTE (L0Tip1_15awg)\nG90  ; Absolute positioning\nG1 Z130 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 X207 Y345.5 F3000  ; Move to waste XY position\nG1 Z67 F1500  ; Move to waste Z height\nG4 P500  ; Pause 500ms for stabilization\nVALVE_INPUT MASK=1111\nG4 P500  ; Pause 500ms for stabilization\nG1 E-500 F1000\nG4 P500  ; Pause 500ms for stabilization\nVALVE_OUTPUT MASK=1111\nG4 P500  ; Pause 500ms for stabilization\nG1 E500 F5000",
+          "name": "prime_pipettes_25g"
+        },
+        {
+          "content": "; G-code Sequence: automation_sequence\n; Generated: 2026-02-02T23:14:09.738Z\n; Ready to execute in Mainsail console\n;M82\n; Move to nanoarray array A1\nG90  ; Absolute positioning\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P50  ; Pause 50ms for stabilization\nG1 Z100 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 X106.00 Y117.00 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nG1 Z65 F2000\nG4 P50  ; Pause 500ms for stabilization\nG1 Z62 F500\nG4 P50  ; Pause 500ms for stabilization\n\n; Nanoarray Dispenser G-code\n; Generated: 2026-02-11T22:08:25.530Z\n; Syringe: 1ml (4.78mm ID)\n; E Units: Calibrated (1 E = 1 µL)\n;\n; === Pattern ===\n; Lines: 1 × 70mm\n; Spacing: 2.5mm\n; Start: X107.5 Y117\n;\n; === Volume ===\n; Per line: 200.00 µL (E: 200.000 µL)\n; Flow rate: 2.8571 µL/mm\n; Needle: 25G (0.26mm ID)\n; E Multiplier: 10\n;\n\nG21 ; mm units\nG90 ; absolute positioning (XYZ)\n;M82 ; absolute extrusion mode\nG92 E0 ; reset extruder position to zero\n\nG1 Z54.5 F1000 ; move to start Z\nG1 X107.500 Y117.000 F3000 ; move to start XY\nG4 P50  ; Pause 50ms for stabilization\n; Line 1 (200.00 µL)\n;G1 E2 F2000 ; for priming\nVALVE_OUTPUT MASK=1111\n;G4 P10  ; Pause 500ms for stabilization\n;G1 E100 F2000\nG4 P10  ; Pause 500ms for stabilization\nLINEARACTSERVOON\n\nG4 P10  ; Pause 500ms for stabilization\nG1 Z50. F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\nG1 E30 F6000\nG1 Z51.5 F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\n\nG1 X107.500 Y120.000 F3000 ; move to start XY\nG4 P10  ; Pause 500ms for stabilization\nG1 Z50. F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\nG1 E5 F6000\nG1 Z51.5 F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\n\nG1 X107.500 Y123.000 F3000 ; move to start XY\nG4 P10  ; Pause 500ms for stabilization\nG1 Z50. F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\nG1 E5 F6000\nG1 Z51.5 F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\n\n\n\n\nG1 X107.500 Y140.000 F3000 ; move to start XY\nG4 P10  ; Pause 500ms for stabilization\nG1 Z50. F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\nG1 E1 F6000\nG1 Z51.5 F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\n\nG1 X107.500 Y143.000 F3000 ; move to start XY\nG4 P10  ; Pause 500ms for stabilization\nG1 Z50. F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\nG1 E1 F6000\nG1 Z51.5 F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\n\nG1 X107.500 Y146.000 F3000 ; move to start XY\nG4 P10  ; Pause 500ms for stabilization\nG1 Z50. F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\nG1 E1 F6000\nG1 Z51.5 F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\n\n\nG1 Z103 F500 ; lift to travel height\n; Total dispensed: 200.00 µL (E: 0 -> 200.00, Δ200.00 µL\n\nG4 P100  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111\nG4 P100  ; Pause 500ms for stabilization\nLINEARACTSERVOOFF\nG4 P100  ; Pause 500ms for stabilization",
+          "name": "spot_test"
+        },
+        {
+          "name": "line_spotter_titration_fixed_target",
+          "content": "; G-code Sequence: automation_sequence\n; Generated: 2026-02-02T23:14:09.738Z\n; Ready to execute in Mainsail console\n;M82\n; Move to nanoarray array A1\nG90  ; Absolute positioning\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P50  ; Pause 50ms for stabilization\nG1 Z100 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 X106.00 Y117.00 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nG1 Z65 F2000\nG4 P50  ; Pause 500ms for stabilization\nG1 Z62 F500\nG4 P50  ; Pause 500ms for stabilization\n\n; Nanoarray Dispenser G-code\n; Generated: 2026-02-11T22:08:25.530Z\n; Syringe: 1ml (4.78mm ID)\n; E Units: Calibrated (1 E = 1 µL)\n;\n; === Pattern ===\n; Lines: 1 × 70mm\n; Spacing: 2.5mm\n; Start: X107.5 Y117\n;\n; === Volume ===\n; Per line: 200.00 µL (E: 200.000 µL)\n; Flow rate: 2.8571 µL/mm\n; Needle: 25G (0.26mm ID)\n; E Multiplier: 10\n;\n\nG21 ; mm units\nG90 ; absolute positioning (XYZ)\n;M82 ; absolute extrusion mode\nG92 E0 ; reset extruder position to zero\n\nG1 Z54.5 F1000 ; move to start Z\nG1 X107.500 Y117.000 F3000 ; move to start XY\nG4 P50  ; Pause 50ms for stabilization\n; Line 1 (200.00 µL)\n;G1 E2 F2000 ; for priming\nVALVE_OUTPUT MASK=1111\n;G4 P10  ; Pause 500ms for stabilization\n;G1 E100 F2000\nG4 P10  ; Pause 500ms for stabilization\nLINEARACTSERVOON\nG4 P10  ; Pause 500ms for stabilization\nG1 Z51 F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\n\nG1 Y187.000 E10.00 F4000\n\nG1 Z53 F500 ; lift to travel height\n; Total dispensed: 200.00 µL (E: 0 -> 200.00, Δ200.00 µL\n\nG4 P100  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111\n\nG1 Z65 F500 ; lift to travel height\nG1 X106.00 Y187.00 F3000   ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111\nG4 P50  ; Pause 50ms for stabilization\nG1 Z100 F2000\nLINEARACTSERVOOFF\nG4 P50"
         }
       ],
       "version": "1.1.0",
-      "id": "d3a8d4af-fe86-474f-95fa-91312118cef7",
-      "name": "Imported Design (7 objects, 11 macros) (Imported)",
+      "id": "e3e2e11b-c5d3-4e33-b372-18db75272486",
+      "name": "Imported Design (7 objects, 17 macros) (Imported)",
       "description": "",
-      "createdAt": "2026-02-13T04:28:36.481Z",
-      "updatedAt": "2026-02-13T04:28:36.481Z"
+      "createdAt": "2026-03-09T18:57:32.662Z",
+      "updatedAt": "2026-03-09T18:57:32.662Z"
     }
   ],
   "publishedDesignId": "d3a8d4af-fe86-474f-95fa-91312118cef7"

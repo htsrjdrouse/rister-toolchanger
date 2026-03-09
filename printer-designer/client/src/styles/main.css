@@ -557,30 +557,6 @@ canvas {
   min-width: 300px;
 }
 
-.slicer-settings {
-  padding: 12px 15px;
-  background: rgba(0, 0, 0, 0.1);
-  border-bottom: 1px solid #333;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-}
-
-.slicer-settings label {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  font-size: 12px;
-  color: #aaa;
-  margin: 0;
-}
-
-.slicer-settings input {
-  width: 70px;
-  padding: 5px 8px;
-  font-size: 12px;
-}
-
 .gcode-stats {
   padding: 12px 15px;
   background: rgba(0, 212, 255, 0.05);
@@ -721,27 +697,6 @@ canvas {
 .dispenser-settings select:focus {
   border-color: #00d9ff;
   outline: none;
-}
-
-/* Legacy Slicer Section */
-.legacy-slicer {
-  margin-top: 15px;
-  border-top: 1px solid #333;
-  padding-top: 10px;
-}
-
-.legacy-slicer summary {
-  cursor: pointer;
-  color: #888;
-  font-size: 12px;
-}
-
-.legacy-slicer summary:hover {
-  color: #aaa;
-}
-
-.legacy-slicer .slicer-settings {
-  margin-top: 10px;
 }
 
 .btn-sm {

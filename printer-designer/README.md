@@ -77,7 +77,7 @@ printer-designer/
 ├── docker-compose.yml      # Docker orchestration
 ├── Dockerfile              # Production container build
 ├── server/
-│   ├── index.js            # Express API + JSCAD/slicer integration
+│   ├── index.js            # Express API server
 │   ├── package.json
 │   └── public/             # Built React app (production)
 ├── client/
@@ -95,10 +95,8 @@ printer-designer/
 │   │   └── styles/
 │   │       └── main.css
 │   └── package.json
-├── data/
-│   └── designs.json        # Persistent design storage
-├── slicer-profiles/        # PrusaSlicer .ini profiles
-└── temp/                   # Temporary build files
+└── data/
+    └── designs.json        # Persistent design storage
 ```
 
 ## 🎮 Usage
@@ -157,26 +155,6 @@ G1 Z0.5 F500      ; Lower to dispense height
 | POST | `/api/designs/:id/clone` | Publisher | Clone design |
 | GET | `/api/designs/:id/export` | - | Export as JSON |
 | POST | `/api/designs/import` | Publisher | Import from JSON |
-
-### Publishing
-
-| Method | Endpoint | Auth | Description |
-|--------|----------|------|-------------|
-| GET | `/api/published` | - | Get published design |
-| GET | `/api/published/status` | - | Check publish status |
-| POST | `/api/designs/:id/publish` | Publisher | Publish a design |
-| POST | `/api/published/unpublish` | Publisher | Unpublish |
-
-### Shape Designer
-
-| Method | Endpoint | Description |
-|--------|----------|-------------|
-| POST | `/api/shape/compile` | Compile JSCAD → STL |
-| POST | `/api/shape/slice` | Slice STL → G-code |
-| GET | `/api/shape/profiles` | List slicer profiles |
-| POST | `/api/shape/save` | Save shape design |
-| GET | `/api/shape/list` | List saved shapes |
-| GET | `/api/shape/:id` | Get shape details |
 
 ### Authentication
 

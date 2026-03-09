@@ -2,17 +2,6 @@
 // Bayonet-style tip case holders and T-slot mounts
 
 module tip_case_system() {
-/*
-    // Bayonet tip case components
-    import("../stls/TipCase/bayonet_pipette_tipcase_clamp.stl");
-    import("../stls/TipCase/bayonet_pipette_tipcase_holder.stl");
-    import("../stls/TipCase/bayonet_pipette_tipcase_holder_1.stl");
-    import("../stls/TipCase/bayonet_pipette_tipcase_makesquare.stl");
-    import("../stls/TipCase/bayonet_pipette_tipcase_makesquare_1.stl");
-    // T-slot 20mm tip case mounts (100mm length)
-    import("../stls/TipCase/tipcase_tslot20_100_A.stl");
-    import("../stls/TipCase/tipcase_tslot20_100_B.stl");
- */
     // Tipcase clamp
     import("../stls/TipCase/bayonet_pipette_tipcase_clamp.stl");
     translate([0,20,0]){

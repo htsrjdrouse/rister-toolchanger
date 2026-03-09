@@ -3,17 +3,25 @@ include <pipette_tip_case_p20_LTS.scad>
 include <pipette_process.scad>
 include <washstation.scad>
 
+//translate([0,3,-22])color("pink")translate([337-12.5,427,300-15+0.2+0.8])rotate([0,180,90])luer_lock_case_lid();
 
 //include <organized_openscad.scad>
-//translate([400-70+3-210,426.5+3+124,330-3+50-124])rotate([0,0,-90])color("lime")luerlock_dispenser_assy_remover();
+translate([400-70+3-210,426.5+3+124,330-3+50-124])rotate([0,0,-90])color("lime")luerlock_dispenser_assy_remover();
 //luer_lock_microwell();
 //luer_lock_alignment_key();
 
-//luerlock_pipette_assy();
+//translate([0,3,-1])luerlock_pipette_assy();
+//linearactuator_pipette_holder_4pipette_luerlock();
+//pipette_assembly();
+//tuberculin_syringe_015ml();
+
+//luerlock_connector();
+//pipette_13g();
+
+
 //translate([0,0,0])luerlock_nozzle_bottom();
 //luer_lock_case_lid();
 //luerlock_nozzle_case();
-linearactuator_pipette_holder_4pipette_luerlock();
 
 //linearactuator_pipette_holder_4pipette_luerlock();
 //pipette_holder_4tip_luerlock_lid();
@@ -22,12 +30,63 @@ linearactuator_pipette_holder_4pipette_luerlock();
 //import("linearactuator_rack_stub.stl");
 //import("linearactuator_rack_stub.stl");
 
+
+module pipette_assembly(){
+translate([339,430+1,295+6])rotate([0,180,90])color("lightgreen")translate([0,-1.9,10.5+12+1]){
+for(i=[0:3]){
+translate([0,-5.7+(i*11.5),-17-8-4])rotate([0,180,0]){
+luerlock_connector();
+pipette_13g();
+cylinder(d=3,h=60,$fn=100);
+if(i==0){
+translate([0,0,60])rotate([-25,-4,0])cylinder(d=3,h=35,$fn=100);
+translate([-2.3,3.5+10,60+28])rotate([0,0,0])cylinder(d=3,h=70,$fn=100);
+translate([-2.3,3.5+10,60+28+69])rotate([0,-50,0])cylinder(d=3,h=80,$fn=100);
+}
+if(i==1){
+translate([0,0,60])rotate([-10,-4,0])cylinder(d=3,h=50,$fn=100);
+translate([-3.4,8.6,60+48.5])rotate([0,0,0])cylinder(d=3,h=46,$fn=100);
+translate([-2.5,8.6,60+50+44])rotate([0,-48,0])cylinder(d=3,h=82,$fn=100);
+}
+if(i==2){
+translate([0,0,60])rotate([0,-4,0])cylinder(d=3,h=50,$fn=100);
+translate([-3.5,0,60+50])rotate([0,0,0])cylinder(d=3,h=47,$fn=100);
+translate([-3.5,0,60+50+47])rotate([2,-50,0])cylinder(d=3,h=80,$fn=100);
+}
+if(i==3){
+translate([0,0,60])rotate([0,-4,0])cylinder(d=3,h=50,$fn=100);
+translate([-3.5,0,60+50])rotate([9,0,0])cylinder(d=3,h=47,$fn=100);
+translate([-3.5,-7.2,60+50+46])rotate([3,-50,0])cylinder(d=3,h=82,$fn=100);
+}
+
+}
+}
+}
+}
+
+
+module pipette_25g(){
+translate([0,0,8]){
+cylinder(d=8,h=3,$fn=100);
+translate([0,0,-29])cylinder(d2=5,d1=1,h=29,$fn=100);
+}
+}
+
+
+module pipette_13g(){
+translate([0,0,8]){
+cylinder(d=8,h=3,$fn=100);
+translate([0,0,-29])cylinder(d2=5,d1=3.5,h=29,$fn=100);
+}
+}
+
+
 module pipette_holder_4tip_luerlock_lid(){
 difference(){
 pre_pipette_holder_4tip_luerlock_lid();
 for(i=[-2:2]){
 for(j=[-2:2]){
-translate([i*0.2,j*0.2,0])#import("linearactuator_rack_stub.stl");
+translate([i*0.2,j*0.2,0])import("linearactuator_rack_stub.stl");
 }
 }
 }
@@ -90,21 +149,21 @@ translate([0,-5.8+11.5*i-4.9,-21.4-3.5-20])cylinder(d1=7.5,d2=7.5,h=63,$fn=30);
 //luerlock_4dispenser_reagent_reservoir_larger();
 /*
 difference(){
-#import("../stls/LiquidDispenserTool0/pipette_loading_module_rack.stl");
+import("../stls/LiquidDispenserTool0/pipette_loading_module_rack.stl");
 translate([330-0.7,430-2,314.2-0.2])rotate([0,0,90])rounded_box_minkowski(size = [10+4+2, 20+2+6.5+6+2, 7+0.3], radius = 2, center = true);
 //}
 */
 
 module luerlock_pipette_assy(){
 //translate([0,0,0])luerlock_nozzle_bottom();
-
 translate([0,0,0]){
 translate([0,0,14]){
-//color("lime")luerlock_nozzle_case();
-color("pink")translate([337-12.5,427,300-15+0.2+0.8])rotate([0,180,90])luer_lock_case_lid();
-translate([0,0,0])luerlock_nozzle_bottom();
 
-
+/*
+translate([0,0,-36])color("pink")translate([337-12.5,427,300-15+0.2+0.8])rotate([0,180,90])luer_lock_case_lid();
+translate([0,0,-36])color("lime")luerlock_nozzle_case();
+translate([0,0,-36])luerlock_nozzle_bottom();
+*/
 /*
 for(i=[0:3]){
 translate([324-10.6+i*10.2,427,280])rotate([0,-90,0])import("SyringeNeedleWithLuerYellow20Gauge002.stl");
@@ -114,13 +173,14 @@ translate([324-10.6+i*10.2,427,280])rotate([0,-90,0])import("SyringeNeedleWithLu
 
 }
 
-/*
 //tuberculin_assay
-translate([-5.5-0.7,0,0-4+6.5]){
+translate([-5.5-0.7-1.3,0,0-4+6.5-24]){
 for(i=[0:3]){
-translate([319+i*10.6,427,309])rotate([0,180,0])tuberculin_syringe_015ml();
+//translate([319+i*11.5,427,309])rotate([0,180,0])tuberculin_syringe_015ml();
+translate([319+i*11.5,427,309-30])rotate([0,0,0])pipette_25g();
 }
 }
+/*
 */
 
 
@@ -246,13 +306,11 @@ module linearactuator_pipette_holder_4pipette_luerlock(){
 
 difference(){
 import("linearactuator_rack_stub.stl");
-
 a=[11.2,11.9,11.2,11.2];
 translate([400-70+4.5-11.5,426.5,330-3-2])rotate([0,0,-90])translate([-0.5-1,-0.7,13])for(i=[0:3]){
 translate([0,-5.8+11.5*i-4.9,-21.4-3.5])cylinder(d1=8,d2=8,h=13,$fn=30);
 translate([0,-5.8+11.5*i-4.9,-21.4-3.5+2])cylinder(d=a[i],h=18,$fn=30);
 }
-
 }
 
 translate([400-70+4.5,426.5,330-3])rotate([0,0,-90]){
@@ -277,6 +335,19 @@ translate([0,-5.7+(i*5.2),-17-8-4.1-80-60])cylinder(d=1,h=106+60,$fn=100);
 }
 }
 }
+*/
+/*
+color("lightgreen")translate([0,-1.9,10.5+12+1]){
+for(i=[0:3]){
+translate([0,-5.7+(i*11.5),-17-8-4])rotate([0,180,0]){
+luerlock_connector();
+pipette_13g();
+}
+}
+}
+*/
+
+/*
 color("lightgreen")translate([0,-1.9,10.5+12+1]){
 for(i=[0:3]){
 difference(){
@@ -302,14 +373,14 @@ translate([0-4,-2,17.8]){
 l = 7.2;
 a=[11.2,11.2,11.2,11.2];
 for(i=[0:3]){
-#translate([0,-5.8+11.5*i-4.9,-21.4-3.5])cylinder(d1=8,d2=8,h=13,$fn=30);
-#translate([0,-5.8+11.5*i-4.9,-21.4-3.5+2])cylinder(d=a[i],h=8,$fn=30);
+translate([0,-5.8+11.5*i-4.9,-21.4-3.5])cylinder(d1=8,d2=8,h=13,$fn=30);
+translate([0,-5.8+11.5*i-4.9,-21.4-3.5+2])cylinder(d=a[i],h=8,$fn=30);
 }
 }
 translate([14-6,0-2,17.8-18])rotate([0,90,0]){
 l = 6;
 for(i=[0:3]){
-#translate([0,-5.8+11.5*i-4.9,-21.4])cylinder(d=1.8,h=l,$fn=100);
+translate([0,-5.8+11.5*i-4.9,-21.4])cylinder(d=1.8,h=l,$fn=100);
 }
 }
 }
@@ -565,7 +636,7 @@ translate([319,427,309])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])colo
 translate([319+10.2,427,309])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d2=7.2,d1=6.4,h=6.5,$fn=50);
 translate([319+20.4,427,309])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d2=7.2,d1=6.4,h=6.5,$fn=50);
 translate([319+30.6,427,309])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d2=7.2,d1=6.4,h=6.5,$fn=50);
-#translate([319,427,309])rotate([0,180,0])tuberculin_syringe_015ml();
+translate([319,427,309])rotate([0,180,0])tuberculin_syringe_015ml();
 translate([319+10.2,427,309])rotate([0,180,0])tuberculin_syringe_015ml();
 translate([319+20.4,427,309])rotate([0,180,0])tuberculin_syringe_015ml();
 translate([319+30.6,427,309])rotate([0,180,0])tuberculin_syringe_015ml();
@@ -602,9 +673,9 @@ translate([0,-i*11.5+0.8,-23-2.7])scale([1.05,1.05,1])rotate([0,180,0])p200_lts_
 translate([0,-i*11.5+0.8,-23-2.7-13])cylinder(d=7.5,h=20,$fn=30);
 }
 translate([0,2,0])for(i=[-1:2]){
-//#translate([0,-i*11.5+0.8,-40+2-2.01-4.3])cylinder(d1=9.25,d2=4,h=8,$fn=50);
+//translate([0,-i*11.5+0.8,-40+2-2.01-4.3])cylinder(d1=9.25,d2=4,h=8,$fn=50);
 translate([0,2,0])for(j=[0:12]){
-#translate([0+j,-i*11.5+0.8,-40+2-2.01-4.3-5])cylinder(d1=7.5,d2=7.5,h=15,$fn=50);
+translate([0+j,-i*11.5+0.8,-40+2-2.01-4.3-5])cylinder(d1=7.5,d2=7.5,h=15,$fn=50);
 }
 }
 }
@@ -632,11 +703,11 @@ translate([-4-2-2,-5-15-7.5,-2-15-1-2+2.9])rounded_cube([8+4+4, 10+15+5+4+8.5+4.
 cylinder(d1=3,d2=2.5,h=5,$fn=50);
 translate([0,0,-5])cylinder(d=5,h=5,$fn=50);
 }
-translate([0,2,0])for(i=[-1:2]){
+translate([0,2-1.3,0])for(i=[-1:2]){
 translate([0,-i*11.5+0.8,-23-2.7])scale([1.05,1.05,1])rotate([0,180,0])p200_lts_holder();
 translate([0,-i*11.5+0.8,-23-2.7-13])cylinder(d=7.5,h=20,$fn=30);
 }
-translate([0,2,0])for(i=[-1:2]){
+translate([0,2-1.3,0])for(i=[-1:2]){
 translate([0,-i*11.5+0.8,-40+2-2.01-4.3])cylinder(d1=9.25,d2=4,h=8,$fn=50);
 }
 }
@@ -648,7 +719,7 @@ module luer_lock_microwell(){
 difference(){
 corner_radius = 1;  // Adjust this value to change roundness
 translate([-4-2-2-2,-5-2-15-6-2-1,-2-16-16-4-2-4])rounded_cube([8+4+4+4, 10+4+15+10+4+8.5+6, 7.5-1+4+2+6.5], corner_radius);
-#translate([0,2,0])for(i=[-1:2]){
+translate([0,2,0])for(i=[-1:2]){
 //translate([0,-i*11.5+0.8,-23-2.7])scale([1.05,1.05,1])rotate([0,180,0])p200_lts_holder();
 translate([0,-i*11.5+0.8,-23-2.7-13])cylinder(d1=8.5,d2=2,h=10,$fn=30);
 }
@@ -701,6 +772,8 @@ module tuberculin_syringe_015ml(
     translate([0,0,0])rotate([0,180,0])color("lightgreen")cylinder(d2=7.1,d1=6.1,h=13,$fn=30);
     translate([0,0,-0.1])rotate([0,180,0])color("lightgreen")cylinder(d2=7.1-0.4,d1=6.1-0.4,h=13.2,$fn=30);
     }
+    /*
+    */
     //tyco_syringe_barrel_luerlock
     color("white", 0.7) {
         // Main barrel
@@ -719,6 +792,35 @@ module tuberculin_syringe_015ml(
                 cylinder(h=luer_length, d=luer_od, $fn=32);
         }
     }
+}
+
+module luerlock_connector(
+    total_length = 155,
+    barrel_od = 7,
+    barrel_id = 5.0,
+    plunger_head_dia = 4.8,
+    flange_length = 19,
+    flange_width = 12,
+    flange_thick = 2.2,
+    luer_lock_male = true
+) {
+    barrel_id = 0;
+    barrel_length = 11; // Approximate active barrel length
+    luer_length = 2;
+    luer_od = 4;
+    luer_taper_length = 7;
+    //p200_LTS_flexpart.stl
+
+        // Luer lock connector
+        translate([0, 0, barrel_length]) {
+            // Tapered portion
+            cylinder(h=luer_taper_length, d1=10, d2=10, $fn=32);
+            
+            // Threaded luer lock (simplified external threads)
+            translate([0, 0, luer_taper_length])
+                cylinder(h=luer_length, d=luer_od, $fn=32);
+        }
+
 }
 
 // Helper module for rounded cube clearances

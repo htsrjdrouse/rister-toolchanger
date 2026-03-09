@@ -1,0 +1,5906 @@
+[
+  {
+    "file": "HFSB5-2020-518.stl",
+    "path": "Bed/HFSB5-2020-518.stl",
+    "category": "BED_ASSEMBLY",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "bed_assembly"
+  },
+  {
+    "file": "HFSB5-2020-518_1.stl",
+    "path": "Bed/HFSB5-2020-518_1.stl",
+    "category": "BED_ASSEMBLY",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "bed_assembly"
+  },
+  {
+    "file": "HFSB5-2020-548-AV103.5-BV444.5.stl",
+    "path": "Bed/HFSB5-2020-548-AV103.5-BV444.5.stl",
+    "category": "BED_ASSEMBLY",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "bed_assembly"
+  },
+  {
+    "file": "HFSB5-2020-548-AV103.5-BV444.5_1.stl",
+    "path": "Bed/HFSB5-2020-548-AV103.5-BV444.5_1.stl",
+    "category": "BED_ASSEMBLY",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "bed_assembly"
+  },
+  {
+    "file": "voron_trident_350_buildplate.stl",
+    "path": "Bed/voron_trident_350_buildplate.stl",
+    "category": "BED_ASSEMBLY",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "bed_assembly"
+  },
+  {
+    "file": "z_bed_left.stl",
+    "path": "Bed/z_bed_left.stl",
+    "category": "BED_ASSEMBLY",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "bed_assembly"
+  },
+  {
+    "file": "z_bed_left_1.stl",
+    "path": "Bed/z_bed_left_1.stl",
+    "category": "BED_ASSEMBLY",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "bed_assembly"
+  },
+  {
+    "file": "z_bed_right.stl",
+    "path": "Bed/z_bed_right.stl",
+    "category": "BED_ASSEMBLY",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "bed_assembly"
+  },
+  {
+    "file": "z_bed_right_1.stl",
+    "path": "Bed/z_bed_right_1.stl",
+    "category": "BED_ASSEMBLY",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "bed_assembly"
+  },
+  {
+    "file": "[a]_tensioner_left_1.stl",
+    "path": "BeltTensioner/[a]_tensioner_left_1.stl",
+    "category": "BELT_TENSIONERS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "belt_tensioners"
+  },
+  {
+    "file": "[a]_tensioner_right_1.stl",
+    "path": "BeltTensioner/[a]_tensioner_right_1.stl",
+    "category": "BELT_TENSIONERS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "belt_tensioners"
+  },
+  {
+    "file": "front_idler_a_x2_1.stl",
+    "path": "BeltTensioner/front_idler_a_x2_1.stl",
+    "category": "BELT_TENSIONERS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "belt_tensioners"
+  },
+  {
+    "file": "front_idler_a_x2_2.stl",
+    "path": "BeltTensioner/front_idler_a_x2_2.stl",
+    "category": "BELT_TENSIONERS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "belt_tensioners"
+  },
+  {
+    "file": "front_idler_b_x2_1.stl",
+    "path": "BeltTensioner/front_idler_b_x2_1.stl",
+    "category": "BELT_TENSIONERS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "belt_tensioners"
+  },
+  {
+    "file": "front_idler_b_x2_2.stl",
+    "path": "BeltTensioner/front_idler_b_x2_2.stl",
+    "category": "BELT_TENSIONERS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "belt_tensioners"
+  },
+  {
+    "file": "voron_keystone_inside.stl",
+    "path": "Cabling/voron_keystone_inside.stl",
+    "category": "CABLING",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "cabling"
+  },
+  {
+    "file": "voron_keystone_inside_1.stl",
+    "path": "Cabling/voron_keystone_inside_1.stl",
+    "category": "CABLING",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "cabling"
+  },
+  {
+    "file": "voron_keystone_inside_2.stl",
+    "path": "Cabling/voron_keystone_inside_2.stl",
+    "category": "CABLING",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "cabling"
+  },
+  {
+    "file": "voron_keystone_inside_3.stl",
+    "path": "Cabling/voron_keystone_inside_3.stl",
+    "category": "CABLING",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "cabling"
+  },
+  {
+    "file": "voron_keystone_inside_4.stl",
+    "path": "Cabling/voron_keystone_inside_4.stl",
+    "category": "CABLING",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "cabling"
+  },
+  {
+    "file": "voron_keystone_outside.stl",
+    "path": "Cabling/voron_keystone_outside.stl",
+    "category": "CABLING",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "cabling"
+  },
+  {
+    "file": "voron_keystone_outside_1.stl",
+    "path": "Cabling/voron_keystone_outside_1.stl",
+    "category": "CABLING",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "cabling"
+  },
+  {
+    "file": "voron_keystone_outside_2.stl",
+    "path": "Cabling/voron_keystone_outside_2.stl",
+    "category": "CABLING",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "cabling"
+  },
+  {
+    "file": "voron_keystone_outside_3.stl",
+    "path": "Cabling/voron_keystone_outside_3.stl",
+    "category": "CABLING",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "cabling"
+  },
+  {
+    "file": "voron_keystone_outside_4.stl",
+    "path": "Cabling/voron_keystone_outside_4.stl",
+    "category": "CABLING",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "cabling"
+  },
+  {
+    "file": "XT60_v2.stl",
+    "path": "Cabling/XT60_v2.stl",
+    "category": "CABLING",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "cabling"
+  },
+  {
+    "file": "arducam_adjuster.stl",
+    "path": "RaspiCameraTool/arducam_adjuster.stl",
+    "category": "CAMERA_TOOL",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "camera_tool"
+  },
+  {
+    "file": "arducam_lineux.stl",
+    "path": "RaspiCameraTool/arducam_lineux.stl",
+    "category": "CAMERA_TOOL",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "camera_tool"
+  },
+  {
+    "file": "arducam_rotate_2mount_adjuster_nut.stl",
+    "path": "RaspiCameraTool/arducam_rotate_2mount_adjuster_nut.stl",
+    "category": "CAMERA_TOOL",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "camera_tool"
+  },
+  {
+    "file": "dock.stl",
+    "path": "RaspiCameraTool/dock.stl",
+    "category": "CAMERA_TOOL",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "camera_tool"
+  },
+  {
+    "file": "lineux_backplate_for_raspberrypi.stl",
+    "path": "RaspiCameraTool/lineux_backplate_for_raspberrypi.stl",
+    "category": "CAMERA_TOOL",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "camera_tool"
+  },
+  {
+    "file": "raspberrypi_bottom_mod.stl",
+    "path": "RaspiCameraTool/raspberrypi_bottom_mod.stl",
+    "category": "CAMERA_TOOL",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "camera_tool"
+  },
+  {
+    "file": "raspberrypi_case_top.stl",
+    "path": "RaspiCameraTool/raspberrypi_case_top.stl",
+    "category": "CAMERA_TOOL",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "camera_tool"
+  },
+  {
+    "file": "led_diffuser_2.stl",
+    "path": "RaspiCameraTool/led_diffuser_2.stl",
+    "category": "CAMERA_TOOL",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "camera_tool"
+  },
+  {
+    "file": "led_diffuser_back_2.stl",
+    "path": "RaspiCameraTool/led_diffuser_back_2.stl",
+    "category": "CAMERA_TOOL",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "camera_tool"
+  },
+  {
+    "file": "umbilical_extrusion.stl",
+    "path": "RaspiCameraTool/umbilical_extrusion.stl",
+    "category": "CAMERA_TOOL",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "camera_tool"
+  },
+  {
+    "file": "dock_body_linearactuator_10mmlonger.stl",
+    "path": "ExtruderTool0/dock_body_linearactuator_10mmlonger.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "back_plate_positioned.stl",
+    "path": "ExtruderTool0/back_plate_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "sherpa_micro_bambu_positioned.stl",
+    "path": "ExtruderTool0/sherpa_micro_bambu_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "sherpa_housing_positioned.stl",
+    "path": "ExtruderTool0/sherpa_housing_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "sherpa_cover_positioned.stl",
+    "path": "ExtruderTool0/sherpa_cover_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "sherpa_lever_positioned.stl",
+    "path": "ExtruderTool0/sherpa_lever_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "sherpa_gear_positioned.stl",
+    "path": "ExtruderTool0/sherpa_gear_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "housing_positioned.stl",
+    "path": "ExtruderTool0/housing_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "lever_arm_positioned.stl",
+    "path": "ExtruderTool0/lever_arm_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "shaftdrive_core_positioned.stl",
+    "path": "ExtruderTool0/shaftdrive_core_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "shimdrive_core_positioned.stl",
+    "path": "ExtruderTool0/shimdrive_core_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "filament_gear_positioned.stl",
+    "path": "ExtruderTool0/filament_gear_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "idler_gear_positioned.stl",
+    "path": "ExtruderTool0/idler_gear_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "idler_pin_positioned.stl",
+    "path": "ExtruderTool0/idler_pin_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "Encoder_Left.stl",
+    "path": "ExtruderTool0/Encoder_Left.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "Encoder_Right.stl",
+    "path": "ExtruderTool0/Encoder_Right.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "[o]_Encoder_Slotted_Wheel.stl",
+    "path": "ExtruderTool0/[o]_Encoder_Slotted_Wheel.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "insert_1_positioned.stl",
+    "path": "ExtruderTool0/insert_1_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "insert_2_positioned.stl",
+    "path": "ExtruderTool0/insert_2_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "insert_3_positioned.stl",
+    "path": "ExtruderTool0/insert_3_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "insert_4_positioned.stl",
+    "path": "ExtruderTool0/insert_4_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "insert_5_positioned.stl",
+    "path": "ExtruderTool0/insert_5_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "mr85_bearing_1_positioned.stl",
+    "path": "ExtruderTool0/mr85_bearing_1_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "mr85_bearing_2_positioned.stl",
+    "path": "ExtruderTool0/mr85_bearing_2_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "m3_20mm_bhcs_positioned.stl",
+    "path": "ExtruderTool0/m3_20mm_bhcs_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "m3_30mm_shcs_1_positioned.stl",
+    "path": "ExtruderTool0/m3_30mm_shcs_1_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "m3_30mm_shcs_2_positioned.stl",
+    "path": "ExtruderTool0/m3_30mm_shcs_2_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "m3_30mm_shcs_3_positioned.stl",
+    "path": "ExtruderTool0/m3_30mm_shcs_3_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "m3_set_screw_positioned.stl",
+    "path": "ExtruderTool0/m3_set_screw_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "button_screw_1_positioned.stl",
+    "path": "ExtruderTool0/button_screw_1_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "thumbscrew_positioned.stl",
+    "path": "ExtruderTool0/thumbscrew_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "ebb36_board_positioned.stl",
+    "path": "ExtruderTool0/ebb36_board_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "ebb36_spacer_1_positioned.stl",
+    "path": "ExtruderTool0/ebb36_spacer_1_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "ebb36_spacer_2_positioned.stl",
+    "path": "ExtruderTool0/ebb36_spacer_2_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "micro_switch_positioned.stl",
+    "path": "ExtruderTool0/micro_switch_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "bambu_hotend_positioned.stl",
+    "path": "ExtruderTool0/bambu_hotend_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "fan_3010_positioned.stl",
+    "path": "ExtruderTool0/fan_3010_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "cowl_exo_klicky_positioned.stl",
+    "path": "ExtruderTool0/cowl_exo_klicky_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "diffuser.stl",
+    "path": "ExtruderTool0/diffuser.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "sherpa_micro_ebb_mount_ribbon.stl",
+    "path": "ExtruderTool0/sherpa_micro_ebb_mount_ribbon.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "sherpa_micro_mount_positioned.stl",
+    "path": "ExtruderTool0/sherpa_micro_mount_positioned.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "klicky_mount_mod_pcb_clone.stl",
+    "path": "ExtruderTool0/klicky_mount_mod_pcb_clone.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "Nozzle_Blocker_Mount_R2_tube_block.stl",
+    "path": "ExtruderTool0/Nozzle_Blocker_Mount_R2_tube_block.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "Umbilical_Extrusion_Mount_ribboncable_filamentsensor.stl",
+    "path": "ExtruderTool0/Umbilical_Extrusion_Mount_ribboncable_filamentsensor.stl",
+    "category": "EXTRUDER_TOOL0",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool0"
+  },
+  {
+    "file": "dock_body_linearactuator_10mmlonger_1.stl",
+    "path": "ExtruderTool1/dock_body_linearactuator_10mmlonger_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "back_plate_positioned_1.stl",
+    "path": "ExtruderTool1/back_plate_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "sherpa_micro_bambu_positioned_1.stl",
+    "path": "ExtruderTool1/sherpa_micro_bambu_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "sherpa_housing_positioned_1.stl",
+    "path": "ExtruderTool1/sherpa_housing_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "sherpa_cover_positioned_1.stl",
+    "path": "ExtruderTool1/sherpa_cover_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "sherpa_lever_positioned_1.stl",
+    "path": "ExtruderTool1/sherpa_lever_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "sherpa_gear_positioned_1.stl",
+    "path": "ExtruderTool1/sherpa_gear_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "housing_positioned_1.stl",
+    "path": "ExtruderTool1/housing_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "lever_arm_positioned_1.stl",
+    "path": "ExtruderTool1/lever_arm_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "shaftdrive_core_positioned_1.stl",
+    "path": "ExtruderTool1/shaftdrive_core_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "shimdrive_core_positioned_1.stl",
+    "path": "ExtruderTool1/shimdrive_core_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "filament_gear_positioned_1.stl",
+    "path": "ExtruderTool1/filament_gear_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "idler_gear_positioned_1.stl",
+    "path": "ExtruderTool1/idler_gear_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "idler_pin_positioned_1.stl",
+    "path": "ExtruderTool1/idler_pin_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "Encoder_Left_1.stl",
+    "path": "ExtruderTool1/Encoder_Left_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "Encoder_Right_1.stl",
+    "path": "ExtruderTool1/Encoder_Right_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "[o]_Encoder_Slotted_Wheel_1.stl",
+    "path": "ExtruderTool1/[o]_Encoder_Slotted_Wheel_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "insert_1_positioned_1.stl",
+    "path": "ExtruderTool1/insert_1_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "insert_2_positioned_1.stl",
+    "path": "ExtruderTool1/insert_2_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "insert_3_positioned_1.stl",
+    "path": "ExtruderTool1/insert_3_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "insert_4_positioned_1.stl",
+    "path": "ExtruderTool1/insert_4_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "insert_5_positioned_1.stl",
+    "path": "ExtruderTool1/insert_5_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "mr85_bearing_1_positioned_1.stl",
+    "path": "ExtruderTool1/mr85_bearing_1_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "mr85_bearing_2_positioned_1.stl",
+    "path": "ExtruderTool1/mr85_bearing_2_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "m3_20mm_bhcs_positioned_1.stl",
+    "path": "ExtruderTool1/m3_20mm_bhcs_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "m3_30mm_shcs_1_positioned_1.stl",
+    "path": "ExtruderTool1/m3_30mm_shcs_1_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "m3_30mm_shcs_2_positioned_1.stl",
+    "path": "ExtruderTool1/m3_30mm_shcs_2_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "m3_30mm_shcs_3_positioned_1.stl",
+    "path": "ExtruderTool1/m3_30mm_shcs_3_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "m3_set_screw_positioned_1.stl",
+    "path": "ExtruderTool1/m3_set_screw_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "button_screw_1_positioned_1.stl",
+    "path": "ExtruderTool1/button_screw_1_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "thumbscrew_positioned_1.stl",
+    "path": "ExtruderTool1/thumbscrew_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "ebb36_board_positioned_1.stl",
+    "path": "ExtruderTool1/ebb36_board_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "ebb36_spacer_1_positioned_1.stl",
+    "path": "ExtruderTool1/ebb36_spacer_1_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "ebb36_spacer_2_positioned_1.stl",
+    "path": "ExtruderTool1/ebb36_spacer_2_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "micro_switch_positioned_1.stl",
+    "path": "ExtruderTool1/micro_switch_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "bambu_hotend_positioned_1.stl",
+    "path": "ExtruderTool1/bambu_hotend_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "fan_3010_positioned_1.stl",
+    "path": "ExtruderTool1/fan_3010_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "cowl_exo_klicky_positioned_1.stl",
+    "path": "ExtruderTool1/cowl_exo_klicky_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "diffuser_1.stl",
+    "path": "ExtruderTool1/diffuser_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "sherpa_micro_ebb_mount_ribbon_1.stl",
+    "path": "ExtruderTool1/sherpa_micro_ebb_mount_ribbon_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "sherpa_micro_mount_positioned_1.stl",
+    "path": "ExtruderTool1/sherpa_micro_mount_positioned_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "Nozzle_Blocker_Mount_R2_tube_block_1.stl",
+    "path": "ExtruderTool1/Nozzle_Blocker_Mount_R2_tube_block_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "Umbilical_Extrusion_Mount_ribboncable_filamentsensor_1.stl",
+    "path": "ExtruderTool1/Umbilical_Extrusion_Mount_ribboncable_filamentsensor_1.stl",
+    "category": "EXTRUDER_TOOL1",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extruder_tool1"
+  },
+  {
+    "file": "HFSB5-2020-480.stl",
+    "path": "HFSB5-2020-480.stl",
+    "category": "EXTRUSIONS_HFSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hfsb5"
+  },
+  {
+    "file": "HFSB5-2020-500-LCP-RCP-AV360.stl",
+    "path": "HFSB5-2020-500-LCP-RCP-AV360.stl",
+    "category": "EXTRUSIONS_HFSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hfsb5"
+  },
+  {
+    "file": "HFSB5-2020-500-LCP-RCP-AV360_1.stl",
+    "path": "HFSB5-2020-500-LCP-RCP-AV360_1.stl",
+    "category": "EXTRUSIONS_HFSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hfsb5"
+  },
+  {
+    "file": "HFSB5-2020-500-LCP-RCP-AV360_2.stl",
+    "path": "HFSB5-2020-500-LCP-RCP-AV360_2.stl",
+    "category": "EXTRUSIONS_HFSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hfsb5"
+  },
+  {
+    "file": "HFSB5-2020-500-LCP-RCP-AV360_3.stl",
+    "path": "HFSB5-2020-500-LCP-RCP-AV360_3.stl",
+    "category": "EXTRUSIONS_HFSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hfsb5"
+  },
+  {
+    "file": "HFSB5-2020-550.stl",
+    "path": "HFSB5-2020-550.stl",
+    "category": "EXTRUSIONS_HFSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hfsb5"
+  },
+  {
+    "file": "HFSB5-2020-550_1.stl",
+    "path": "HFSB5-2020-550_1.stl",
+    "category": "EXTRUSIONS_HFSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hfsb5"
+  },
+  {
+    "file": "HFSB5-2020-550_2.stl",
+    "path": "HFSB5-2020-550_2.stl",
+    "category": "EXTRUSIONS_HFSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hfsb5"
+  },
+  {
+    "file": "HFSB5-2020-550_3.stl",
+    "path": "HFSB5-2020-550_3.stl",
+    "category": "EXTRUSIONS_HFSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hfsb5"
+  },
+  {
+    "file": "HFSB5-2020-660.stl",
+    "path": "HFSB5-2020-660.stl",
+    "category": "EXTRUSIONS_HFSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hfsb5"
+  },
+  {
+    "file": "HFSB5-2020-660_7.stl",
+    "path": "HFSB5-2020-660_7.stl",
+    "category": "EXTRUSIONS_HFSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hfsb5"
+  },
+  {
+    "file": "HFSB5-2020-660_8.stl",
+    "path": "HFSB5-2020-660_8.stl",
+    "category": "EXTRUSIONS_HFSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hfsb5"
+  },
+  {
+    "file": "HFSB5-2020-660-AV335.stl",
+    "path": "HFSB5-2020-660-AV335.stl",
+    "category": "EXTRUSIONS_HFSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hfsb5"
+  },
+  {
+    "file": "HFSB5-2020-660-AV335_1.stl",
+    "path": "HFSB5-2020-660-AV335_1.stl",
+    "category": "EXTRUSIONS_HFSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hfsb5"
+  },
+  {
+    "file": "HGSB5-2020-260.stl",
+    "path": "HGSB5-2020-260.stl",
+    "category": "EXTRUSIONS_HGSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hgsb5"
+  },
+  {
+    "file": "HGSB5-2020-270.stl",
+    "path": "HGSB5-2020-270.stl",
+    "category": "EXTRUSIONS_HGSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hgsb5"
+  },
+  {
+    "file": "HGSB5-2020-660_1.stl",
+    "path": "HGSB5-2020-660_1.stl",
+    "category": "EXTRUSIONS_HGSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hgsb5"
+  },
+  {
+    "file": "HGSB5-2020-660_2.stl",
+    "path": "HGSB5-2020-660_2.stl",
+    "category": "EXTRUSIONS_HGSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hgsb5"
+  },
+  {
+    "file": "HGSB5-2020-660_3.stl",
+    "path": "HGSB5-2020-660_3.stl",
+    "category": "EXTRUSIONS_HGSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hgsb5"
+  },
+  {
+    "file": "HGSB5-2020-660_4.stl",
+    "path": "HGSB5-2020-660_4.stl",
+    "category": "EXTRUSIONS_HGSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hgsb5"
+  },
+  {
+    "file": "HGSB5-2020-660_6.stl",
+    "path": "HGSB5-2020-660_6.stl",
+    "category": "EXTRUSIONS_HGSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hgsb5"
+  },
+  {
+    "file": "HGSB5-2020-660-AV336.stl",
+    "path": "HGSB5-2020-660-AV336.stl",
+    "category": "EXTRUSIONS_HGSB5",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "extrusions_hgsb5"
+  },
+  {
+    "file": "corner_a_x2.stl",
+    "path": "corner_a_x2.stl",
+    "category": "FRAME_CORNERS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "frame_corners"
+  },
+  {
+    "file": "corner_a_x2_1.stl",
+    "path": "corner_a_x2_1.stl",
+    "category": "FRAME_CORNERS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "frame_corners"
+  },
+  {
+    "file": "corner_b_x2.stl",
+    "path": "corner_b_x2.stl",
+    "category": "FRAME_CORNERS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "frame_corners"
+  },
+  {
+    "file": "corner_b_x2_1.stl",
+    "path": "corner_b_x2_1.stl",
+    "category": "FRAME_CORNERS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "frame_corners"
+  },
+  {
+    "file": "Dock_mount_fixed_v3.stl",
+    "path": "Klicky/Dock_mount_fixed_v3.stl",
+    "category": "KLICKY_PROBE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "klicky_probe"
+  },
+  {
+    "file": "dock-front_insert.stl",
+    "path": "Klicky/dock-front_insert.stl",
+    "category": "KLICKY_PROBE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "klicky_probe"
+  },
+  {
+    "file": "mag_probe_screw_mod.stl",
+    "path": "Klicky/mag_probe_screw_mod.stl",
+    "category": "KLICKY_PROBE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "klicky_probe"
+  },
+  {
+    "file": "dock_body_linearactuator_10mmlonger_3.stl",
+    "path": "LiquidDispenserTool0/dock_body_linearactuator_10mmlonger_3.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      -1.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "lineux_backplate_for_linearactuator_modified.stl",
+    "path": "LiquidDispenserTool0/lineux_backplate_for_linearactuator_modified.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      -1.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "lineux_backplate_for_linearactuator_modified001.stl",
+    "path": "LiquidDispenserTool0/lineux_backplate_for_linearactuator_modified001.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      -1.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "holder_half_bottom.stl",
+    "path": "LiquidDispenserTool0/holder_half_bottom.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      -1.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "holder_half_top.stl",
+    "path": "LiquidDispenserTool0/holder_half_top.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      -1.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "linearactuator_pipette_holder_4pipette_luerlock.stl",
+    "path": "LiquidDispenserTool0/linearactuator_pipette_holder_4pipette_luerlock.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      -1.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "pipette_assembly.stl",
+    "path": "LiquidDispenserTool0/pipette_assembly.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      -1.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "servo_linear_actuator_rack_toolchanger_4channel.stl",
+    "path": "LiquidDispenserTool0/servo_linear_actuator_rack_toolchanger_4channel.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      -1.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "servo_linearactuator.stl",
+    "path": "LiquidDispenserTool0/servo_linearactuator.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      -1.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "pinion.stl",
+    "path": "LiquidDispenserTool0/pinion.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      -1.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "sled_bottom_no_limit_switch_protrusion.stl",
+    "path": "LiquidDispenserTool0/sled_bottom_no_limit_switch_protrusion.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      -1.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "tubing_straight_sledcap.stl",
+    "path": "LiquidDispenserTool0/tubing_straight_sledcap.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      -1.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "tubing_to_pipettes_valve_side_umbilical.stl",
+    "path": "LiquidDispenserTool0/tubing_to_pipettes_valve_side_umbilical.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      -31.0,
+      0.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "umbilical_cord.stl",
+    "path": "LiquidDispenserTool0/umbilical_cord.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      -1.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "umbilical_extrusion_1.stl",
+    "path": "LiquidDispenserTool0/umbilical_extrusion_1.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      -1.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "luerlock_dispenser_assy_remover.stl",
+    "path": "PipetteRemoval/luerlock_dispenser_assy_remover.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      0.0,
+      0.0,
+      1.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "singlechannel_tipremoval_base.stl",
+    "path": "PipetteRemoval/singlechannel_tipremoval_base.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      -47.0,
+      -32.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "led_diffuser_back.stl",
+    "path": "LiquidDispenserTool0/led_diffuser_back.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      -47.0,
+      -32.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "led_diffuser.stl",
+    "path": "LiquidDispenserTool0/led_diffuser.stl",
+    "category": "LIQUID_DISPENSER",
+    "translate": [
+      -47.0,
+      -32.0,
+      5.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "liquid_dispenser"
+  },
+  {
+    "file": "luer_lock_case_lid.stl",
+    "path": "luerlock_pipette_assy/luer_lock_case_lid.stl",
+    "category": "LUERLOCK_NOZZLE",
+    "translate": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "luerlock_nozzle_4channel"
+  },
+  {
+    "file": "luerlock_nozzle_case.stl",
+    "path": "luerlock_pipette_assy/luerlock_nozzle_case.stl",
+    "category": "LUERLOCK_NOZZLE",
+    "translate": [
+      0.0,
+      3.0,
+      -23.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "luerlock_nozzle_4channel"
+  },
+  {
+    "file": "luerlock_nozzle_bottom.stl",
+    "path": "luerlock_pipette_assy/luerlock_nozzle_bottom.stl",
+    "category": "LUERLOCK_NOZZLE",
+    "translate": [
+      0.0,
+      3.0,
+      -23.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "luerlock_nozzle_4channel"
+  },
+  {
+    "file": "p200_LTS_flexpart.stl",
+    "path": "luerlock_pipette_assy/p200_LTS_flexpart.stl",
+    "category": "LUERLOCK_NOZZLE",
+    "translate": [
+      -1.0,
+      0.0,
+      0.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "luerlock_nozzle_4channel"
+  },
+  {
+    "file": "tyco_syringe_barrel_luerlock.stl",
+    "path": "luerlock_pipette_assy/tyco_syringe_barrel_luerlock.stl",
+    "category": "LUERLOCK_NOZZLE",
+    "translate": [
+      -1.0,
+      0.0,
+      0.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "luerlock_nozzle_4channel"
+  },
+  {
+    "file": "pipette_25g_set.stl",
+    "path": "luerlock_pipette_assy/pipette_25g_set.stl",
+    "category": "LUERLOCK_NOZZLE",
+    "translate": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "luerlock_nozzle_4channel"
+  },
+  {
+    "file": "luer_lock_case_lid.stl",
+    "path": "luerlock_pipette_assy/luer_lock_case_lid.stl",
+    "category": "LUERLOCK_NOZZLE",
+    "translate": [
+      110.0,
+      -28.0,
+      -10.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "luerlock_nozzle_4channel"
+  },
+  {
+    "file": "luerlock_nozzle_case.stl",
+    "path": "luerlock_pipette_assy/luerlock_nozzle_case.stl",
+    "category": "LUERLOCK_NOZZLE",
+    "translate": [
+      110.0,
+      -25.0,
+      -33.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "luerlock_nozzle_4channel"
+  },
+  {
+    "file": "luerlock_nozzle_bottom.stl",
+    "path": "luerlock_pipette_assy/luerlock_nozzle_bottom.stl",
+    "category": "LUERLOCK_NOZZLE",
+    "translate": [
+      110.0,
+      -25.0,
+      -33.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "luerlock_nozzle_4channel"
+  },
+  {
+    "file": "p200_LTS_flexpart.stl",
+    "path": "luerlock_pipette_assy/p200_LTS_flexpart.stl",
+    "category": "LUERLOCK_NOZZLE",
+    "translate": [
+      109.0,
+      -28.0,
+      -10.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "luerlock_nozzle_4channel"
+  },
+  {
+    "file": "tyco_syringe_barrel_luerlock.stl",
+    "path": "luerlock_pipette_assy/tyco_syringe_barrel_luerlock.stl",
+    "category": "LUERLOCK_NOZZLE",
+    "translate": [
+      109.0,
+      -28.0,
+      -10.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "luerlock_nozzle_4channel"
+  },
+  {
+    "file": "pipette_25g_set.stl",
+    "path": "luerlock_pipette_assy/pipette_25g_set.stl",
+    "category": "LUERLOCK_NOZZLE",
+    "translate": [
+      110.0,
+      -28.0,
+      -10.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "luerlock_nozzle_4channel"
+  },
+  {
+    "file": "TaidacentNon-ContactLiquidSensor.stl",
+    "path": "Microfluidics/TaidacentNon-ContactLiquidSensor.stl",
+    "category": "MICROFLUIDICS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "microfluidics"
+  },
+  {
+    "file": "bottle.stl",
+    "path": "Microfluidics/bottle.stl",
+    "category": "MICROFLUIDICS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "microfluidics"
+  },
+  {
+    "file": "bottle_lid.stl",
+    "path": "Microfluidics/bottle_lid.stl",
+    "category": "MICROFLUIDICS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "microfluidics"
+  },
+  {
+    "file": "wastebottle.stl",
+    "path": "Microfluidics/wastebottle.stl",
+    "category": "MICROFLUIDICS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "microfluidics"
+  },
+  {
+    "file": "waterbottle.stl",
+    "path": "Microfluidics/waterbottle.stl",
+    "category": "MICROFLUIDICS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "microfluidics"
+  },
+  {
+    "file": "waterbottle_tubing.stl",
+    "path": "Microfluidics/waterbottle_tubing.stl",
+    "category": "MICROFLUIDICS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "microfluidics"
+  },
+  {
+    "file": "nalgene_250ml_bottle_holder_liquid_level_sensor.stl",
+    "path": "Microfluidics/nalgene_250ml_bottle_holder_liquid_level_sensor.stl",
+    "category": "MICROFLUIDICS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "microfluidics"
+  },
+  {
+    "file": "pcv_bottle_tubing.stl",
+    "path": "Microfluidics/pcv_bottle_tubing.stl",
+    "category": "MICROFLUIDICS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "microfluidics"
+  },
+  {
+    "file": "peristaltic_pump_1.stl",
+    "path": "Microfluidics/peristaltic_pump_1.stl",
+    "category": "MICROFLUIDICS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "microfluidics"
+  },
+  {
+    "file": "peristaltic_pump_1_tubing.stl",
+    "path": "Microfluidics/peristaltic_pump_1_tubing.stl",
+    "category": "MICROFLUIDICS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "microfluidics"
+  },
+  {
+    "file": "peristaltic_pump_2.stl",
+    "path": "Microfluidics/peristaltic_pump_2.stl",
+    "category": "MICROFLUIDICS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "microfluidics"
+  },
+  {
+    "file": "peristaltic_pump_2_tubing.stl",
+    "path": "Microfluidics/peristaltic_pump_2_tubing.stl",
+    "category": "MICROFLUIDICS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "microfluidics"
+  },
+  {
+    "file": "peristaltic_waste_bottle_tubing.stl",
+    "path": "Microfluidics/peristaltic_waste_bottle_tubing.stl",
+    "category": "MICROFLUIDICS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "microfluidics"
+  },
+  {
+    "file": "keystone-box-1_box.stl",
+    "path": "Microfluidics/keystone-box-1_box.stl",
+    "category": "MICROFLUIDICS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "microfluidics"
+  },
+  {
+    "file": "keystone-box-1_lid.stl",
+    "path": "Microfluidics/keystone-box-1_lid.stl",
+    "category": "MICROFLUIDICS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "microfluidics"
+  },
+  {
+    "file": "F695-2Z.stl",
+    "path": "A/F695-2Z.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "F695-2Z_1.stl",
+    "path": "A/F695-2Z_1.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "F695-2Z_2.stl",
+    "path": "A/F695-2Z_2.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "F695-2Z_3.stl",
+    "path": "A/F695-2Z_3.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "F695-2Z_4.stl",
+    "path": "A/F695-2Z_4.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "F695-2Z_5.stl",
+    "path": "A/F695-2Z_5.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "m5_washer.stl",
+    "path": "A/m5_washer.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "m5_washer_1.stl",
+    "path": "A/m5_washer_1.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "m5_washer_2.stl",
+    "path": "A/m5_washer_2.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "m5_washer_3.stl",
+    "path": "A/m5_washer_3.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "m5_washer_4.stl",
+    "path": "A/m5_washer_4.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "m5_washer_5.stl",
+    "path": "A/m5_washer_5.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "m5_washer_6.stl",
+    "path": "A/m5_washer_6.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "mod_corner_bracket_long_2020_bottom.stl",
+    "path": "A/mod_corner_bracket_long_2020_bottom.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "mod_corner_bracket_long_2020_top.stl",
+    "path": "A/mod_corner_bracket_long_2020_top.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "mod_Motor_Mount_v2Motor_Mount_A_Bottom.stl",
+    "path": "A/mod_Motor_Mount_v2Motor_Mount_A_Bottom.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "mod_Motor_Mount_v2Motor_Mount_A_Top.stl",
+    "path": "A/mod_Motor_Mount_v2Motor_Mount_A_Top.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "printed_spacer.stl",
+    "path": "A/printed_spacer.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "nema17.stl",
+    "path": "A/nema17.stl",
+    "category": "MOTOR_MOUNT_A",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_a"
+  },
+  {
+    "file": "F695-2Z_6.stl",
+    "path": "B/F695-2Z_6.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "F695-2Z_7.stl",
+    "path": "B/F695-2Z_7.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "F695-2Z_8.stl",
+    "path": "B/F695-2Z_8.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "F695-2Z_9.stl",
+    "path": "B/F695-2Z_9.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "F695-2Z_10.stl",
+    "path": "B/F695-2Z_10.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "F695-2Z_11.stl",
+    "path": "B/F695-2Z_11.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "m5_washer_7.stl",
+    "path": "B/m5_washer_7.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "m5_washer_8.stl",
+    "path": "B/m5_washer_8.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "m5_washer_9.stl",
+    "path": "B/m5_washer_9.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "m5_washer_10.stl",
+    "path": "B/m5_washer_10.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "m5_washer_11.stl",
+    "path": "B/m5_washer_11.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "m5_washer_12.stl",
+    "path": "B/m5_washer_12.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "m5_washer_13.stl",
+    "path": "B/m5_washer_13.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "mod_corner_bracket_long_2020_bottom_1.stl",
+    "path": "B/mod_corner_bracket_long_2020_bottom_1.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "mod_corner_bracket_long_2020_top_1.stl",
+    "path": "B/mod_corner_bracket_long_2020_top_1.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "mod_Motor_Mount_v2Motor_Mount_B_Bottom.stl",
+    "path": "B/mod_Motor_Mount_v2Motor_Mount_B_Bottom.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "mod_Motor_Mount_v2Motor_Mount_B_Top.stl",
+    "path": "B/mod_Motor_Mount_v2Motor_Mount_B_Top.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "printed_spacer_1.stl",
+    "path": "B/printed_spacer_1.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "nema17_1.stl",
+    "path": "B/nema17_1.stl",
+    "category": "MOTOR_MOUNT_B",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "motor_mount_b"
+  },
+  {
+    "file": "bottom_left_panel.stl",
+    "path": "bottom_left_panel.stl",
+    "category": "PANELS_SKIRTS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "panels_skirts"
+  },
+  {
+    "file": "bottom_right_panel.stl",
+    "path": "bottom_right_panel.stl",
+    "category": "PANELS_SKIRTS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "panels_skirts"
+  },
+  {
+    "file": "top_left_panel.stl",
+    "path": "top_left_panel.stl",
+    "category": "PANELS_SKIRTS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "panels_skirts"
+  },
+  {
+    "file": "top_right_panel.stl",
+    "path": "top_right_panel.stl",
+    "category": "PANELS_SKIRTS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "panels_skirts"
+  },
+  {
+    "file": "left_skirt.stl",
+    "path": "left_skirt.stl",
+    "category": "PANELS_SKIRTS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "panels_skirts"
+  },
+  {
+    "file": "front_side_skirt.stl",
+    "path": "front_side_skirt.stl",
+    "category": "PANELS_SKIRTS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "panels_skirts"
+  },
+  {
+    "file": "back_side_skirt.stl",
+    "path": "back_side_skirt.stl",
+    "category": "PANELS_SKIRTS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "panels_skirts"
+  },
+  {
+    "file": "right_skirt_powercord.stl",
+    "path": "right_skirt_powercord.stl",
+    "category": "PANELS_SKIRTS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "panels_skirts"
+  },
+  {
+    "file": "peek_nozzle_part1_4channel.stl",
+    "path": "peek_nozzle_4channel/peek_nozzle_part1_4channel.stl",
+    "category": "PEEK_NOZZLE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "peek_nozzle"
+  },
+  {
+    "file": "peek_nozzle_part2_4channel.stl",
+    "path": "peek_nozzle_4channel/peek_nozzle_part2_4channel.stl",
+    "category": "PEEK_NOZZLE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "peek_nozzle"
+  },
+  {
+    "file": "peek_nozzle_part3_4channel.stl",
+    "path": "peek_nozzle_4channel/peek_nozzle_part3_4channel.stl",
+    "category": "PEEK_NOZZLE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "peek_nozzle"
+  },
+  {
+    "file": "peek_nozzle.stl",
+    "path": "peek_nozzle_4channel/peek_nozzle.stl",
+    "category": "PEEK_NOZZLE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "peek_nozzle"
+  },
+  {
+    "file": "plastic_polypropylene_connector.stl",
+    "path": "peek_nozzle_4channel/plastic_polypropylene_connector.stl",
+    "category": "PEEK_NOZZLE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "peek_nozzle"
+  },
+  {
+    "file": "silicon_tubing_od_2mm_id_1mm.stl",
+    "path": "peek_nozzle_4channel/silicon_tubing_od_2mm_id_1mm.stl",
+    "category": "PEEK_NOZZLE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "peek_nozzle"
+  },
+  {
+    "file": "silicon_tubing_od_2mm_id_1mm_stretched.stl",
+    "path": "peek_nozzle_4channel/silicon_tubing_od_2mm_id_1mm_stretched.stl",
+    "category": "PEEK_NOZZLE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "peek_nozzle"
+  },
+  {
+    "file": "silicon_tubing_od_2mm_id_1mm_stretched_part.stl",
+    "path": "peek_nozzle_4channel/silicon_tubing_od_2mm_id_1mm_stretched_part.stl",
+    "category": "PEEK_NOZZLE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "peek_nozzle"
+  },
+  {
+    "file": "silicon_tubing_od_4mm_id_2mm.stl",
+    "path": "peek_nozzle_4channel/silicon_tubing_od_4mm_id_2mm.stl",
+    "category": "PEEK_NOZZLE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "peek_nozzle"
+  },
+  {
+    "file": "silicon tubing_od_4mm_id_2mm_stretched_part.stl",
+    "path": "peek_nozzle_4channel/silicon tubing_od_4mm_id_2mm_stretched_part.stl",
+    "category": "PEEK_NOZZLE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "peek_nozzle"
+  },
+  {
+    "file": "silicon_tubing_od_4mm_id_2mm_stretched_part.stl",
+    "path": "peek_nozzle_4channel/silicon_tubing_od_4mm_id_2mm_stretched_part.stl",
+    "category": "PEEK_NOZZLE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "peek_nozzle"
+  },
+  {
+    "file": "tyco_multichannel_syringe1ml_clamp.stl",
+    "path": "Syringepump_valve/tyco_multichannel_syringe1ml_clamp.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "tyco_multichannel_syringe1ml_clamp_luerlock.stl",
+    "path": "Syringepump_valve/tyco_multichannel_syringe1ml_clamp_luerlock.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "multichannel_syringe1ml_clamp_extrusion_connect_1.stl",
+    "path": "Syringepump_valve/multichannel_syringe1ml_clamp_extrusion_connect_1.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "multichannel_syringe1ml_clamp_extrusion_connect_2.stl",
+    "path": "Syringepump_valve/multichannel_syringe1ml_clamp_extrusion_connect_2.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "multichannel_plunger_clamp.stl",
+    "path": "Syringepump_valve/multichannel_plunger_clamp.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "syringe_1ml_stack_1piece_multichannel.stl",
+    "path": "Syringepump_valve/syringe_1ml_stack_1piece_multichannel.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "syringe_1ml_stack_1piece_multichannel_clamp.stl",
+    "path": "Syringepump_valve/syringe_1ml_stack_1piece_multichannel_clamp.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "syringe_1m_4units.stl",
+    "path": "Syringepump_valve/syringe_1m_4units.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "oneml_syringe_stepper_linear_m8nut_coupler.stl",
+    "path": "Syringepump_valve/oneml_syringe_stepper_linear_m8nut_coupler.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "mgn12_rail_300mm.stl",
+    "path": "Syringepump_valve/mgn12_rail_300mm.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "mgn12_shuttle.stl",
+    "path": "Syringepump_valve/mgn12_shuttle.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "MGN12_slider_mount.stl",
+    "path": "Syringepump_valve/MGN12_slider_mount.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "MGN12_slider_mount_motormount_screws.stl",
+    "path": "Syringepump_valve/MGN12_slider_mount_motormount_screws.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "multichannel_syringeshuttle_clipbracket.stl",
+    "path": "Syringepump_valve/multichannel_syringeshuttle_clipbracket.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "m8_threaded_rod_200mm.stl",
+    "path": "Syringepump_valve/m8_threaded_rod_200mm.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "nema_multichannel.stl",
+    "path": "Syringepump_valve/nema_multichannel.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "HFSB5-2020-350.stl",
+    "path": "Syringepump_valve/HFSB5-2020-350.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "servo_0.stl",
+    "path": "Syringepump_valve/servo_0.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "servo_1.stl",
+    "path": "Syringepump_valve/servo_1.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "servo_2.stl",
+    "path": "Syringepump_valve/servo_2.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "servo_3.stl",
+    "path": "Syringepump_valve/servo_3.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "stopcock_0.stl",
+    "path": "Syringepump_valve/stopcock_0.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "stopcock_1.stl",
+    "path": "Syringepump_valve/stopcock_1.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "stopcock_2.stl",
+    "path": "Syringepump_valve/stopcock_2.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "stopcock_3.stl",
+    "path": "Syringepump_valve/stopcock_3.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "smallsyringe_valvesupportmodule_plate_4valve.stl",
+    "path": "Syringepump_valve/smallsyringe_valvesupportmodule_plate_4valve.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valvemountplate_screwattach_smallersyringe_0.stl",
+    "path": "Syringepump_valve/valvemountplate_screwattach_smallersyringe_0.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valvemountplate_screwattach_smallersyringe_1.stl",
+    "path": "Syringepump_valve/valvemountplate_screwattach_smallersyringe_1.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valvemountplate_screwattach_smallersyringe_2.stl",
+    "path": "Syringepump_valve/valvemountplate_screwattach_smallersyringe_2.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valvemountplate_screwattach_smallersyringe_3.stl",
+    "path": "Syringepump_valve/valvemountplate_screwattach_smallersyringe_3.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valvemountplate_screwattach_smallersyringe_vertical_attach_0.stl",
+    "path": "Syringepump_valve/valvemountplate_screwattach_smallersyringe_vertical_attach_0.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valvemountplate_screwattach_smallersyringe_vertical_attach_1.stl",
+    "path": "Syringepump_valve/valvemountplate_screwattach_smallersyringe_vertical_attach_1.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valvemountplate_screwattach_smallersyringe_vertical_attach_2.stl",
+    "path": "Syringepump_valve/valvemountplate_screwattach_smallersyringe_vertical_attach_2.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valvemountplate_screwattach_smallersyringe_vertical_attach_3.stl",
+    "path": "Syringepump_valve/valvemountplate_screwattach_smallersyringe_vertical_attach_3.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valveconnect_part_0.stl",
+    "path": "Syringepump_valve/valveconnect_part_0.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valveconnect_part_1.stl",
+    "path": "Syringepump_valve/valveconnect_part_1.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valveconnect_part_2.stl",
+    "path": "Syringepump_valve/valveconnect_part_2.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valveconnect_part_3.stl",
+    "path": "Syringepump_valve/valveconnect_part_3.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "syringe_pump_tubing_to_valves.stl",
+    "path": "Syringepump_valve/syringe_pump_tubing_to_valves.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valve_tubing_0.stl",
+    "path": "Syringepump_valve/valve_tubing_0.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valve_tubing_1.stl",
+    "path": "Syringepump_valve/valve_tubing_1.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valve_tubing_2.stl",
+    "path": "Syringepump_valve/valve_tubing_2.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "valve_tubing_3.stl",
+    "path": "Syringepump_valve/valve_tubing_3.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "conduit.stl",
+    "path": "LiquidDispenserTool0/conduit.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "washbowl_1tip001.stl",
+    "path": "Syringepump_valve/washbowl_1tip001.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "washbowl_stilt001.stl",
+    "path": "Syringepump_valve/washbowl_stilt001.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "washbowl_watervacinput_tpu001.stl",
+    "path": "Syringepump_valve/washbowl_watervacinput_tpu001.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "wash_dry_pressure_plate_rj45_connector.stl",
+    "path": "Syringepump_valve/wash_dry_pressure_plate_rj45_connector.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "drypad001.stl",
+    "path": "Syringepump_valve/drypad001.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "peristaltic_pump_1.stl",
+    "path": "Syringepump_valve/peristaltic_pump_1.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "peristaltic_pump_1_tubing.stl",
+    "path": "Syringepump_valve/peristaltic_pump_1_tubing.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "peristaltic_pump_2.stl",
+    "path": "Syringepump_valve/peristaltic_pump_2.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "peristaltic_pump_2_tubing.stl",
+    "path": "Syringepump_valve/peristaltic_pump_2_tubing.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "peristaltic_waste_bottle_tubing.stl",
+    "path": "Syringepump_valve/peristaltic_waste_bottle_tubing.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "bottle.stl",
+    "path": "Syringepump_valve/bottle.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "bottle_lid.stl",
+    "path": "Syringepump_valve/bottle_lid.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "waterbottle.stl",
+    "path": "Syringepump_valve/waterbottle.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "waterbottle_tubing.stl",
+    "path": "Syringepump_valve/waterbottle_tubing.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "wastebottle.stl",
+    "path": "Syringepump_valve/wastebottle.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "nalgene_250ml_bottle_holder_liquid_level_sensor.stl",
+    "path": "Syringepump_valve/nalgene_250ml_bottle_holder_liquid_level_sensor.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "pcv_bottle_tubing.stl",
+    "path": "Syringepump_valve/pcv_bottle_tubing.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "TaidacentNon-ContactLiquidSensor.stl",
+    "path": "Syringepump_valve/TaidacentNon-ContactLiquidSensor.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "keystone-box-1_box.stl",
+    "path": "Syringepump_valve/keystone-box-1_box.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "keystone-box-1_lid.stl",
+    "path": "Syringepump_valve/keystone-box-1_lid.stl",
+    "category": "SYRINGE_PUMP",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "syringe_pump"
+  },
+  {
+    "file": "bayonet_pipette_tipcase_clamp.stl",
+    "path": "TipCase/bayonet_pipette_tipcase_clamp.stl",
+    "category": "TIP_CASE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "tip_case"
+  },
+  {
+    "file": "luerlock_pipette_tipcase_holder_1.stl",
+    "path": "TipCase/luerlock_pipette_tipcase_holder_1.stl",
+    "category": "TIP_CASE",
+    "translate": [
+      0.0,
+      -17.0,
+      0.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "tip_case"
+  },
+  {
+    "file": "luerlock_pipette_tipcase_holder.stl",
+    "path": "TipCase/luerlock_pipette_tipcase_holder.stl",
+    "category": "TIP_CASE",
+    "translate": [
+      0.0,
+      -7.0,
+      0.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "tip_case"
+  },
+  {
+    "file": "luerlock_tipcase_makesquare_set.stl",
+    "path": "TipCase/luerlock_tipcase_makesquare_set.stl",
+    "category": "TIP_CASE",
+    "translate": [
+      0.0,
+      -12.0,
+      0.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "tip_case"
+  },
+  {
+    "file": "luerlock_tipcase_tslot20_100_A.stl",
+    "path": "TipCase/luerlock_tipcase_tslot20_100_A.stl",
+    "category": "TIP_CASE",
+    "translate": [
+      0.0,
+      -12.0,
+      0.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "tip_case"
+  },
+  {
+    "file": "luerlock_tipcase_tslot20_100_B.stl",
+    "path": "TipCase/luerlock_tipcase_tslot20_100_B.stl",
+    "category": "TIP_CASE",
+    "translate": [
+      0.0,
+      -12.0,
+      0.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "tip_case"
+  },
+  {
+    "file": "carriage_body_bottom_trident_v2.stl",
+    "path": "Carriage/carriage_body_bottom_trident_v2.stl",
+    "category": "TOOLHEAD_CARRIAGE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "toolhead_carriage"
+  },
+  {
+    "file": "carriage_body_middle_trident_v2.stl",
+    "path": "Carriage/carriage_body_middle_trident_v2.stl",
+    "category": "TOOLHEAD_CARRIAGE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "toolhead_carriage"
+  },
+  {
+    "file": "carriage_body_rear_trident_v2.stl",
+    "path": "Carriage/carriage_body_rear_trident_v2.stl",
+    "category": "TOOLHEAD_CARRIAGE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "toolhead_carriage"
+  },
+  {
+    "file": "carriage_body_top.stl",
+    "path": "Carriage/carriage_body_top.stl",
+    "category": "TOOLHEAD_CARRIAGE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "toolhead_carriage"
+  },
+  {
+    "file": "CarriageBodyFront_editable_belt_holes.stl",
+    "path": "Carriage/CarriageBodyFront_editable_belt_holes.stl",
+    "category": "TOOLHEAD_CARRIAGE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "toolhead_carriage"
+  },
+  {
+    "file": "5015AdapterRister_longer.stl",
+    "path": "Carriage/5015AdapterRister_longer.stl",
+    "category": "TOOLHEAD_CARRIAGE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "toolhead_carriage"
+  },
+  {
+    "file": "duct_trident_v2_nozzle_10mm_longer.stl",
+    "path": "Carriage/duct_trident_v2_nozzle_10mm_longer.stl",
+    "category": "TOOLHEAD_CARRIAGE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "toolhead_carriage"
+  },
+  {
+    "file": "radial_cooling_5015.stl",
+    "path": "Carriage/radial_cooling_5015.stl",
+    "category": "TOOLHEAD_CARRIAGE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "toolhead_carriage"
+  },
+  {
+    "file": "locking_plate_lineux_one.stl",
+    "path": "Carriage/locking_plate_lineux_one.stl",
+    "category": "TOOLHEAD_CARRIAGE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "toolhead_carriage"
+  },
+  {
+    "file": "slider.stl",
+    "path": "Carriage/slider.stl",
+    "category": "TOOLHEAD_CARRIAGE",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "toolhead_carriage"
+  },
+  {
+    "file": "drypad.stl",
+    "path": "Washstation/drypad.stl",
+    "category": "WASHSTATION",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "washstation"
+  },
+  {
+    "file": "washbowl_stilt.stl",
+    "path": "Washstation/washbowl_stilt.stl",
+    "category": "WASHSTATION",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "washstation"
+  },
+  {
+    "file": "washbowl_watervacinput_tpu.stl",
+    "path": "Washstation/washbowl_watervacinput_tpu.stl",
+    "category": "WASHSTATION",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "washstation"
+  },
+  {
+    "file": "washbowl_4tip_luerlock.stl",
+    "path": "Washstation/washbowl_4tip_luerlock.stl",
+    "category": "WASHSTATION",
+    "translate": [
+      0.0,
+      0.0,
+      0.0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "washstation"
+  },
+  {
+    "file": "mgn9H_shuttle.stl",
+    "path": "mgn9H_shuttle.stl",
+    "category": "X_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "x_axis"
+  },
+  {
+    "file": "HFSB5-2020-510_freecad.stl",
+    "path": "HFSB5-2020-510_freecad.stl",
+    "category": "X_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "x_axis"
+  },
+  {
+    "file": "rister_multi-modal_toolchanger-mgn9_450.stl",
+    "path": "rister_multi-modal_toolchanger-mgn9_450.stl",
+    "category": "X_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "x_axis"
+  },
+  {
+    "file": "xy_joint_left_lower_MGN12HHHHHH.stl",
+    "path": "xy_joint_left_lower_MGN12HHHHHH.stl",
+    "category": "XY_JOINTS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "xy_joints"
+  },
+  {
+    "file": "xy_joint_left_upper_MGN12.stl",
+    "path": "xy_joint_left_upper_MGN12.stl",
+    "category": "XY_JOINTS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "xy_joints"
+  },
+  {
+    "file": "xy_joint_right_lower_MGN12HHHHH.stl",
+    "path": "xy_joint_right_lower_MGN12HHHHH.stl",
+    "category": "XY_JOINTS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "xy_joints"
+  },
+  {
+    "file": "xy_joint_right_upper_MGN12.stl",
+    "path": "xy_joint_right_upper_MGN12.stl",
+    "category": "XY_JOINTS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "xy_joints"
+  },
+  {
+    "file": "HGSB5-2020-660.stl",
+    "path": "HGSB5-2020-660.stl",
+    "category": "Y_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "y_axis"
+  },
+  {
+    "file": "MGN12_600_y1.stl",
+    "path": "MGN12_600_y1.stl",
+    "category": "Y_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "y_axis"
+  },
+  {
+    "file": "MGN12H_shuttle_y1.stl",
+    "path": "MGN12H_shuttle_y1.stl",
+    "category": "Y_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "y_axis"
+  },
+  {
+    "file": "HGSB5-2020-660_5.stl",
+    "path": "HGSB5-2020-660_5.stl",
+    "category": "Y_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "y_axis"
+  },
+  {
+    "file": "MGN12_600_y2.stl",
+    "path": "MGN12_600_y2.stl",
+    "category": "Y_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "y_axis"
+  },
+  {
+    "file": "MGN12H_shuttle_y2.stl",
+    "path": "MGN12H_shuttle_y2.stl",
+    "category": "Y_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "y_axis"
+  },
+  {
+    "file": "nema17001.stl",
+    "path": "Z/nema17001.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "nema17_1001.stl",
+    "path": "Z/nema17_1001.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "nema17_2.stl",
+    "path": "Z/nema17_2.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "nema17_3.stl",
+    "path": "Z/nema17_3.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "threaded_rod_300.stl",
+    "path": "Z/threaded_rod_300.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "threaded_rod_300_1.stl",
+    "path": "Z/threaded_rod_300_1.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "threaded_rod_300_2.stl",
+    "path": "Z/threaded_rod_300_2.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "threaded_rod_300_3.stl",
+    "path": "Z/threaded_rod_300_3.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "z_stepper_left.stl",
+    "path": "Z/z_stepper_left.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "z_stepper_left_1.stl",
+    "path": "Z/z_stepper_left_1.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "z_stepper_right.stl",
+    "path": "Z/z_stepper_right.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "z_stepper_right_1.stl",
+    "path": "Z/z_stepper_right_1.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "z_carriage_left.stl",
+    "path": "ZParts/z_carriage_left.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "z_carriage_left_1.stl",
+    "path": "ZParts/z_carriage_left_1.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "z_carriage_right.stl",
+    "path": "ZParts/z_carriage_right.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "z_carriage_right_1.stl",
+    "path": "ZParts/z_carriage_right_1.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  },
+  {
+    "file": "xyendstop_lineax.stl",
+    "path": "Endstop/xyendstop_lineax.stl",
+    "category": "Z_AXIS",
+    "translate": [
+      0,
+      -32,
+      0
+    ],
+    "rotate": [
+      0,
+      0,
+      0
+    ],
+    "module": "z_axis"
+  }
+]

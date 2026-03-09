@@ -58,6 +58,15 @@ const DEFAULT_SETTINGS = {
   // Prime and post-dispense G-code
   primeGcode: '',        // G-code to insert before each dispense line
   postDispenseGcode: '', // G-code to insert after each dispense line
+  
+  // Print job sections
+  beforePrintingGcode: '',    // G-code before entire print job
+  afterPrintingGcode: '',     // G-code after entire print job
+  beforeLineSegmentGcode: '', // G-code before each line (multi-line only)
+  afterLineSegmentGcode: '',  // G-code after each line (multi-line only)
+  
+  // Multi-line options
+  zigzagLines: false,    // Alternate direction for faster printing
 };
 
 const STORAGE_KEY = 'shapeDesignerSettings';
@@ -314,6 +323,13 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     lines.push('G92 E0 ; reset extruder position to zero');
     lines.push('');
     
+    // Before printing section
+    if (s.beforePrintingGcode && s.beforePrintingGcode.trim()) {
+      lines.push('; === Before Printing ===');
+      lines.push(s.beforePrintingGcode.trim());
+      lines.push('');
+    }
+    
     // Move to start
     lines.push(`G1 Z${s.startZ} F1000 ; move to start Z`);
     lines.push(`G1 X${s.startX.toFixed(3)} Y${s.startY.toFixed(3)} F${s.travelFeedrate} ; move to start XY`);
@@ -322,15 +338,28 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     
     // Dispense lines (absolute E positions - POSITIVE for dispensing)
     // Syringe pump: dispense = positive E (pushes plunger down)
+    const multiLine = s.numLines > 1;
     let currentE = 0;
+    
     for (let i = 0; i < s.numLines; i++) {
       const x = s.startX + i * s.lineSpacing;
       currentE += eDisplacementPerLine;  // Increase E for each dispense
       
+      // Determine direction based on zigzag setting
+      const isReverse = s.zigzagLines && (i % 2 === 1);
+      const yStart = isReverse ? endY : s.startY;
+      const yEnd = isReverse ? s.startY : endY;
+      
       lines.push(`; Line ${i + 1} (${actualVolumePerLine.toFixed(2)} µL)`);
+      
+      // Before line segment (multi-line only)
+      if (multiLine && s.beforeLineSegmentGcode && s.beforeLineSegmentGcode.trim()) {
+        lines.push(s.beforeLineSegmentGcode.trim());
+      }
+      
       if (i > 0) {
         lines.push(`G1 Z${s.zTravel} F500`);
-        lines.push(`G1 X${x.toFixed(3)} Y${s.startY.toFixed(3)} F${s.travelFeedrate}`);
+        lines.push(`G1 X${x.toFixed(3)} Y${yStart.toFixed(3)} F${s.travelFeedrate}`);
         lines.push(`G1 Z${s.zHeight} F500`);
       }
       
@@ -339,11 +368,16 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
         lines.push(s.primeGcode.trim());
       }
       
-      lines.push(`G1 Y${endY.toFixed(3)} E${currentE.toFixed(2)} F${s.feedrate}`);
+      lines.push(`G1 Y${yEnd.toFixed(3)} E${currentE.toFixed(2)} F${s.feedrate}`);
       
       // Insert post-dispense G-code after dispense
       if (s.postDispenseGcode && s.postDispenseGcode.trim()) {
         lines.push(s.postDispenseGcode.trim());
+      }
+      
+      // After line segment (multi-line only)
+      if (multiLine && s.afterLineSegmentGcode && s.afterLineSegmentGcode.trim()) {
+        lines.push(s.afterLineSegmentGcode.trim());
       }
     }
     
@@ -356,6 +390,13 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     lines.push('');
     lines.push(`G1 Z${s.zTravel} F500 ; lift to travel height`);
     lines.push(`; Total dispensed: ${totalVolume.toFixed(2)} µL (E: 0 -> ${currentE.toFixed(2)}, Δ${totalEDisplacement.toFixed(2)}${isCalibrated ? ' µL' : ' mm'})`);
+    
+    // After printing section
+    if (s.afterPrintingGcode && s.afterPrintingGcode.trim()) {
+      lines.push('');
+      lines.push('; === After Printing ===');
+      lines.push(s.afterPrintingGcode.trim());
+    }
     
     const gcodeText = lines.join('\n');
     setGcode(gcodeText);
@@ -687,6 +728,78 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
               </label>
             </div>
           </div>
+          
+          <div className="panel-header">
+            <h3>📋 Print Job Sections</h3>
+          </div>
+          <div className="settings-section">
+            <div className="settings-group">
+              <label>
+                <span>Before Printing (start of job)</span>
+                <textarea
+                  rows="3"
+                  placeholder="M117 Starting print...&#10;G4 P1000"
+                  value={settings.beforePrintingGcode}
+                  onChange={(e) => updateSetting('beforePrintingGcode', e.target.value)}
+                  style={{ fontFamily: 'monospace', fontSize: '11px', width: '100%' }}
+                />
+              </label>
+              <label>
+                <span>After Printing (end of job)</span>
+                <textarea
+                  rows="3"
+                  placeholder="M117 Print complete&#10;G4 P1000"
+                  value={settings.afterPrintingGcode}
+                  onChange={(e) => updateSetting('afterPrintingGcode', e.target.value)}
+                  style={{ fontFamily: 'monospace', fontSize: '11px', width: '100%' }}
+                />
+              </label>
+            </div>
+          </div>
+          
+          {settings.numLines > 1 && (
+            <>
+              <div className="panel-header">
+                <h3>🔄 Multi-Line Options</h3>
+              </div>
+              <div className="settings-section">
+                <div className="settings-group">
+                  <label style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                    <input
+                      type="checkbox"
+                      checked={settings.zigzagLines}
+                      onChange={(e) => updateSetting('zigzagLines', e.target.checked)}
+                    />
+                    <span>Zigzag printing (alternate direction)</span>
+                  </label>
+                  <small style={{ color: '#888', fontSize: '10px', marginLeft: '24px' }}>
+                    Faster: prints back and forth instead of returning to start
+                  </small>
+                  
+                  <label style={{ marginTop: '12px' }}>
+                    <span>Before Line Segment</span>
+                    <textarea
+                      rows="2"
+                      placeholder="G4 P50  ; Pause before line"
+                      value={settings.beforeLineSegmentGcode}
+                      onChange={(e) => updateSetting('beforeLineSegmentGcode', e.target.value)}
+                      style={{ fontFamily: 'monospace', fontSize: '11px', width: '100%' }}
+                    />
+                  </label>
+                  <label>
+                    <span>After Line Segment</span>
+                    <textarea
+                      rows="2"
+                      placeholder="G4 P50  ; Pause after line"
+                      value={settings.afterLineSegmentGcode}
+                      onChange={(e) => updateSetting('afterLineSegmentGcode', e.target.value)}
+                      style={{ fontFamily: 'monospace', fontSize: '11px', width: '100%' }}
+                    />
+                  </label>
+                </div>
+              </div>
+            </>
+          )}
           
           <div className="generate-button">
             <button className="btn btn-primary btn-large" onClick={generateGcode}>

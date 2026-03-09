@@ -5,6 +5,7 @@ include <scad/tslot.inc.scad>
 // =============================================================================
 // COMPONENT INCLUDES
 // =============================================================================
+
 include <includes/x_axis.scad>
 include <includes/y_axis.scad>
 include <includes/xy_joints.scad>
@@ -18,8 +19,9 @@ include <includes/z_axis.scad>
 include <includes/belt_tensioners.scad>
 include <includes/toolhead_carriage.scad>
 include <includes/bed_assembly.scad>
+
+include <includes/target_holder.scad>
 include <includes/liquid_dispenser.scad>
-include <includes/peek_nozzle.scad>
 include <includes/luerlock_nozzle_4channel.scad>
 include <includes/tip_case.scad>
 include <includes/camera_tool.scad>
@@ -43,6 +45,7 @@ USE_PARAMETRIC_EXTRUSIONS = false;
 // VISIBILITY TOGGLES - Set to true/false to show/hide components
 // =============================================================================
 
+/*
 SHOW_X_AXIS = true;
 SHOW_Y_AXIS = true;
 SHOW_XY_JOINTS = true;
@@ -57,21 +60,25 @@ SHOW_Z_CARRIAGES = true;
 SHOW_ENDSTOPS = true;
 SHOW_BELT_TENSIONERS = true;
 SHOW_TOOLHEAD_CARRIAGE = true;
-SHOW_BED_ASSEMBLY = true;
 SHOW_LIQUID_DISPENSER = true;
 SHOW_LUERLOCK_NOZZLE = true;
-//SHOW_PEEK_NOZZLE = true;
+SHOW_BED_ASSEMBLY = true;
 SHOW_TIP_CASE = true;
+*/
+SHOW_TARGET_HOLDER = true;
+
+/*
+SHOW_PEEK_NOZZLE = true;
 SHOW_CAMERA_TOOL = true;
 SHOW_EXTRUDER_TOOL0 = true;
 SHOW_EXTRUDER_TOOL1 = true;
-//SHOW_SYRINGE_PUMP = true;
+SHOW_SYRINGE_PUMP = true;
 
 SHOW_WASHSTATION = true;
 SHOW_MICROFLUIDICS = true;
-//SHOW_CABLING = true;
+SHOW_CABLING = true;
 SHOW_KLICKY_PROBE = true;
-
+*/
 // =============================================================================
 // POSITION OFFSETS
 // =============================================================================
@@ -119,9 +126,9 @@ module freecad_assembly() {
         
         // Tools
         if (SHOW_LIQUID_DISPENSER) liquid_dispenser_tool0();
-        if (SHOW_PEEK_NOZZLE) peek_nozzle_4channel();
         if (SHOW_LUERLOCK_NOZZLE) luerlock_nozzle_4channel();
         if (SHOW_TIP_CASE) tip_case_system();
+        if (SHOW_TARGET_HOLDER) target_holder();
         if (SHOW_CAMERA_TOOL) camera_tool();
         if (SHOW_EXTRUDER_TOOL0) extruder_tool0();
         if (SHOW_EXTRUDER_TOOL1) extruder_tool1();

@@ -8,8 +8,6 @@
     "dev": "nodemon index.js"
   },
   "dependencies": {
-    "@jscad/cli": "^2.3.6",
-    "@jscad/modeling": "^2.12.6",
     "cors": "^2.8.5",
     "express": "^4.18.2",
     "uuid": "^9.0.0"
