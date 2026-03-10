@@ -62,8 +62,8 @@ const DEFAULT_SETTINGS = {
   // Print job sections
   beforePrintingGcode: '',    // G-code before entire print job
   afterPrintingGcode: '',     // G-code after entire print job
-  beforeLineSegmentGcode: '', // G-code before each line (multi-line only)
-  afterLineSegmentGcode: '',  // G-code after each line (multi-line only)
+  beforeLineSetGcode: '',     // G-code before the group of lines (multi-line only)
+  afterLineSetGcode: '',      // G-code after the group of lines (multi-line only)
   
   // Multi-line options
   zigzagLines: false,    // Alternate direction for faster printing
@@ -331,14 +331,21 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     }
     
     // Move to start
-    lines.push(`G1 Z${s.startZ} F1000 ; move to start Z`);
     lines.push(`G1 X${s.startX.toFixed(3)} Y${s.startY.toFixed(3)} F${s.travelFeedrate} ; move to start XY`);
+    lines.push(`G1 Z${s.startZ} F1000 ; move to start Z`);
     lines.push(`G1 Z${s.zHeight} F500 ; lower to dispense height`);
     lines.push('');
     
+    // Before line set (multi-line only)
+    const multiLine = s.numLines > 1;
+    if (multiLine && s.beforeLineSetGcode && s.beforeLineSetGcode.trim()) {
+      lines.push('; === Before Line Set ===');
+      lines.push(s.beforeLineSetGcode.trim());
+      lines.push('');
+    }
+    
     // Dispense lines (absolute E positions - POSITIVE for dispensing)
     // Syringe pump: dispense = positive E (pushes plunger down)
-    const multiLine = s.numLines > 1;
     let currentE = 0;
     
     for (let i = 0; i < s.numLines; i++) {
@@ -351,11 +358,6 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
       const yEnd = isReverse ? s.startY : endY;
       
       lines.push(`; Line ${i + 1} (${actualVolumePerLine.toFixed(2)} µL)`);
-      
-      // Before line segment (multi-line only)
-      if (multiLine && s.beforeLineSegmentGcode && s.beforeLineSegmentGcode.trim()) {
-        lines.push(s.beforeLineSegmentGcode.trim());
-      }
       
       if (i > 0) {
         lines.push(`G1 Z${s.zTravel} F500`);
@@ -374,11 +376,6 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
       if (s.postDispenseGcode && s.postDispenseGcode.trim()) {
         lines.push(s.postDispenseGcode.trim());
       }
-      
-      // After line segment (multi-line only)
-      if (multiLine && s.afterLineSegmentGcode && s.afterLineSegmentGcode.trim()) {
-        lines.push(s.afterLineSegmentGcode.trim());
-      }
     }
     
     // Total volume calculation depends on E units mode
@@ -389,6 +386,14 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     
     lines.push('');
     lines.push(`G1 Z${s.zTravel} F500 ; lift to travel height`);
+    
+    // After line set (multi-line only)
+    if (multiLine && s.afterLineSetGcode && s.afterLineSetGcode.trim()) {
+      lines.push('');
+      lines.push('; === After Line Set ===');
+      lines.push(s.afterLineSetGcode.trim());
+    }
+    
     lines.push(`; Total dispensed: ${totalVolume.toFixed(2)} µL (E: 0 -> ${currentE.toFixed(2)}, Δ${totalEDisplacement.toFixed(2)}${isCalibrated ? ' µL' : ' mm'})`);
     
     // After printing section
@@ -777,22 +782,22 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
                   </small>
                   
                   <label style={{ marginTop: '12px' }}>
-                    <span>Before Line Segment</span>
+                    <span>Before Line Set (once before all lines)</span>
                     <textarea
                       rows="2"
-                      placeholder="G4 P50  ; Pause before line"
-                      value={settings.beforeLineSegmentGcode}
-                      onChange={(e) => updateSetting('beforeLineSegmentGcode', e.target.value)}
+                      placeholder="G4 P100  ; Pause before line set"
+                      value={settings.beforeLineSetGcode}
+                      onChange={(e) => updateSetting('beforeLineSetGcode', e.target.value)}
                       style={{ fontFamily: 'monospace', fontSize: '11px', width: '100%' }}
                     />
                   </label>
                   <label>
-                    <span>After Line Segment</span>
+                    <span>After Line Set (once after all lines)</span>
                     <textarea
                       rows="2"
-                      placeholder="G4 P50  ; Pause after line"
-                      value={settings.afterLineSegmentGcode}
-                      onChange={(e) => updateSetting('afterLineSegmentGcode', e.target.value)}
+                      placeholder="G4 P100  ; Pause after line set"
+                      value={settings.afterLineSetGcode}
+                      onChange={(e) => updateSetting('afterLineSetGcode', e.target.value)}
                       style={{ fontFamily: 'monospace', fontSize: '11px', width: '100%' }}
                     />
                   </label>

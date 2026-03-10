@@ -30,6 +30,8 @@ A web-based tool for designing printer bed layouts and generating G-code for liq
 - Hardware settings: needle gauge, syringe size
 - Real-time 3D preview with Three.js
 - Automatic extrusion calculation based on geometry
+- **Custom G-code sections**: Before/After Printing, Before/After Line Set, Prime/Post-Dispense per line
+- **Zigzag printing**: Alternate line direction for faster multi-line dispensing
 - Export ready-to-run G-code
 
 ### 🔐 Publisher/Viewer Mode
@@ -140,6 +142,53 @@ G1 Z0.5 F500      ; Lower to dispense height
 | **Z Dispense** | Height while dispensing |
 | **Z Travel** | Height for moves between lines |
 | **E Multiplier** | Tune extrusion volume |
+| **Zigzag Lines** | Alternate direction for faster printing (multi-line) |
+
+### Shape Designer G-code Sections
+
+The Shape Designer supports custom G-code insertion at multiple points:
+
+| Section | When | Visibility |
+|---------|------|------------|
+| **Before Printing** | Once at start of job | Always |
+| **After Printing** | Once at end of job | Always |
+| **Before Line Set** | Once before all lines | Multi-line only (numLines > 1) |
+| **After Line Set** | Once after all lines (after Z lift) | Multi-line only (numLines > 1) |
+| **Prime G-code** | Before each individual line | Always |
+| **Post-Dispense G-code** | After each individual line | Always |
+
+**G-code Structure:**
+```gcode
+; Setup (G21, G90, G92 E0)
+
+; === Before Printing ===
+[Your custom start G-code]
+
+; Move to start position (XY first, then Z)
+
+; === Before Line Set ===  (multi-line only)
+[Runs once before all lines]
+
+; Line 1
+[Prime G-code - runs before each line]
+G1 Y... E... F...  ; Dispense
+[Post-Dispense G-code - runs after each line]
+
+; Line 2 (zigzag: reverses direction if enabled)
+[Prime G-code]
+G1 Y... E... F...  ; Dispense (opposite direction)
+[Post-Dispense G-code]
+
+; ... more lines ...
+
+G1 Z... ; Lift to travel height
+
+; === After Line Set ===  (multi-line only)
+[Runs once after all lines]
+
+; === After Printing ===
+[Your custom end G-code]
+```
 
 ## 🔌 API Reference
 
