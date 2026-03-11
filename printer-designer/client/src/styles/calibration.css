@@ -16,7 +16,7 @@
 .calibration-header .subtitle {
   font-family: 'Courier New', monospace;
   font-size: 0.85rem;
-  color: #888;
+  color: #d1d5db;
   margin-bottom: 2rem;
 }
 
@@ -59,7 +59,7 @@
   text-transform: uppercase;
   letter-spacing: 0.08em;
   margin-bottom: 1rem;
-  color: #888;
+  color: #d1d5db;
 }
 
 .sweep1 h3 {
@@ -73,7 +73,7 @@
 .cal-card .note {
   font-family: 'Courier New', monospace;
   font-size: 0.75rem;
-  color: #888;
+  color: #d1d5db;
   margin-bottom: 0.75rem;
   line-height: 1.5;
 }
@@ -89,7 +89,7 @@
   display: block;
   font-family: 'Courier New', monospace;
   font-size: 0.7rem;
-  color: #888;
+  color: #d1d5db;
   margin-bottom: 0.3rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -129,7 +129,7 @@
 
 .sweep-table th {
   text-align: left;
-  color: #888;
+  color: #d1d5db;
   font-size: 0.7rem;
   text-transform: uppercase;
   letter-spacing: 0.05em;
@@ -144,7 +144,7 @@
 }
 
 .sweep-table td:first-child {
-  color: #888;
+  color: #d1d5db;
 }
 
 .tag {

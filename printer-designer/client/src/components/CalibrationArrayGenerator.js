@@ -2,21 +2,20 @@ import React, { useState, useEffect } from 'react';
 import '../styles/calibration.css';
 
 function CalibrationArrayGenerator() {
+  // Load settings from Shape Designer's localStorage
+  const loadShapeSettings = () => {
+    try {
+      const saved = localStorage.getItem('shapeDesignerSettings');
+      if (saved) {
+        return JSON.parse(saved);
+      }
+    } catch (e) {
+      console.warn('Failed to load Shape Designer settings:', e);
+    }
+    return null;
+  };
+
   const [settings, setSettings] = useState({
-    // Shared hardware
-    lineLen: 90,
-    spacing: 2.2,
-    volPerLine: 5.0,
-    xySpeed: 6000,
-    restoreAccel: 3000,
-    startX: 101,
-    startY: 127,
-    zDisp: 53.2,
-    zTravel: 65,
-    sweepGap: 15,
-    beforeLineSet: 'G92 E0\nG1 E2.5 F300\nG92 E0',
-    afterLineSet: 'G1 Z70 F2000\nG4 P10\nVALVE_BYPASS MASK=1111\nG4 P10',
-    
     // Active sweep selection
     activeSweep: 'sweep1', // 'sweep1', 'sweep2', or 'both'
     
@@ -28,7 +27,10 @@ function CalibrationArrayGenerator() {
     // Sweep 2: Acceleration
     s2EMult: 1.50,
     s2Center: 600,
-    s2Step: 150
+    s2Step: 150,
+    
+    // Sweep gap
+    sweepGap: 15
   });
 
   const [gcode, setGcode] = useState('');
@@ -60,36 +62,47 @@ function CalibrationArrayGenerator() {
   };
 
   const generateSweepGcode = (lines, startX, startY, label) => {
-    const { lineLen, spacing, volPerLine, xySpeed, zDisp, zTravel, restoreAccel, beforeLineSet, afterLineSet } = settings;
+    const shapeSettings = loadShapeSettings();
+    if (!shapeSettings) {
+      alert('Please configure settings in Shape Designer first!');
+      return '';
+    }
+    
+    const { lineLength, feedrate, zHeight, zTravel, restoreAccel, volumePerLine, 
+            zigzagLines, primeGcode, postDispenseGcode, beforeLineSetGcode, afterLineSetGcode } = shapeSettings;
     
     let gc = [];
     gc.push(`; === ${label} ===`);
     gc.push(`G1 Z${zTravel} F2000`);
     gc.push(`G1 X${startX.toFixed(3)} Y${startY.toFixed(3)} F3000 ; move to sweep start`);
-    gc.push(`G1 Z${zDisp} F500 ; lower to dispense height`);
+    gc.push(`G1 Z${zHeight} F500 ; lower to dispense height`);
     gc.push(``);
-    gc.push(`; Before Line Set`);
-    if (beforeLineSet) beforeLineSet.split('\n').forEach(l => gc.push(l.trim()));
-    gc.push(``);
+    
+    if (beforeLineSetGcode && beforeLineSetGcode.trim()) {
+      gc.push(`; Before Line Set`);
+      beforeLineSetGcode.split('\n').forEach(l => gc.push(l.trim()));
+      gc.push(``);
+    }
 
     let eAccum = 0;
     let lastAccel = null;
 
     lines.forEach((line, i) => {
       const { eMult, accel } = line;
-      const eForLine = volPerLine * eMult;
+      const eForLine = volumePerLine * eMult;
       eAccum += eForLine;
 
-      const x = startX + i * spacing;
-      const yStart = (i % 2 === 0) ? startY : startY + lineLen;
-      const yEnd = (i % 2 === 0) ? startY + lineLen : startY;
+      const x = startX + i * shapeSettings.lineSpacing;
+      const isReverse = zigzagLines && (i % 2 === 1);
+      const yStart = isReverse ? startY + lineLength : startY;
+      const yEnd = isReverse ? startY : startY + lineLength;
 
       gc.push(`; Line ${i+1} | E×${eMult.toFixed(2)} | Accel S${Math.round(accel)} | E delta: ${eForLine.toFixed(2)}µL`);
 
       if (i > 0) {
-        gc.push(`G1 Z${zDisp} F500`);
+        gc.push(`G1 Z${zTravel} F500`);
         gc.push(`G1 X${x.toFixed(3)} Y${yStart.toFixed(3)} F3000`);
-        gc.push(`G1 Z${zDisp} F500`);
+        gc.push(`G1 Z${zHeight} F500`);
       }
 
       if (accel !== lastAccel) {
@@ -97,22 +110,41 @@ function CalibrationArrayGenerator() {
         lastAccel = accel;
       }
 
-      gc.push(`G1 Y${yEnd.toFixed(3)} E${eAccum.toFixed(2)} F${xySpeed}`);
+      if (primeGcode && primeGcode.trim()) {
+        primeGcode.split('\n').forEach(l => gc.push(l.trim()));
+      }
+
+      gc.push(`G1 Y${yEnd.toFixed(3)} E${eAccum.toFixed(2)} F${feedrate}`);
+
+      if (postDispenseGcode && postDispenseGcode.trim()) {
+        postDispenseGcode.split('\n').forEach(l => gc.push(l.trim()));
+      }
+      
       gc.push(``);
     });
 
-    gc.push(`G1 Z${zDisp} F500 ; lift`);
+    gc.push(`G1 Z${zTravel} F500 ; lift`);
     gc.push(`M204 S${restoreAccel} ; restore acceleration`);
     gc.push(``);
-    gc.push(`; After Line Set`);
-    if (afterLineSet) afterLineSet.split('\n').forEach(l => gc.push(l.trim()));
-    gc.push(``);
+    
+    if (afterLineSetGcode && afterLineSetGcode.trim()) {
+      gc.push(`; After Line Set`);
+      afterLineSetGcode.split('\n').forEach(l => gc.push(l.trim()));
+      gc.push(``);
+    }
 
     return gc.join('\n');
   };
 
   const generate = () => {
-    const { startX, startY, spacing, sweepGap, zTravel, s1Accel, s2EMult, activeSweep } = settings;
+    const shapeSettings = loadShapeSettings();
+    if (!shapeSettings) {
+      alert('Please configure settings in Shape Designer first!');
+      return;
+    }
+    
+    const { startX, startY, lineSpacing, zTravel, beforePrintingGcode, afterPrintingGcode } = shapeSettings;
+    const { sweepGap, activeSweep, s1Accel, s2EMult } = settings;
     
     const s1Vals = getSweep1Values();
     const sweep1Lines = s1Vals.map(v => ({ eMult: v, accel: s1Accel }));
@@ -120,7 +152,7 @@ function CalibrationArrayGenerator() {
     const s2Vals = getSweep2Values();
     const sweep2Lines = s2Vals.map(v => ({ eMult: s2EMult, accel: v }));
     
-    const sweep1Width = (sweep1Lines.length - 1) * spacing;
+    const sweep1Width = (sweep1Lines.length - 1) * lineSpacing;
     const sweep2StartX = startX + sweep1Width + sweepGap;
 
     const now = new Date().toISOString();
@@ -153,7 +185,13 @@ function CalibrationArrayGenerator() {
     gc.push(`G90 ; absolute positioning`);
     gc.push(`G92 E0 ; reset extruder`);
     gc.push(``);
-    gc.push(`; === Before Printing ===`);
+    
+    if (beforePrintingGcode && beforePrintingGcode.trim()) {
+      gc.push(`; === Before Printing ===`);
+      beforePrintingGcode.split('\n').forEach(l => gc.push(l.trim()));
+      gc.push(``);
+    }
+    
     gc.push(`G1 Z${zTravel} F2000`);
     gc.push(``);
 
@@ -166,9 +204,10 @@ function CalibrationArrayGenerator() {
       gc.push(generateSweepGcode(sweep2Lines, s2StartX, startY, 'SWEEP 2 — Acceleration (E Mult fixed at ×' + s2EMult.toFixed(2) + ')'));
     }
 
-    gc.push(`; === After Printing ===`);
-    gc.push(`G1 Z130 F2000`);
-    gc.push(`G1 X250 Y300 F3000`);
+    if (afterPrintingGcode && afterPrintingGcode.trim()) {
+      gc.push(`; === After Printing ===`);
+      afterPrintingGcode.split('\n').forEach(l => gc.push(l.trim()));
+    }
 
     setGcode(gc.join('\n'));
   };
@@ -200,9 +239,9 @@ function CalibrationArrayGenerator() {
       </div>
 
       <div className="cal-grid">
-        {/* Shared Settings */}
+        {/* Sweep Selection */}
         <div className="cal-card shared">
-          <h3>🔧 Hardware & Motion (Shared)</h3>
+          <h3>🔧 Calibration Settings</h3>
           
           {/* Sweep Selection Radio Buttons */}
           <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#ffffff08', borderRadius: '4px' }}>
@@ -210,7 +249,7 @@ function CalibrationArrayGenerator() {
               Active Sweep:
             </label>
             <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: '#e2e8f0' }}>
                 <input 
                   type="radio" 
                   name="activeSweep" 
@@ -220,7 +259,7 @@ function CalibrationArrayGenerator() {
                 />
                 <span>Sweep 1 Only (E Multiplier)</span>
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: '#e2e8f0' }}>
                 <input 
                   type="radio" 
                   name="activeSweep" 
@@ -230,7 +269,7 @@ function CalibrationArrayGenerator() {
                 />
                 <span>Sweep 2 Only (Acceleration)</span>
               </label>
-              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem', color: '#e2e8f0' }}>
                 <input 
                   type="radio" 
                   name="activeSweep" 
@@ -244,25 +283,14 @@ function CalibrationArrayGenerator() {
           </div>
           
           <div className="field-row">
-            <label>Line Length (mm)<input type="number" value={settings.lineLen} onChange={(e) => updateSetting('lineLen', parseFloat(e.target.value))}/></label>
-            <label>Line Spacing (mm)<input type="number" step="0.1" value={settings.spacing} onChange={(e) => updateSetting('spacing', parseFloat(e.target.value))}/></label>
-            <label>Vol per Line (µL)<input type="number" step="0.1" value={settings.volPerLine} onChange={(e) => updateSetting('volPerLine', parseFloat(e.target.value))}/></label>
-            <label>XY Speed (mm/min)<input type="number" value={settings.xySpeed} onChange={(e) => updateSetting('xySpeed', parseFloat(e.target.value))}/></label>
-            <label>Restore Accel (mm/s²)<input type="number" value={settings.restoreAccel} onChange={(e) => updateSetting('restoreAccel', parseFloat(e.target.value))}/></label>
+            <label>Sweep Gap (mm) <small style={{color: '#888', fontSize: '0.65rem'}}>(spacing between sweeps when both selected)</small>
+              <input type="number" value={settings.sweepGap} onChange={(e) => updateSetting('sweepGap', parseFloat(e.target.value))}/>
+            </label>
           </div>
-          <div className="field-row">
-            <label>Start X (mm)<input type="number" value={settings.startX} onChange={(e) => updateSetting('startX', parseFloat(e.target.value))}/></label>
-            <label>Start Y (mm)<input type="number" value={settings.startY} onChange={(e) => updateSetting('startY', parseFloat(e.target.value))}/></label>
-            <label>Z Dispense (mm)<input type="number" step="0.1" value={settings.zDisp} onChange={(e) => updateSetting('zDisp', parseFloat(e.target.value))}/></label>
-            <label>Z Travel (mm)<input type="number" step="0.1" value={settings.zTravel} onChange={(e) => updateSetting('zTravel', parseFloat(e.target.value))}/></label>
-            <label>Sweep Gap (mm)<input type="number" value={settings.sweepGap} onChange={(e) => updateSetting('sweepGap', parseFloat(e.target.value))}/></label>
-          </div>
-          <div className="field-row">
-            <label style={{gridColumn: '1/-1'}}>Before Line Set G-code<textarea rows="2" value={settings.beforeLineSet} onChange={(e) => updateSetting('beforeLineSet', e.target.value)}/></label>
-          </div>
-          <div className="field-row">
-            <label style={{gridColumn: '1/-1'}}>After Line Set G-code<textarea rows="2" value={settings.afterLineSet} onChange={(e) => updateSetting('afterLineSet', e.target.value)}/></label>
-          </div>
+          
+          <p className="note" style={{marginTop: '1rem', padding: '0.75rem', background: '#ffffff08', borderRadius: '4px'}}>
+            ℹ️ All other settings (line length, spacing, volume, speeds, Z heights, prime/post G-code, etc.) are synced from <strong>Shape Designer</strong> tab. Configure them there first.
+          </p>
         </div>
 
         {/* Sweep 1 */}
