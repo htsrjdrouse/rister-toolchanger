@@ -234,36 +234,46 @@ M204 S3000  ; Restore acceleration
 
 The **⚗️ Calibration Array** tab generates test patterns to find optimal E multiplier and acceleration values in a single print run.
 
-**Workflow:**
-1. Set your current "best guess" values as center points
-2. Configure step sizes for each parameter
-3. Generate G-code with two 5-line sweeps
-4. Print and visually inspect results
-5. Identify the best line in each sweep
-6. Use those values in Shape Designer per-line overrides
+**Settings Sync:**
+- All hardware and motion settings (line length, spacing, volume, speeds, Z heights, start position) are automatically synced from **Shape Designer**
+- Prime/post-dispense G-code, before/after printing G-code, and zigzag setting are inherited from Shape Designer
+- Configure hardware settings in Shape Designer first, then use Calibration Array to generate test sweeps
 
-**Parameters:**
+**Workflow:**
+1. Configure hardware settings in **Shape Designer** tab (line length, spacing, volume, speeds, etc.)
+2. Switch to **Calibration Array** tab
+3. Select which sweep(s) to run: Sweep 1 (E multiplier), Sweep 2 (acceleration), or both
+4. Set your current "best guess" values as center points
+5. Configure step sizes for each parameter
+6. Generate G-code
+7. Print and visually inspect results
+8. Identify the best line in each sweep
+9. Use those values in Shape Designer per-line overrides
+
+**Calibration-Specific Parameters:**
 
 | Parameter | Description |
 |-----------|-------------|
+| **Active Sweep** | Choose Sweep 1 only, Sweep 2 only, or both sweeps |
 | **Sweep 1: E Multiplier** | Varies E multiplier across 5 lines with fixed acceleration |
 | **Sweep 2: Acceleration** | Varies acceleration across 5 lines with fixed E multiplier |
 | **Center Value** | Your current best value (marked with ★ in middle line) |
 | **Step Size** | How much to vary between lines |
-| **Sweep Gap** | Horizontal spacing between the two sweep groups |
+| **Sweep Gap** | Horizontal spacing between sweep groups (only used when both sweeps selected) |
 
 **Example Configuration:**
 - Sweep 1: Center E=1.50, Step=0.10 → Lines at 1.30, 1.40, 1.50★, 1.60, 1.70
 - Sweep 2: Center Accel=600, Step=150 → Lines at 300, 450, 600★, 750, 900 mm/s²
 
 **Output:**
-- Single G-code file with both sweeps
+- Single G-code file with selected sweep(s)
 - Each line labeled with its parameters in comments
-- Zigzag pattern for faster printing
-- Proper spacing between sweep groups
+- Zigzag pattern if enabled in Shape Designer
+- Prime/post-dispense G-code from Shape Designer applied to each line
+- Before/after printing G-code from Shape Designer included
 
 **Use Case:**
-If you're unsure whether your under-dispense is due to E multiplier or acceleration, run both sweeps. The best-looking line in each sweep tells you the optimal value for that parameter.
+If you're unsure whether your under-dispense is due to E multiplier or acceleration, run both sweeps. The best-looking line in each sweep tells you the optimal value for that parameter. For faster iteration, run only the sweep you need to calibrate.
 
 ## 🔌 API Reference
 
