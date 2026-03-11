@@ -17,6 +17,9 @@ function CalibrationArrayGenerator() {
     beforeLineSet: 'G92 E0\nG1 E2.5 F300\nG92 E0',
     afterLineSet: 'G1 Z70 F2000\nG4 P10\nVALVE_BYPASS MASK=1111\nG4 P10',
     
+    // Active sweep selection
+    activeSweep: 'sweep1', // 'sweep1', 'sweep2', or 'both'
+    
     // Sweep 1: E multiplier
     s1Accel: 600,
     s1Center: 1.50,
@@ -109,7 +112,7 @@ function CalibrationArrayGenerator() {
   };
 
   const generate = () => {
-    const { startX, startY, spacing, sweepGap, zTravel, s1Accel, s2EMult } = settings;
+    const { startX, startY, spacing, sweepGap, zTravel, s1Accel, s2EMult, activeSweep } = settings;
     
     const s1Vals = getSweep1Values();
     const sweep1Lines = s1Vals.map(v => ({ eMult: v, accel: s1Accel }));
@@ -124,17 +127,27 @@ function CalibrationArrayGenerator() {
     let gc = [];
     gc.push(`; Calibration Array G-code`);
     gc.push(`; Generated: ${now}`);
-    gc.push(`; Sweep 1: E Multiplier sweep (fixed accel)`);
-    gc.push(`; Sweep 2: Acceleration sweep (fixed E mult)`);
+    
+    if (activeSweep === 'sweep1' || activeSweep === 'both') {
+      gc.push(`; Sweep 1: E Multiplier sweep (fixed accel)`);
+    }
+    if (activeSweep === 'sweep2' || activeSweep === 'both') {
+      gc.push(`; Sweep 2: Acceleration sweep (fixed E mult)`);
+    }
     gc.push(`; ★ = center value (current best)`);
     gc.push(`;`);
 
-    gc.push(`; Sweep 1 — Fixed Accel: S${s1Accel}`);
-    s1Vals.forEach((v,i) => gc.push(`;   Line ${i+1}: E×${v.toFixed(2)}${Math.abs(v-settings.s1Center)<0.001?' ★':''}`));
-    gc.push(`;`);
-    gc.push(`; Sweep 2 — Fixed E Mult: ×${s2EMult.toFixed(2)}`);
-    s2Vals.forEach((v,i) => gc.push(`;   Line ${i+1}: Accel S${Math.round(v)}${Math.abs(v-settings.s2Center)<1?' ★':''}`));
-    gc.push(``);
+    if (activeSweep === 'sweep1' || activeSweep === 'both') {
+      gc.push(`; Sweep 1 — Fixed Accel: S${s1Accel}`);
+      s1Vals.forEach((v,i) => gc.push(`;   Line ${i+1}: E×${v.toFixed(2)}${Math.abs(v-settings.s1Center)<0.001?' ★':''}`));
+      gc.push(`;`);
+    }
+    
+    if (activeSweep === 'sweep2' || activeSweep === 'both') {
+      gc.push(`; Sweep 2 — Fixed E Mult: ×${s2EMult.toFixed(2)}`);
+      s2Vals.forEach((v,i) => gc.push(`;   Line ${i+1}: Accel S${Math.round(v)}${Math.abs(v-settings.s2Center)<1?' ★':''}`));
+      gc.push(`;`);
+    }
 
     gc.push(`G21 ; mm units`);
     gc.push(`G90 ; absolute positioning`);
@@ -144,8 +157,14 @@ function CalibrationArrayGenerator() {
     gc.push(`G1 Z${zTravel} F2000`);
     gc.push(``);
 
-    gc.push(generateSweepGcode(sweep1Lines, startX, startY, 'SWEEP 1 — E Multiplier (Accel fixed at S' + Math.round(s1Accel) + ')'));
-    gc.push(generateSweepGcode(sweep2Lines, sweep2StartX, startY, 'SWEEP 2 — Acceleration (E Mult fixed at ×' + s2EMult.toFixed(2) + ')'));
+    if (activeSweep === 'sweep1' || activeSweep === 'both') {
+      gc.push(generateSweepGcode(sweep1Lines, startX, startY, 'SWEEP 1 — E Multiplier (Accel fixed at S' + Math.round(s1Accel) + ')'));
+    }
+    
+    if (activeSweep === 'sweep2' || activeSweep === 'both') {
+      const s2StartX = activeSweep === 'both' ? sweep2StartX : startX;
+      gc.push(generateSweepGcode(sweep2Lines, s2StartX, startY, 'SWEEP 2 — Acceleration (E Mult fixed at ×' + s2EMult.toFixed(2) + ')'));
+    }
 
     gc.push(`; === After Printing ===`);
     gc.push(`G1 Z130 F2000`);
@@ -184,6 +203,46 @@ function CalibrationArrayGenerator() {
         {/* Shared Settings */}
         <div className="cal-card shared">
           <h3>🔧 Hardware & Motion (Shared)</h3>
+          
+          {/* Sweep Selection Radio Buttons */}
+          <div style={{ marginBottom: '1rem', padding: '0.75rem', background: '#ffffff08', borderRadius: '4px' }}>
+            <label style={{ display: 'block', marginBottom: '0.5rem', color: '#fff', fontSize: '0.8rem', fontWeight: '600' }}>
+              Active Sweep:
+            </label>
+            <div style={{ display: 'flex', gap: '1.5rem', flexWrap: 'wrap' }}>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+                <input 
+                  type="radio" 
+                  name="activeSweep" 
+                  value="sweep1" 
+                  checked={settings.activeSweep === 'sweep1'}
+                  onChange={(e) => updateSetting('activeSweep', e.target.value)}
+                />
+                <span>Sweep 1 Only (E Multiplier)</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+                <input 
+                  type="radio" 
+                  name="activeSweep" 
+                  value="sweep2" 
+                  checked={settings.activeSweep === 'sweep2'}
+                  onChange={(e) => updateSetting('activeSweep', e.target.value)}
+                />
+                <span>Sweep 2 Only (Acceleration)</span>
+              </label>
+              <label style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', fontSize: '0.85rem' }}>
+                <input 
+                  type="radio" 
+                  name="activeSweep" 
+                  value="both" 
+                  checked={settings.activeSweep === 'both'}
+                  onChange={(e) => updateSetting('activeSweep', e.target.value)}
+                />
+                <span>Both Sweeps</span>
+              </label>
+            </div>
+          </div>
+          
           <div className="field-row">
             <label>Line Length (mm)<input type="number" value={settings.lineLen} onChange={(e) => updateSetting('lineLen', parseFloat(e.target.value))}/></label>
             <label>Line Spacing (mm)<input type="number" step="0.1" value={settings.spacing} onChange={(e) => updateSetting('spacing', parseFloat(e.target.value))}/></label>
