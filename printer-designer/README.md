@@ -139,10 +139,24 @@ G1 Z0.5 F500      ; Lower to dispense height
 | **Start X/Y** | G-code coordinates for first line |
 | **Needle Gauge** | 18G–34G (affects inner diameter) |
 | **Syringe Size** | 1ml–20ml (affects plunger area) |
+| **Dispense Speed** | Feedrate while dispensing (mm/min) |
+| **Dispense Acceleration** | Acceleration during dispensing (mm/s²) |
+| **Restore Acceleration** | Acceleration to restore after all lines (mm/s²) |
 | **Z Dispense** | Height while dispensing |
 | **Z Travel** | Height for moves between lines |
-| **E Multiplier** | Tune extrusion volume |
+| **E Multiplier** | Global extrusion volume multiplier |
+| **Per-Line Overrides** | Individual E multiplier and acceleration per line |
 | **Zigzag Lines** | Alternate direction for faster printing (multi-line) |
+
+#### Per-Line Overrides
+
+The **Per-Line Overrides** section allows fine-tuning of individual lines to compensate for stepper ramp-up effects or other line-specific requirements:
+
+- **Collapsible UI**: Click to expand and see one row per line
+- **E Multiplier**: Override global E multiplier for specific lines (e.g., 1.5 for Line 1, 1.3 for Line 2)
+- **Acceleration**: Override global dispense acceleration per line (e.g., 300 mm/s² for Line 1)
+- **Smart Defaults**: New lines initialize with global values; non-edited lines update when globals change
+- **Use Case**: Compensate for under-dispense at line start by increasing E multiplier and/or reducing acceleration for first few lines
 
 ### Shape Designer G-code Sections
 
@@ -166,22 +180,33 @@ The Shape Designer supports custom G-code insertion at multiple points:
 
 ; Move to start position (XY first, then Z)
 
+M204 S500  ; Set dispense acceleration
+
 ; === Before Line Set ===  (multi-line only)
 [Runs once before all lines]
 
-; Line 1
+; Line 1 (E mult: 1.50)
+M204 S300  ; Set line-specific acceleration (if different)
 [Prime G-code - runs before each line]
 G1 Y... E... F...  ; Dispense
 [Post-Dispense G-code - runs after each line]
 
-; Line 2 (zigzag: reverses direction if enabled)
+; Line 2 (E mult: 1.30) (zigzag: reverses direction if enabled)
+M204 S400  ; Update acceleration (if different from previous)
 [Prime G-code]
 G1 Y... E... F...  ; Dispense (opposite direction)
+[Post-Dispense G-code]
+
+; Line 3 (E mult: 1.00)
+M204 S500  ; Update acceleration (if different from previous)
+[Prime G-code]
+G1 Y... E... F...  ; Dispense
 [Post-Dispense G-code]
 
 ; ... more lines ...
 
 G1 Z... ; Lift to travel height
+M204 S3000  ; Restore acceleration
 
 ; === After Line Set ===  (multi-line only)
 [Runs once after all lines]
@@ -189,6 +214,11 @@ G1 Z... ; Lift to travel height
 ; === After Printing ===
 [Your custom end G-code]
 ```
+
+**Acceleration Control:**
+- `M204 S{value}` sets acceleration at start of line set
+- Per-line acceleration changes only emit `M204` when value differs from previous line
+- Acceleration restored to travel value after all lines complete
 
 ## 🔌 API Reference
 

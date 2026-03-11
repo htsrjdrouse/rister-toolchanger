@@ -50,10 +50,15 @@ const DEFAULT_SETTINGS = {
   travelFeedrate: 3000,  // mm/min - travel speed (no dispensing)
   zHeight: 0.5,          // mm - nozzle height above substrate
   zTravel: 5,            // mm - Z height for travel moves
+  dispenseAccel: 500,    // mm/s² - acceleration during dispensing
+  restoreAccel: 3000,    // mm/s² - acceleration to restore after dispensing
   
   // Extruder settings
   eMultiplier: 1.0,      // fine-tune multiplier (1.0 = calibrated)
   eUnits: 'calibrated',  // 'calibrated' = 1 E = 1 µL (firmware calibrated), 'mm' = raw mm (use syringe area)
+  
+  // Per-line overrides
+  perLineOverrides: [],  // Array of {eMultiplier, accel} per line
   
   // Prime and post-dispense G-code
   primeGcode: '',        // G-code to insert before each dispense line
@@ -344,25 +349,49 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
       lines.push('');
     }
     
+    // Set initial acceleration
+    lines.push(`M204 S${s.dispenseAccel} ; set dispense acceleration`);
+    lines.push('');
+    
     // Dispense lines (absolute E positions - POSITIVE for dispensing)
     // Syringe pump: dispense = positive E (pushes plunger down)
     let currentE = 0;
+    let prevAccel = s.dispenseAccel;
     
     for (let i = 0; i < s.numLines; i++) {
       const x = s.startX + i * s.lineSpacing;
-      currentE += eDisplacementPerLine;  // Increase E for each dispense
+      
+      // Get per-line overrides
+      const override = (s.perLineOverrides || [])[i] || { 
+        eMultiplier: parseFloat(s.eMultiplier) || 1.0, 
+        accel: s.dispenseAccel 
+      };
+      const lineEMultiplier = parseFloat(override.eMultiplier) || 1.0;
+      const lineAccel = parseInt(override.accel) || s.dispenseAccel;
+      
+      // Calculate E for this line using per-line multiplier
+      const lineEDisplacement = isCalibrated 
+        ? volumePerLine * lineEMultiplier
+        : (volumePerLine / syringeArea) * lineEMultiplier;
+      currentE += lineEDisplacement;
       
       // Determine direction based on zigzag setting
       const isReverse = s.zigzagLines && (i % 2 === 1);
       const yStart = isReverse ? endY : s.startY;
       const yEnd = isReverse ? s.startY : endY;
       
-      lines.push(`; Line ${i + 1} (${actualVolumePerLine.toFixed(2)} µL)`);
+      lines.push(`; Line ${i + 1} (E mult: ${lineEMultiplier.toFixed(2)})`);
       
       if (i > 0) {
         lines.push(`G1 Z${s.zTravel} F500`);
         lines.push(`G1 X${x.toFixed(3)} Y${yStart.toFixed(3)} F${s.travelFeedrate}`);
         lines.push(`G1 Z${s.zHeight} F500`);
+      }
+      
+      // Set acceleration if different from previous line
+      if (lineAccel !== prevAccel) {
+        lines.push(`M204 S${lineAccel}`);
+        prevAccel = lineAccel;
       }
       
       // Insert prime G-code before dispense
@@ -386,6 +415,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     
     lines.push('');
     lines.push(`G1 Z${s.zTravel} F500 ; lift to travel height`);
+    lines.push(`M204 S${s.restoreAccel} ; restore acceleration`);
     
     // After line set (multi-line only)
     if (multiLine && s.afterLineSetGcode && s.afterLineSetGcode.trim()) {
@@ -443,6 +473,51 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
   // Update a setting
   const updateSetting = (key, value) => {
     setSettings(s => ({ ...s, [key]: value }));
+  };
+
+  // Track which per-line overrides have been manually edited
+  const [editedOverrides, setEditedOverrides] = useState(new Set());
+  const [overridesExpanded, setOverridesExpanded] = useState(false);
+
+  // Initialize per-line overrides when numLines changes
+  useEffect(() => {
+    const numLines = settings.numLines || 1;
+    const currentOverrides = settings.perLineOverrides || [];
+    
+    if (currentOverrides.length !== numLines) {
+      const newOverrides = Array.from({ length: numLines }, (_, i) => {
+        if (i < currentOverrides.length && editedOverrides.has(i)) {
+          return currentOverrides[i]; // Keep manually edited values
+        }
+        return {
+          eMultiplier: settings.eMultiplier,
+          accel: settings.dispenseAccel
+        };
+      });
+      updateSetting('perLineOverrides', newOverrides);
+    }
+  }, [settings.numLines]);
+
+  // Update non-edited overrides when global values change
+  useEffect(() => {
+    const overrides = settings.perLineOverrides || [];
+    const updated = overrides.map((override, i) => {
+      if (editedOverrides.has(i)) return override;
+      return {
+        eMultiplier: settings.eMultiplier,
+        accel: settings.dispenseAccel
+      };
+    });
+    if (JSON.stringify(updated) !== JSON.stringify(overrides)) {
+      updateSetting('perLineOverrides', updated);
+    }
+  }, [settings.eMultiplier, settings.dispenseAccel]);
+
+  const updateLineOverride = (lineIndex, field, value) => {
+    const overrides = [...(settings.perLineOverrides || [])];
+    overrides[lineIndex] = { ...overrides[lineIndex], [field]: value };
+    updateSetting('perLineOverrides', overrides);
+    setEditedOverrides(prev => new Set(prev).add(lineIndex));
   };
 
   return (
@@ -650,6 +725,26 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
                 />
               </label>
               <label>
+                <span>Dispense Acceleration (mm/s²)</span>
+                <input
+                  type="number"
+                  step="50"
+                  min="50"
+                  value={settings.dispenseAccel}
+                  onChange={(e) => updateSetting('dispenseAccel', parseInt(e.target.value) || 500)}
+                />
+              </label>
+              <label>
+                <span>Restore Acceleration (mm/s²)</span>
+                <input
+                  type="number"
+                  step="100"
+                  min="100"
+                  value={settings.restoreAccel}
+                  onChange={(e) => updateSetting('restoreAccel', parseInt(e.target.value) || 3000)}
+                />
+              </label>
+              <label>
                 <span>Z Dispense (mm)</span>
                 <input
                   type="number"
@@ -703,6 +798,72 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
                 />
                 <small style={{ color: '#888', fontSize: '10px' }}>1.0 = 100%, 0.1 = 10%, 0.01 = 1%</small>
               </label>
+              
+              <div style={{ marginTop: '16px' }}>
+                <div 
+                  onClick={() => setOverridesExpanded(!overridesExpanded)}
+                  style={{ 
+                    cursor: 'pointer', 
+                    userSelect: 'none',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '6px',
+                    fontWeight: '500'
+                  }}
+                >
+                  <span>{overridesExpanded ? '▼' : '▶'}</span>
+                  <span>Per-Line Overrides</span>
+                </div>
+                
+                {overridesExpanded && (
+                  <div style={{ marginTop: '8px', fontSize: '11px' }}>
+                    <div style={{ 
+                      display: 'grid', 
+                      gridTemplateColumns: '60px 1fr 1fr',
+                      gap: '4px',
+                      marginBottom: '4px',
+                      fontWeight: 'bold',
+                      color: '#888'
+                    }}>
+                      <div>Line</div>
+                      <div>E Mult</div>
+                      <div>Accel (mm/s²)</div>
+                    </div>
+                    {Array.from({ length: settings.numLines }, (_, i) => {
+                      const override = (settings.perLineOverrides || [])[i] || { 
+                        eMultiplier: settings.eMultiplier, 
+                        accel: settings.dispenseAccel 
+                      };
+                      return (
+                        <div key={i} style={{ 
+                          display: 'grid', 
+                          gridTemplateColumns: '60px 1fr 1fr',
+                          gap: '4px',
+                          marginBottom: '2px'
+                        }}>
+                          <div style={{ paddingTop: '4px' }}>Line {i + 1}</div>
+                          <input
+                            type="number"
+                            step="0.1"
+                            min="0.1"
+                            value={override.eMultiplier}
+                            onChange={(e) => updateLineOverride(i, 'eMultiplier', parseFloat(e.target.value) || 1.0)}
+                            style={{ width: '100%', padding: '2px 4px', fontSize: '11px' }}
+                          />
+                          <input
+                            type="number"
+                            step="50"
+                            min="50"
+                            value={override.accel}
+                            onChange={(e) => updateLineOverride(i, 'accel', parseInt(e.target.value) || 500)}
+                            style={{ width: '100%', padding: '2px 4px', fontSize: '11px' }}
+                          />
+                        </div>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             </div>
           </div>
           
