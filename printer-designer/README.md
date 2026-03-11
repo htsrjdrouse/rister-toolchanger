@@ -32,7 +32,17 @@ A web-based tool for designing printer bed layouts and generating G-code for liq
 - Automatic extrusion calculation based on geometry
 - **Custom G-code sections**: Before/After Printing, Before/After Line Set, Prime/Post-Dispense per line
 - **Zigzag printing**: Alternate line direction for faster multi-line dispensing
+- **Acceleration control**: Global and per-line acceleration settings
+- **Per-line overrides**: Individual E multiplier and acceleration per line
 - Export ready-to-run G-code
+
+### ⚗️ Calibration Array Generator
+- **Automated parameter sweeps**: Find optimal E multiplier and acceleration in one print
+- **Sweep 1**: Vary E multiplier (5 lines) with fixed acceleration
+- **Sweep 2**: Vary acceleration (5 lines) with fixed E multiplier
+- **Center value marking**: Middle line (★) represents your current best value
+- **Dual sweep output**: Both sweeps in single G-code file with proper spacing
+- **Use case**: Quickly identify best settings for consistent line quality
 
 ### 🔐 Publisher/Viewer Mode
 - Optional password protection for editing
@@ -219,6 +229,41 @@ M204 S3000  ; Restore acceleration
 - `M204 S{value}` sets acceleration at start of line set
 - Per-line acceleration changes only emit `M204` when value differs from previous line
 - Acceleration restored to travel value after all lines complete
+
+### Calibration Array Generator
+
+The **⚗️ Calibration Array** tab generates test patterns to find optimal E multiplier and acceleration values in a single print run.
+
+**Workflow:**
+1. Set your current "best guess" values as center points
+2. Configure step sizes for each parameter
+3. Generate G-code with two 5-line sweeps
+4. Print and visually inspect results
+5. Identify the best line in each sweep
+6. Use those values in Shape Designer per-line overrides
+
+**Parameters:**
+
+| Parameter | Description |
+|-----------|-------------|
+| **Sweep 1: E Multiplier** | Varies E multiplier across 5 lines with fixed acceleration |
+| **Sweep 2: Acceleration** | Varies acceleration across 5 lines with fixed E multiplier |
+| **Center Value** | Your current best value (marked with ★ in middle line) |
+| **Step Size** | How much to vary between lines |
+| **Sweep Gap** | Horizontal spacing between the two sweep groups |
+
+**Example Configuration:**
+- Sweep 1: Center E=1.50, Step=0.10 → Lines at 1.30, 1.40, 1.50★, 1.60, 1.70
+- Sweep 2: Center Accel=600, Step=150 → Lines at 300, 450, 600★, 750, 900 mm/s²
+
+**Output:**
+- Single G-code file with both sweeps
+- Each line labeled with its parameters in comments
+- Zigzag pattern for faster printing
+- Proper spacing between sweep groups
+
+**Use Case:**
+If you're unsure whether your under-dispense is due to E multiplier or acceleration, run both sweeps. The best-looking line in each sweep tells you the optimal value for that parameter.
 
 ## 🔌 API Reference
 

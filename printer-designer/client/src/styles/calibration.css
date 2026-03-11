@@ -1,0 +1,196 @@
+/* Calibration Array Generator Styles */
+
+.calibration-generator {
+  padding: 1.5rem;
+  max-width: 1400px;
+  margin: 0 auto;
+}
+
+.calibration-header h2 {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--accent);
+  margin-bottom: 0.25rem;
+}
+
+.calibration-header .subtitle {
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  color: #888;
+  margin-bottom: 2rem;
+}
+
+.cal-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+@media (max-width: 900px) {
+  .cal-grid {
+    grid-template-columns: 1fr;
+  }
+}
+
+.cal-card {
+  background: var(--panel-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 8px;
+  padding: 1.25rem;
+}
+
+.cal-card.shared {
+  grid-column: 1 / -1;
+  border-top: 2px solid #ffffff22;
+}
+
+.cal-card.sweep1 {
+  border-top: 2px solid #00e5ff;
+}
+
+.cal-card.sweep2 {
+  border-top: 2px solid #ff6b35;
+}
+
+.cal-card h3 {
+  font-size: 0.9rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 1rem;
+  color: #888;
+}
+
+.sweep1 h3 {
+  color: #00e5ff;
+}
+
+.sweep2 h3 {
+  color: #ff6b35;
+}
+
+.cal-card .note {
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  color: #888;
+  margin-bottom: 0.75rem;
+  line-height: 1.5;
+}
+
+.cal-card .field-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 0.75rem;
+}
+
+.cal-card label {
+  display: block;
+  font-family: 'Courier New', monospace;
+  font-size: 0.7rem;
+  color: #888;
+  margin-bottom: 0.3rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.cal-card input[type=number],
+.cal-card textarea {
+  width: 100%;
+  background: var(--input-bg);
+  border: 1px solid var(--border-color);
+  border-radius: 4px;
+  color: var(--text-color);
+  font-family: 'Courier New', monospace;
+  font-size: 0.85rem;
+  padding: 0.45rem 0.6rem;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.cal-card input:focus,
+.cal-card textarea:focus {
+  border-color: var(--accent);
+}
+
+.cal-card textarea {
+  resize: vertical;
+  font-size: 0.75rem;
+}
+
+.sweep-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: 'Courier New', monospace;
+  font-size: 0.78rem;
+  margin-top: 0.75rem;
+}
+
+.sweep-table th {
+  text-align: left;
+  color: #888;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  padding: 0.3rem 0.5rem;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.sweep-table td {
+  padding: 0.35rem 0.5rem;
+  border-bottom: 1px solid #ffffff08;
+  color: #7fff6b;
+}
+
+.sweep-table td:first-child {
+  color: #888;
+}
+
+.tag {
+  display: inline-block;
+  font-family: 'Courier New', monospace;
+  font-size: 0.65rem;
+  padding: 0.15rem 0.5rem;
+  border-radius: 3px;
+  margin-left: 0.5rem;
+  vertical-align: middle;
+}
+
+.tag.e {
+  background: #00e5ff22;
+  color: #00e5ff;
+  border: 1px solid #00e5ff44;
+}
+
+.tag.a {
+  background: #ff6b3522;
+  color: #ff6b35;
+  border: 1px solid #ff6b3544;
+}
+
+.output-wrap {
+  position: relative;
+  margin-top: 1.5rem;
+}
+
+.output-wrap .gcode-output {
+  width: 100%;
+  height: 420px;
+  background: #06080b;
+  border: 1px solid var(--border-color);
+  border-radius: 6px;
+  color: #a8ff78;
+  font-family: 'Courier New', monospace;
+  font-size: 0.75rem;
+  padding: 1rem;
+  resize: vertical;
+  outline: none;
+  line-height: 1.6;
+}
+
+.output-actions {
+  margin-top: 0.75rem;
+  display: flex;
+  gap: 0.75rem;
+}

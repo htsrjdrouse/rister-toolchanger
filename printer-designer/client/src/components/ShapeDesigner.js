@@ -524,7 +524,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     <div className="shape-designer">
       <div className="shape-designer-header">
         <h2>💧 Dispenser Line Generator</h2>
-        <p>Generate G-code for parallel line dispensing</p>
+        <p>Generate G-code for parallel line dispensing • <span style={{color: 'var(--accent)', cursor: 'pointer'}} onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-calibration'))}>⚗️ Need to find optimal E mult/accel? Try Calibration Array →</span></p>
       </div>
       
       <div className="shape-designer-content">

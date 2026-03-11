@@ -5,6 +5,7 @@ import ObjectEditor from './components/ObjectEditor';
 import TipManagement from './components/TipManagement';
 import GcodeBuilder from './components/GcodeBuilder';
 import ShapeDesigner from './components/ShapeDesigner';
+import CalibrationArrayGenerator from './components/CalibrationArrayGenerator';
 import LoginModal from './components/LoginModal';
 
 function AppContent() {
@@ -21,6 +22,13 @@ function AppContent() {
   useEffect(() => {
     loadDesigns();
     checkPublished();
+  }, []);
+
+  // Listen for navigation events
+  useEffect(() => {
+    const handleNavigate = () => setActiveTab('calibration');
+    window.addEventListener('navigate-to-calibration', handleNavigate);
+    return () => window.removeEventListener('navigate-to-calibration', handleNavigate);
   }, []);
 
   // Auto-load published design for viewers
@@ -198,6 +206,12 @@ function AppContent() {
         >
           🔬 Shape Designer
         </button>
+        <button 
+          className={`tab-btn ${activeTab === 'calibration' ? 'active' : ''}`}
+          onClick={() => setActiveTab('calibration')}
+        >
+          ⚗️ Calibration Array
+        </button>
       </nav>
 
       <main className="main-content">
@@ -253,6 +267,9 @@ function AppContent() {
                 onSave={saveDesign}
                 isPublisher={isPublisher}
               />
+            )}
+            {activeTab === 'calibration' && (
+              <CalibrationArrayGenerator />
             )}
           </>
         )}
