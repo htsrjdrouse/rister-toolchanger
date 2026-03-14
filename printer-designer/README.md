@@ -34,6 +34,9 @@ A web-based tool for designing printer bed layouts and generating G-code for liq
 - **Zigzag printing**: Alternate line direction for faster multi-line dispensing
 - **Acceleration control**: Global and per-line acceleration settings
 - **Per-line overrides**: Individual E multiplier and acceleration per line
+- **3D bed preview**: Shows printer bed sized from Object Editor with 3D objects rendered at correct positions and heights
+- **G-code-accurate visualization**: Dispense lines, zigzag direction arrows, and dashed travel moves match generated G-code exactly
+- **Mouse coordinate tracking**: Hover over the 3D preview to see real-time X/Y position overlay
 - Export ready-to-run G-code
 
 ### ⚗️ Calibration Array Generator
@@ -48,6 +51,7 @@ A web-based tool for designing printer bed layouts and generating G-code for liq
 - Optional password protection for editing
 - Viewers can see designs and export G-code
 - Publishers can create, edit, and delete designs
+- **Auto-load last design**: Remembers your last loaded design and opens it automatically on next visit
 
 ## 🚀 Quick Start
 
@@ -101,6 +105,8 @@ printer-designer/
 │   │   │   ├── TipManagement.js      # Dispenser tip config
 │   │   │   ├── GcodeBuilder.js       # G-code sequence builder
 │   │   │   ├── ShapeDesigner.js      # Line pattern generator
+│   │   │   ├── CalibrationArrayGenerator.js # Calibration sweeps
+│   │   │   ├── NumInput.js           # Reusable numeric input component
 │   │   │   └── LoginModal.js         # Auth UI
 │   │   ├── context/
 │   │   │   └── AuthContext.js        # Publisher authentication

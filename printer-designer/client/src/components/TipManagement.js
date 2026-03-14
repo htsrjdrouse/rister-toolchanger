@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import NumInput from './NumInput';
 
 function TipManagement({ design, onSave, isPublisher = true }) {
   const [tips, setTips] = useState(design.tips || []);
@@ -197,28 +198,28 @@ function TipManagement({ design, onSave, isPublisher = true }) {
           <div className="form-row cols-3">
             <div>
               <label>X:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.drypad_x}
-                onChange={(e) => updateTip('drypad_x', parseFloat(e.target.value))}
+                onChange={(v) => updateTip('drypad_x', v)}
+                fallback={0}
                 step="0.1"
               />
             </div>
             <div>
               <label>Y:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.drypad_y}
-                onChange={(e) => updateTip('drypad_y', parseFloat(e.target.value))}
+                onChange={(v) => updateTip('drypad_y', v)}
+                fallback={0}
                 step="0.1"
               />
             </div>
             <div>
               <label>Z:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.drypad_z}
-                onChange={(e) => updateTip('drypad_z', parseFloat(e.target.value))}
+                onChange={(v) => updateTip('drypad_z', v)}
+                fallback={0}
                 step="0.1"
               />
             </div>
@@ -226,38 +227,42 @@ function TipManagement({ design, onSave, isPublisher = true }) {
           <div className="form-row cols-4">
             <div>
               <label>Move°:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.drypad_servo_move}
-                onChange={(e) => updateTip('drypad_servo_move', parseInt(e.target.value))}
+                onChange={(v) => updateTip('drypad_servo_move', v)}
+                fallback={0}
+                integer
                 min="0"
                 max="180"
               />
             </div>
             <div>
               <label>Touch°:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.drypad_servo_touch}
-                onChange={(e) => updateTip('drypad_servo_touch', parseInt(e.target.value))}
+                onChange={(v) => updateTip('drypad_servo_touch', v)}
+                fallback={0}
+                integer
                 min="0"
                 max="180"
               />
             </div>
             <div>
               <label>Time (ms):</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.drypad_time}
-                onChange={(e) => updateTip('drypad_time', parseInt(e.target.value))}
+                onChange={(v) => updateTip('drypad_time', v)}
+                fallback={0}
+                integer
               />
             </div>
             <div>
               <label>Delay (ms):</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.drypad_delay}
-                onChange={(e) => updateTip('drypad_delay', parseInt(e.target.value))}
+                onChange={(v) => updateTip('drypad_delay', v)}
+                fallback={0}
+                integer
               />
             </div>
           </div>
@@ -267,28 +272,28 @@ function TipManagement({ design, onSave, isPublisher = true }) {
           <div className="form-row cols-3">
             <div>
               <label>X:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.wash_x}
-                onChange={(e) => updateTip('wash_x', parseFloat(e.target.value))}
+                onChange={(v) => updateTip('wash_x', v)}
+                fallback={0}
                 step="0.1"
               />
             </div>
             <div>
               <label>Y:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.wash_y}
-                onChange={(e) => updateTip('wash_y', parseFloat(e.target.value))}
+                onChange={(v) => updateTip('wash_y', v)}
+                fallback={0}
                 step="0.1"
               />
             </div>
             <div>
               <label>Z:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.wash_z}
-                onChange={(e) => updateTip('wash_z', parseFloat(e.target.value))}
+                onChange={(v) => updateTip('wash_z', v)}
+                fallback={0}
                 step="0.1"
               />
             </div>
@@ -296,20 +301,22 @@ function TipManagement({ design, onSave, isPublisher = true }) {
           <div className="form-row cols-2">
             <div>
               <label>Move°:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.wash_servo_move}
-                onChange={(e) => updateTip('wash_servo_move', parseInt(e.target.value))}
+                onChange={(v) => updateTip('wash_servo_move', v)}
+                fallback={0}
+                integer
                 min="0"
                 max="180"
               />
             </div>
             <div>
               <label>Wash°:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.wash_servo_wash}
-                onChange={(e) => updateTip('wash_servo_wash', parseInt(e.target.value))}
+                onChange={(v) => updateTip('wash_servo_wash', v)}
+                fallback={0}
+                integer
                 min="0"
                 max="180"
               />
@@ -321,28 +328,28 @@ function TipManagement({ design, onSave, isPublisher = true }) {
           <div className="form-row cols-3">
             <div>
               <label>X:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.waste_x}
-                onChange={(e) => updateTip('waste_x', parseFloat(e.target.value))}
+                onChange={(v) => updateTip('waste_x', v)}
+                fallback={0}
                 step="0.1"
               />
             </div>
             <div>
               <label>Y:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.waste_y}
-                onChange={(e) => updateTip('waste_y', parseFloat(e.target.value))}
+                onChange={(v) => updateTip('waste_y', v)}
+                fallback={0}
                 step="0.1"
               />
             </div>
             <div>
               <label>Z:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.waste_z}
-                onChange={(e) => updateTip('waste_z', parseFloat(e.target.value))}
+                onChange={(v) => updateTip('waste_z', v)}
+                fallback={0}
                 step="0.1"
               />
             </div>
@@ -350,20 +357,22 @@ function TipManagement({ design, onSave, isPublisher = true }) {
           <div className="form-row cols-2">
             <div>
               <label>Move°:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.waste_servo_move}
-                onChange={(e) => updateTip('waste_servo_move', parseInt(e.target.value))}
+                onChange={(v) => updateTip('waste_servo_move', v)}
+                fallback={0}
+                integer
                 min="0"
                 max="180"
               />
             </div>
             <div>
               <label>Waste°:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.waste_servo_waste}
-                onChange={(e) => updateTip('waste_servo_waste', parseInt(e.target.value))}
+                onChange={(v) => updateTip('waste_servo_waste', v)}
+                fallback={0}
+                integer
                 min="0"
                 max="180"
               />
@@ -375,28 +384,28 @@ function TipManagement({ design, onSave, isPublisher = true }) {
           <div className="form-row cols-3">
             <div>
               <label>X:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.eject_x}
-                onChange={(e) => updateTip('eject_x', parseFloat(e.target.value))}
+                onChange={(v) => updateTip('eject_x', v)}
+                fallback={0}
                 step="0.1"
               />
             </div>
             <div>
               <label>Y:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.eject_y}
-                onChange={(e) => updateTip('eject_y', parseFloat(e.target.value))}
+                onChange={(v) => updateTip('eject_y', v)}
+                fallback={0}
                 step="0.1"
               />
             </div>
             <div>
               <label>Z:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.eject_z}
-                onChange={(e) => updateTip('eject_z', parseFloat(e.target.value))}
+                onChange={(v) => updateTip('eject_z', v)}
+                fallback={0}
                 step="0.1"
               />
             </div>
@@ -404,20 +413,22 @@ function TipManagement({ design, onSave, isPublisher = true }) {
           <div className="form-row cols-2">
             <div>
               <label>Move°:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.eject_servo_move}
-                onChange={(e) => updateTip('eject_servo_move', parseInt(e.target.value))}
+                onChange={(v) => updateTip('eject_servo_move', v)}
+                fallback={0}
+                integer
                 min="0"
                 max="180"
               />
             </div>
             <div>
               <label>Eject°:</label>
-              <input
-                type="number"
+              <NumInput
                 value={selectedTip.eject_servo_eject}
-                onChange={(e) => updateTip('eject_servo_eject', parseInt(e.target.value))}
+                onChange={(v) => updateTip('eject_servo_eject', v)}
+                fallback={0}
+                integer
                 min="0"
                 max="180"
               />

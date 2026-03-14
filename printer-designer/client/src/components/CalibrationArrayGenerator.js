@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import '../styles/calibration.css';
+import NumInput from './NumInput';
 
 function CalibrationArrayGenerator() {
   // Load settings from Shape Designer's localStorage
@@ -284,7 +285,7 @@ function CalibrationArrayGenerator() {
           
           <div className="field-row">
             <label>Sweep Gap (mm) <small style={{color: '#888', fontSize: '0.65rem'}}>(spacing between sweeps when both selected)</small>
-              <input type="number" value={settings.sweepGap} onChange={(e) => updateSetting('sweepGap', parseFloat(e.target.value))}/>
+              <NumInput value={settings.sweepGap} onChange={(v) => updateSetting('sweepGap', v)} fallback={10}/>
             </label>
           </div>
           
@@ -298,9 +299,9 @@ function CalibrationArrayGenerator() {
           <h3>Sweep 1 <span className="tag e">E Multiplier</span></h3>
           <p className="note">Fixed acceleration. Vary E multiplier across 5 lines.</p>
           <div className="field-row">
-            <label>Fixed Accel (mm/s²)<input type="number" value={settings.s1Accel} onChange={(e) => updateSetting('s1Accel', parseFloat(e.target.value))}/></label>
-            <label>Center E Mult<input type="number" step="0.05" value={settings.s1Center} onChange={(e) => updateSetting('s1Center', parseFloat(e.target.value))}/></label>
-            <label>Step Size<input type="number" step="0.01" value={settings.s1Step} onChange={(e) => updateSetting('s1Step', parseFloat(e.target.value))}/></label>
+            <label>Fixed Accel (mm/s²)<NumInput value={settings.s1Accel} onChange={(v) => updateSetting('s1Accel', v)} fallback={500} integer/></label>
+            <label>Center E Mult<NumInput step="0.05" value={settings.s1Center} onChange={(v) => updateSetting('s1Center', v)} fallback={1.0}/></label>
+            <label>Step Size<NumInput step="0.01" value={settings.s1Step} onChange={(v) => updateSetting('s1Step', v)} fallback={0.1}/></label>
           </div>
           <table className="sweep-table">
             <thead><tr><th>Line</th><th>E Multiplier</th><th>Accel (mm/s²)</th></tr></thead>
@@ -317,9 +318,9 @@ function CalibrationArrayGenerator() {
           <h3>Sweep 2 <span className="tag a">Acceleration</span></h3>
           <p className="note">Fixed E multiplier. Vary acceleration across 5 lines.</p>
           <div className="field-row">
-            <label>Fixed E Mult<input type="number" step="0.05" value={settings.s2EMult} onChange={(e) => updateSetting('s2EMult', parseFloat(e.target.value))}/></label>
-            <label>Center Accel (mm/s²)<input type="number" value={settings.s2Center} onChange={(e) => updateSetting('s2Center', parseFloat(e.target.value))}/></label>
-            <label>Step Size (mm/s²)<input type="number" value={settings.s2Step} onChange={(e) => updateSetting('s2Step', parseFloat(e.target.value))}/></label>
+            <label>Fixed E Mult<NumInput step="0.05" value={settings.s2EMult} onChange={(v) => updateSetting('s2EMult', v)} fallback={1.0}/></label>
+            <label>Center Accel (mm/s²)<NumInput value={settings.s2Center} onChange={(v) => updateSetting('s2Center', v)} fallback={600} integer/></label>
+            <label>Step Size (mm/s²)<NumInput value={settings.s2Step} onChange={(v) => updateSetting('s2Step', v)} fallback={150} integer/></label>
           </div>
           <table className="sweep-table">
             <thead><tr><th>Line</th><th>E Multiplier</th><th>Accel (mm/s²)</th></tr></thead>

@@ -1,6 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import * as THREE from 'three';
 import { OrbitControls } from 'three/examples/jsm/controls/OrbitControls';
+import NumInput from './NumInput';
 
 // Needle gauge to inner diameter (mm)
 const NEEDLE_GAUGES = {
@@ -109,8 +110,10 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     }
   }, [settings]);
   
-  // Build plate size for preview
-  const [buildPlate, setBuildPlate] = useState({ width: 200, height: 200 });
+  // Build plate size from design
+  const bedW = design?.printerArea?.width || 380;
+  const bedH = design?.printerArea?.height || 480;
+  const bedMax = Math.max(bedW, bedH);
   
   const viewerRef = useRef(null);
   const sceneRef = useRef(null);
@@ -119,6 +122,17 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
   const animationRef = useRef(null);
   const cameraRef = useRef(null);
   const linesGroupRef = useRef(null);
+  const objectsGroupRef = useRef(null);
+  const bedGroupRef = useRef(null);
+  const [hoverCoords, setHoverCoords] = useState(null);
+  const [sceneReady, setSceneReady] = useState(false);
+  const raycasterRef = useRef(new THREE.Raycaster());
+  const bedPlaneRef = useRef(new THREE.Plane(new THREE.Vector3(0, 1, 0), 0));
+
+  // Keep raycaster plane at dispense height so hover coords match visual positions
+  useEffect(() => {
+    bedPlaneRef.current.constant = -(parseFloat(settings.zHeight) || 0);
+  }, [settings.zHeight]);
 
   // Initialize Three.js scene
   useEffect(() => {
@@ -133,10 +147,13 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     scene.background = new THREE.Color(0x1a1a2e);
     sceneRef.current = scene;
     
+    const cx = bedW / 2;
+    const cz = bedH / 2;
+    
     // Camera
-    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 2000);
-    camera.position.set(150, 150, 150);
-    camera.lookAt(100, 0, 100);
+    const camera = new THREE.PerspectiveCamera(45, width / height, 0.1, 5000);
+    camera.position.set(cx + bedMax * 0.4, bedMax * 0.5, cz + bedMax * 0.4);
+    camera.lookAt(cx, 0, cz);
     cameraRef.current = camera;
     
     // Renderer
@@ -150,7 +167,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     const controls = new OrbitControls(camera, renderer.domElement);
     controls.enableDamping = true;
     controls.dampingFactor = 0.05;
-    controls.target.set(100, 0, 100);
+    controls.target.set(cx, 0, cz);
     controls.update();
     controlsRef.current = controls;
     
@@ -158,30 +175,22 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
     scene.add(ambientLight);
     const directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
-    directionalLight.position.set(100, 200, 100);
+    directionalLight.position.set(cx, bedMax, cz);
     scene.add(directionalLight);
     
-    // Grid (build plate)
-    const gridHelper = new THREE.GridHelper(200, 20, 0x444444, 0x333333);
-    gridHelper.position.set(100, 0, 100);
-    scene.add(gridHelper);
+    // Bed group (grid + plate) — replaced when bed size changes
+    bedGroupRef.current = new THREE.Group();
+    scene.add(bedGroupRef.current);
     
-    // Build plate outline
-    const plateGeometry = new THREE.PlaneGeometry(200, 200);
-    const plateMaterial = new THREE.MeshBasicMaterial({ 
-      color: 0x2a2a4e, 
-      side: THREE.DoubleSide,
-      transparent: true,
-      opacity: 0.3
-    });
-    const plate = new THREE.Mesh(plateGeometry, plateMaterial);
-    plate.rotation.x = -Math.PI / 2;
-    plate.position.set(100, -0.1, 100);
-    scene.add(plate);
+    // Objects group (design objects rendered on bed)
+    objectsGroupRef.current = new THREE.Group();
+    scene.add(objectsGroupRef.current);
     
     // Lines group
     linesGroupRef.current = new THREE.Group();
     scene.add(linesGroupRef.current);
+
+    setSceneReady(true);
     
     // Animation loop
     const animate = () => {
@@ -200,14 +209,134 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
       renderer.setSize(w, h);
     };
     window.addEventListener('resize', handleResize);
+
+    // Mouse hover → bed coordinates
+    const handleMouseMove = (e) => {
+      const rect = renderer.domElement.getBoundingClientRect();
+      const mouse = new THREE.Vector2(
+        ((e.clientX - rect.left) / rect.width) * 2 - 1,
+        -((e.clientY - rect.top) / rect.height) * 2 + 1
+      );
+      raycasterRef.current.setFromCamera(mouse, camera);
+      const hit = new THREE.Vector3();
+      if (raycasterRef.current.ray.intersectPlane(bedPlaneRef.current, hit)) {
+        setHoverCoords({ x: hit.x, y: hit.z, z: hit.y });
+      }
+    };
+    const handleMouseLeave = () => setHoverCoords(null);
+    renderer.domElement.addEventListener('mousemove', handleMouseMove);
+    renderer.domElement.addEventListener('mouseleave', handleMouseLeave);
     
     return () => {
       window.removeEventListener('resize', handleResize);
+      renderer.domElement.removeEventListener('mousemove', handleMouseMove);
+      renderer.domElement.removeEventListener('mouseleave', handleMouseLeave);
       cancelAnimationFrame(animationRef.current);
       renderer.dispose();
       container.removeChild(renderer.domElement);
     };
-  }, []);
+  }, []); // init once
+
+  // Update bed grid + plate when design printer area changes
+  useEffect(() => {
+    const group = bedGroupRef.current;
+    if (!group) return;
+    while (group.children.length) group.remove(group.children[0]);
+
+    const cx = bedW / 2;
+    const cz = bedH / 2;
+    const gridSize = Math.max(bedW, bedH);
+    const divisions = Math.round(gridSize / 20);
+
+    const gridHelper = new THREE.GridHelper(gridSize, divisions, 0x444444, 0x333333);
+    gridHelper.position.set(cx, 0, cz);
+    group.add(gridHelper);
+
+    // Bed outline
+    const plateGeo = new THREE.PlaneGeometry(bedW, bedH);
+    const plateMat = new THREE.MeshBasicMaterial({ color: 0x2a2a4e, side: THREE.DoubleSide, transparent: true, opacity: 0.3 });
+    const plate = new THREE.Mesh(plateGeo, plateMat);
+    plate.rotation.x = -Math.PI / 2;
+    plate.position.set(cx, -0.1, cz);
+    group.add(plate);
+
+    // Bed border
+    const border = new THREE.LineLoop(
+      new THREE.BufferGeometry().setFromPoints([
+        new THREE.Vector3(0, 0.01, 0),
+        new THREE.Vector3(bedW, 0.01, 0),
+        new THREE.Vector3(bedW, 0.01, bedH),
+        new THREE.Vector3(0, 0.01, bedH),
+      ]),
+      new THREE.LineBasicMaterial({ color: 0x666688 })
+    );
+    group.add(border);
+
+    // Update camera/controls to frame the bed
+    if (cameraRef.current && controlsRef.current) {
+      const bMax = Math.max(bedW, bedH);
+      cameraRef.current.position.set(cx + bMax * 0.4, bMax * 0.5, cz + bMax * 0.4);
+      controlsRef.current.target.set(cx, 0, cz);
+      controlsRef.current.update();
+    }
+  }, [bedW, bedH]);
+
+  // Render design objects on the bed
+  useEffect(() => {
+    const group = objectsGroupRef.current;
+    if (!group) return;
+    while (group.children.length) group.remove(group.children[0]);
+
+    const objects = design?.objects || [];
+    objects.forEach((obj) => {
+      if (obj.status === 'off') return;
+      const px = parseFloat(obj.posx) || 0;
+      const py = parseFloat(obj.posy) || 0;
+      const sx = parseFloat(obj.X) || 10;
+      const sy = parseFloat(obj.Y) || 10;
+      const sz = parseFloat(obj.Z) || 1;
+      const [r, g, b] = (obj.color || '99,87,101').split(',').map(c => parseInt(c.trim()));
+      const color = new THREE.Color(r / 255, g / 255, b / 255);
+
+      // 3D box: X=width, Y=height(Z), Z=depth
+      const geo = new THREE.BoxGeometry(sx, sz, sy);
+      const mat = new THREE.MeshPhongMaterial({
+        color,
+        transparent: true,
+        opacity: 0.4,
+        depthWrite: false,
+      });
+      const mesh = new THREE.Mesh(geo, mat);
+      mesh.position.set(px + sx / 2, sz / 2, py + sy / 2);
+      group.add(mesh);
+
+      // Wireframe edges
+      const edges = new THREE.LineSegments(
+        new THREE.EdgesGeometry(geo),
+        new THREE.LineBasicMaterial({ color, transparent: true, opacity: 0.6 })
+      );
+      edges.position.copy(mesh.position);
+      group.add(edges);
+
+      // Label on top
+      if (obj.name) {
+        const canvas = document.createElement('canvas');
+        canvas.width = 256;
+        canvas.height = 64;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = `rgb(${r},${g},${b})`;
+        ctx.font = 'bold 28px sans-serif';
+        ctx.fillText(obj.name, 4, 40);
+        const tex = new THREE.CanvasTexture(canvas);
+        const labelGeo = new THREE.PlaneGeometry(sx * 0.8, sx * 0.2);
+        const labelMat = new THREE.MeshBasicMaterial({ map: tex, transparent: true, side: THREE.DoubleSide });
+        const label = new THREE.Mesh(labelGeo, labelMat);
+        label.rotation.x = -Math.PI / 2;
+        label.position.set(px + sx / 2, sz + 0.5, py + sy / 2);
+        group.add(label);
+      }
+    });
+  }, [design?.objects, design?.printerArea, sceneReady]);
 
   // Update 3D preview when settings change
   const updatePreview = useCallback(() => {
@@ -221,36 +350,62 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     const s = settings;
     const endY = s.startY + s.lineLength;
     
-    // Display dimensions for preview (visual only, not actual line size)
-    const displayWidth = Math.max(0.3, s.lineSpacing * 0.3);  // Scale with spacing
-    const displayHeight = 0.5;  // Fixed visual height
+    // Display dimensions for preview
+    const displayWidth = Math.max(0.3, s.lineSpacing * 0.3);
     
-    // Create line meshes
+    // Create line meshes with direction arrows
     for (let i = 0; i < s.numLines; i++) {
       const x = s.startX + i * s.lineSpacing;
+      const isReverse = s.zigzagLines && (i % 2 === 1);
+      const yStart = isReverse ? endY : s.startY;
+      const yEnd = isReverse ? s.startY : endY;
       
-      // Line geometry (thin box along Y axis)
-      const geometry = new THREE.BoxGeometry(
-        displayWidth,     // X (visual width)
-        displayHeight,    // Y (visual height)
-        s.lineLength      // Z (length in Y direction shown as Z in 3D)
-      );
+      // Line as a thin 3D path (3D coords: X=gcode X, Y=gcode Z height, Z=gcode Y)
+      const points = [
+        new THREE.Vector3(x, s.zHeight, yStart),
+        new THREE.Vector3(x, s.zHeight, yEnd),
+      ];
+      const lineGeo = new THREE.BufferGeometry().setFromPoints(points);
+      const lineMat = new THREE.LineBasicMaterial({ color: 0x00d9ff, linewidth: 2 });
+      const lineMesh = new THREE.Line(lineGeo, lineMat);
+      linesGroupRef.current.add(lineMesh);
       
-      const material = new THREE.MeshPhongMaterial({ 
-        color: 0x00d9ff,
-        transparent: true,
-        opacity: 0.8
-      });
+      // Thin box for visibility
+      const boxGeo = new THREE.BoxGeometry(displayWidth, 0.3, s.lineLength);
+      const boxMat = new THREE.MeshPhongMaterial({ color: 0x00d9ff, transparent: true, opacity: 0.5 });
+      const box = new THREE.Mesh(boxGeo, boxMat);
+      box.position.set(x, s.zHeight, s.startY + s.lineLength / 2);
+      linesGroupRef.current.add(box);
       
-      const line = new THREE.Mesh(geometry, material);
-      // Position: X as specified, Y at half height, Z centered on line
-      line.position.set(x, s.zHeight + displayHeight / 2, s.startY + s.lineLength / 2);
+      // Arrow showing dispense direction
+      const dir = new THREE.Vector3(0, 0, yEnd > yStart ? 1 : -1);
+      const arrowOrigin = new THREE.Vector3(x, s.zHeight + 0.5, (yStart + yEnd) / 2);
+      const arrowLen = s.lineLength * 0.3;
+      const arrow = new THREE.ArrowHelper(dir, arrowOrigin, arrowLen, 0x00ff88, arrowLen * 0.3, arrowLen * 0.15);
+      linesGroupRef.current.add(arrow);
       
-      linesGroupRef.current.add(line);
+      // Travel move from previous line (dashed)
+      if (i > 0) {
+        const prevX = s.startX + (i - 1) * s.lineSpacing;
+        const prevReverse = s.zigzagLines && ((i - 1) % 2 === 1);
+        const prevEnd = prevReverse ? s.startY : endY;
+        // Travel: lift → move XY → lower
+        const travelPts = [
+          new THREE.Vector3(prevX, s.zHeight, prevEnd),
+          new THREE.Vector3(prevX, s.zTravel, prevEnd),
+          new THREE.Vector3(x, s.zTravel, yStart),
+          new THREE.Vector3(x, s.zHeight, yStart),
+        ];
+        const travelGeo = new THREE.BufferGeometry().setFromPoints(travelPts);
+        const travelMat = new THREE.LineDashedMaterial({ color: 0xffaa00, dashSize: 3, gapSize: 2 });
+        const travelLine = new THREE.Line(travelGeo, travelMat);
+        travelLine.computeLineDistances();
+        linesGroupRef.current.add(travelLine);
+      }
     }
     
-    // Add start position marker
-    const markerGeometry = new THREE.SphereGeometry(1, 16, 16);
+    // Start position marker (larger, at actual start position)
+    const markerGeometry = new THREE.SphereGeometry(2, 16, 16);
     const markerMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00 });
     const marker = new THREE.Mesh(markerGeometry, markerMaterial);
     marker.position.set(s.startX, s.zHeight, s.startY);
@@ -538,32 +693,33 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
             <div className="settings-group">
               <label>
                 <span>Number of Lines</span>
-                <input
-                  type="number"
+                <NumInput
                   min="1"
                   max="100"
                   value={settings.numLines}
-                  onChange={(e) => updateSetting('numLines', parseInt(e.target.value) || 1)}
+                  onChange={(v) => updateSetting('numLines', v)}
+                  fallback={1}
+                  integer
                 />
               </label>
               <label>
                 <span>Line Length (mm)</span>
-                <input
-                  type="number"
+                <NumInput
                   step="1"
                   min="1"
                   value={settings.lineLength}
-                  onChange={(e) => updateSetting('lineLength', parseFloat(e.target.value) || 10)}
+                  onChange={(v) => updateSetting('lineLength', v)}
+                  fallback={10}
                 />
               </label>
               <label>
                 <span>Line Spacing (mm)</span>
-                <input
-                  type="number"
+                <NumInput
                   step="0.1"
                   min="0.1"
                   value={settings.lineSpacing}
-                  onChange={(e) => updateSetting('lineSpacing', parseFloat(e.target.value) || 0.5)}
+                  onChange={(v) => updateSetting('lineSpacing', v)}
+                  fallback={0.5}
                 />
               </label>
             </div>
@@ -577,12 +733,12 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
             <div className="settings-group">
               <label>
                 <span>Volume per Line (µL)</span>
-                <input
-                  type="number"
+                <NumInput
                   step="0.5"
                   min="0.1"
                   value={settings.volumePerLine}
-                  onChange={(e) => updateSetting('volumePerLine', parseFloat(e.target.value) || 1)}
+                  onChange={(v) => updateSetting('volumePerLine', v)}
+                  fallback={1}
                 />
               </label>
               {(() => {
@@ -623,42 +779,42 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
             <div className="settings-group horizontal">
               <label>
                 <span>X (mm)</span>
-                <input
-                  type="number"
+                <NumInput
                   step="1"
                   value={settings.startX}
-                  onChange={(e) => updateSetting('startX', parseFloat(e.target.value) || 0)}
+                  onChange={(v) => updateSetting('startX', v)}
+                  fallback={0}
                 />
               </label>
               <label>
                 <span>Y (mm)</span>
-                <input
-                  type="number"
+                <NumInput
                   step="1"
                   value={settings.startY}
-                  onChange={(e) => updateSetting('startY', parseFloat(e.target.value) || 0)}
+                  onChange={(v) => updateSetting('startY', v)}
+                  fallback={0}
                 />
               </label>
             </div>
             <div className="settings-group horizontal">
               <label>
                 <span>Z (mm)</span>
-                <input
-                  type="number"
+                <NumInput
                   step="1"
                   min="0"
                   value={settings.startZ}
-                  onChange={(e) => updateSetting('startZ', parseFloat(e.target.value) || 0)}
+                  onChange={(v) => updateSetting('startZ', v)}
+                  fallback={0}
                 />
               </label>
               <label>
                 <span>E (µL remaining)</span>
-                <input
-                  type="number"
+                <NumInput
                   step="1"
                   min="0"
                   value={settings.startE}
-                  onChange={(e) => updateSetting('startE', parseFloat(e.target.value) || 0)}
+                  onChange={(v) => updateSetting('startE', v)}
+                  fallback={0}
                 />
               </label>
             </div>
@@ -716,84 +872,67 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
             <div className="settings-group">
               <label>
                 <span>Dispense Speed (mm/min)</span>
-                <input
-                  type="number"
+                <NumInput
                   step="10"
                   min="10"
                   value={settings.feedrate}
-                  onChange={(e) => updateSetting('feedrate', parseInt(e.target.value) || 100)}
+                  onChange={(v) => updateSetting('feedrate', v)}
+                  fallback={100}
+                  integer
                 />
               </label>
               <label>
                 <span>Dispense Acceleration (mm/s²)</span>
-                <input
-                  type="number"
+                <NumInput
                   step="50"
                   min="50"
                   value={settings.dispenseAccel}
-                  onChange={(e) => updateSetting('dispenseAccel', parseInt(e.target.value) || 500)}
+                  onChange={(v) => updateSetting('dispenseAccel', v)}
+                  fallback={500}
+                  integer
                 />
               </label>
               <label>
                 <span>Restore Acceleration (mm/s²)</span>
-                <input
-                  type="number"
+                <NumInput
                   step="100"
                   min="100"
                   value={settings.restoreAccel}
-                  onChange={(e) => updateSetting('restoreAccel', parseInt(e.target.value) || 3000)}
+                  onChange={(v) => updateSetting('restoreAccel', v)}
+                  fallback={3000}
+                  integer
                 />
               </label>
               <label>
                 <span>Z Dispense (mm)</span>
-                <input
-                  type="number"
+                <NumInput
                   step="0.1"
                   min="0.1"
                   value={settings.zHeight}
-                  onChange={(e) => updateSetting('zHeight', parseFloat(e.target.value) || 0.5)}
+                  onChange={(v) => updateSetting('zHeight', v)}
+                  fallback={0.5}
                 />
               </label>
               <label>
                 <span>Z Travel (mm)</span>
-                <input
-                  type="number"
+                <NumInput
                   step="1"
                   min="1"
                   value={settings.zTravel}
-                  onChange={(e) => updateSetting('zTravel', parseFloat(e.target.value) || 5)}
+                  onChange={(v) => updateSetting('zTravel', v)}
+                  fallback={5}
                 />
               </label>
             </div>
             <div className="settings-group">
               <label>
                 <span>E Multiplier</span>
-                <input
-                  type="text"
-                  inputMode="decimal"
-                  pattern="[0-9]*\.?[0-9]*"
+                <NumInput
+                  step="0.01"
+                  min="0"
                   value={settings.eMultiplier}
-                  onChange={(e) => {
-                    const val = e.target.value;
-                    // Allow empty or partial input while typing
-                    if (val === '' || val === '.' || val === '0.' || val === '0.0') {
-                      updateSetting('eMultiplier', val);
-                    } else {
-                      const num = parseFloat(val);
-                      if (!isNaN(num) && num >= 0) {
-                        updateSetting('eMultiplier', val);
-                      }
-                    }
-                  }}
-                  onBlur={(e) => {
-                    // On blur, ensure valid number
-                    const num = parseFloat(e.target.value);
-                    if (isNaN(num) || num <= 0) {
-                      updateSetting('eMultiplier', 1.0);
-                    } else {
-                      updateSetting('eMultiplier', num);
-                    }
-                  }}
+                  onChange={(v) => updateSetting('eMultiplier', v)}
+                  fallback={1.0}
                   style={{ width: '80px' }}
                 />
                 <small style={{ color: '#888', fontSize: '10px' }}>1.0 = 100%, 0.1 = 10%, 0.01 = 1%</small>
@@ -842,20 +981,21 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
                           marginBottom: '2px'
                         }}>
                           <div style={{ paddingTop: '4px' }}>Line {i + 1}</div>
-                          <input
-                            type="number"
+                          <NumInput
                             step="0.1"
                             min="0.1"
                             value={override.eMultiplier}
-                            onChange={(e) => updateLineOverride(i, 'eMultiplier', parseFloat(e.target.value) || 1.0)}
+                            onChange={(v) => updateLineOverride(i, 'eMultiplier', v)}
+                            fallback={1.0}
                             style={{ width: '100%', padding: '2px 4px', fontSize: '11px' }}
                           />
-                          <input
-                            type="number"
+                          <NumInput
                             step="50"
                             min="50"
                             value={override.accel}
-                            onChange={(e) => updateLineOverride(i, 'accel', parseInt(e.target.value) || 500)}
+                            onChange={(v) => updateLineOverride(i, 'accel', v)}
+                            fallback={500}
+                            integer
                             style={{ width: '100%', padding: '2px 4px', fontSize: '11px' }}
                           />
                         </div>
@@ -979,10 +1119,21 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
           <div className="panel-header">
             <h3>🔍 Preview</h3>
           </div>
-          <div className="stl-viewer" ref={viewerRef}></div>
+          <div className="stl-viewer" ref={viewerRef} style={{ position: 'relative' }}>
+            {hoverCoords && (
+              <div style={{
+                position: 'absolute', top: 8, left: 8,
+                background: 'rgba(0,0,0,0.7)', color: '#0f0', padding: '4px 8px',
+                borderRadius: 4, fontSize: 12, fontFamily: 'monospace', pointerEvents: 'none',
+              }}>
+                X: {hoverCoords.x.toFixed(1)} &nbsp; Y: {hoverCoords.y.toFixed(1)}
+              </div>
+            )}
+          </div>
           <div className="viewer-info">
             <span>🟢 Start position</span>
             <span>🔵 Dispense lines</span>
+            <span>🟠 Travel moves</span>
           </div>
         </div>
         

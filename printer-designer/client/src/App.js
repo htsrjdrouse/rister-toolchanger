@@ -22,6 +22,9 @@ function AppContent() {
   useEffect(() => {
     loadDesigns();
     checkPublished();
+    // Auto-load last used design
+    const lastId = localStorage.getItem('lastDesignId');
+    if (lastId) loadDesign(lastId);
   }, []);
 
   // Listen for navigation events
@@ -66,6 +69,7 @@ function AppContent() {
       const data = await response.json();
       setCurrentDesign(data);
       setActiveTab('objects');
+      localStorage.setItem('lastDesignId', id);
     } catch (err) {
       console.error('Failed to load design:', err);
     }

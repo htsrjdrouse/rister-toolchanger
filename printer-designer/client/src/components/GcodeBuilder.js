@@ -1,4 +1,5 @@
 import React, { useState, useEffect } from 'react';
+import NumInput from './NumInput';
 
 function GcodeBuilder({ design, onSave, isPublisher = true }) {
   const [savedMacros, setSavedMacros] = useState(design.savedMacros || []);
@@ -344,24 +345,24 @@ function GcodeBuilder({ design, onSave, isPublisher = true }) {
         <div className="form-row cols-2">
           <div>
             <label>Z Dispense (mm):</label>
-            <input 
-              type="number" 
+            <NumInput 
               step="0.1"
               min="0.1"
               value={zDispense}
-              onChange={(e) => setZDispense(parseFloat(e.target.value) || 0.5)}
+              onChange={(v) => setZDispense(v)}
+              fallback={0.5}
               disabled={!isPublisher}
             />
             <small style={{ color: '#888', fontSize: '10px' }}>Height while dispensing</small>
           </div>
           <div>
             <label>Z Travel (mm):</label>
-            <input 
-              type="number" 
+            <NumInput 
               step="1"
               min="1"
               value={zTravel}
-              onChange={(e) => setZTravel(parseFloat(e.target.value) || 10)}
+              onChange={(v) => setZTravel(v)}
+              fallback={10}
               disabled={!isPublisher}
             />
             <small style={{ color: '#888', fontSize: '10px' }}>Height for travel moves</small>
@@ -424,20 +425,22 @@ function GcodeBuilder({ design, onSave, isPublisher = true }) {
         <div className="form-row cols-2" style={{ marginBottom: '10px' }}>
           <div>
             <label>Array Row:</label>
-            <input 
-              type="number" 
+            <NumInput 
               min="1" 
               value={arrayRow}
-              onChange={(e) => setArrayRow(parseInt(e.target.value) || 1)}
+              onChange={(v) => setArrayRow(v)}
+              fallback={1}
+              integer
             />
           </div>
           <div>
             <label>Array Column:</label>
-            <input 
-              type="number" 
+            <NumInput 
               min="1" 
               value={arrayColumn}
-              onChange={(e) => setArrayColumn(parseInt(e.target.value) || 1)}
+              onChange={(v) => setArrayColumn(v)}
+              fallback={1}
+              integer
             />
           </div>
         </div>

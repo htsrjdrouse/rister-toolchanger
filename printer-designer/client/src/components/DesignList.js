@@ -222,7 +222,7 @@ function DesignList({ designs, onLoadDesign, onCreateDesign, onRefresh, isPublis
                 </div>
                 <div className="btn-group" style={{ marginTop: '15px', marginBottom: 0 }}>
                   <button className="btn btn-sm" onClick={() => onLoadDesign(design.id)}>
-                    {isPublisher ? '✏️ Edit' : '👁️ View'}
+                    {isPublisher ? '📂 Load' : '👁️ View'}
                   </button>
                   {isPublisher && (
                     <>
