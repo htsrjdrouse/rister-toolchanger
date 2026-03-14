@@ -1,13 +1,13 @@
 
 
 
-//plate();
+plate();
 //base();
 //plate_template();
 
 //prespot_template();
 
-plate_aligner();
+//plate_aligner();
 
 
 module plate_aligner(){
@@ -43,11 +43,11 @@ module plate(){
 difference(){
 union(){
 hull(){
-translate([-4,-4,-2.5])cube([105+8,100+20+3+8,5]);
+translate([-4,-4-5,-2.5])cube([105+8,100+20+3+8+5,5]);
 //translate([-4+25,-4+25,-2.5-25])cube([105+8-50,100+20+3+8-50,5]);
 }
 }
-cube([105,100,10]);
+translate([0,-5-10,0])#cube([105,105+10,10]);
 translate([0,100+3,0])cube([105,20,10]);
 }
 }
