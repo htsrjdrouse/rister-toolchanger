@@ -409,7 +409,8 @@ function ObjectEditor({ design, onSave, isPublisher = true }) {
       {/* Object Editor Form */}
       {selectedObj && (
         <div className="section">
-          <h3 className="section-title">✏️ Edit: {selectedObj.name}</h3>
+          <h3 className="section-title">✏️ {isPublisher ? 'Edit' : 'View'}: {selectedObj.name}</h3>
+          <fieldset disabled={!isPublisher} style={{ border: 'none', padding: 0, margin: 0 }}>
 
           <div className="form-row cols-2">
             <div>
@@ -418,6 +419,7 @@ function ObjectEditor({ design, onSave, isPublisher = true }) {
                 type="text"
                 value={selectedObj.name}
                 onChange={(e) => updateObject('name', e.target.value)}
+                disabled={!isPublisher}
               />
             </div>
             <div>
@@ -425,6 +427,7 @@ function ObjectEditor({ design, onSave, isPublisher = true }) {
               <select
                 value={selectedObj.status}
                 onChange={(e) => updateObject('status', e.target.value)}
+                disabled={!isPublisher}
               >
                 <option value="on">Active</option>
                 <option value="off">Inactive</option>
@@ -590,6 +593,7 @@ function ObjectEditor({ design, onSave, isPublisher = true }) {
               />
             </div>
           </div>
+          </fieldset>
         </div>
       )}
     </div>

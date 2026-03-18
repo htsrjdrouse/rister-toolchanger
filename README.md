@@ -12,6 +12,7 @@ Unlike traditional toolchangers that focus solely on FDM extruders, the Rister s
 - **Liquid Dispenser (L0)**: Precision liquid handling with linear actuator pipette
 - **Camera Tool (C0)**: Programmable focus imaging with MQTT control and **visual calibration system**
 - **Microfluidics Integration**: Arduino-controlled wash station for liquid handling
+- **Decoupled Syringe Pump**: Arduino Micro + TMC2209 with hardware trigger for independent pump feedrate
 
 Each tool type uses optimized communication protocols and provides comprehensive sensor feedback for reliable operation.
 
@@ -26,6 +27,7 @@ Each tool type uses optimized communication protocols and provides comprehensive
 - **Pixel-to-Printer Calibration**: Click-to-coordinate mapping for visual calibration
 - **Extruder Offset Calibration**: Automated visual offset measurement and correction
 - **Precision Liquid Handling**: Syringe pump with valve control and wash station
+- **Decoupled Pump Architecture**: Hardware-triggered dispensing decouples XY feedrate from pump feedrate for sub-300µm lines
 - **Configuration Files**: 20+ Klipper .cfg files for comprehensive system integration
 - **Python Modules**: Custom Klipper extras and integrated services
 - **G-code Macros**: Unified command interface with 50+ custom macros
@@ -111,8 +113,8 @@ The browser extension works seamlessly with the updated configuration files:
 
 **Specialized Hardware**
 - **Camera**: Arducam IMX519 with programmable focus (0-30 range)
-- **Syringe Pump**: Stepper motor controlled via extruder interface
-- **Microfluidics**: Arduino-controlled wash station with pumps and valves
+- **Syringe Pump**: Arduino Micro + TMC2209 stepper driver (decoupled from Klipper motion)
+- **Microfluidics**: Arduino Micro-controlled wash station with pumps and valves
 - **Sensors**: Per-tool dock/carriage detection switches
 - **LEDs**: NeoPixel status indicators for each tool
 
@@ -128,8 +130,10 @@ The browser extension works seamlessly with the updated configuration files:
 - Klipper Pi IP: <KLIPPER_PI_IP> (MQTT broker)
 - Topics: `dakash/camera/*`, `dakash/gpio/*`, and `dakash/klipper/*`
 
-**Serial (Microfluidics)**
-- Arduino connection: `/dev/ttyACM1`
+**Serial (Microfluidics & Pump Arduino)**
+- Microfluidics Arduino: `/dev/ttyMICROFLUIDICS` (wash station)
+- Pump Arduino: `/dev/ttyPUMP` (decoupled syringe pump)
+- Stable device names via udev rules
 - Wash/waste pump control
 - Pressure compensation vessel
 
@@ -172,7 +176,9 @@ The browser extension works seamlessly with the updated configuration files:
 ├── camera_monitor.cfg             # Camera sensor monitoring (replaces shell scripts)  
 ├── camera_calibration.cfg         # NEW: Pixel-to-printer calibration tools
 │
-├── syringe_pump_0.cfg             # Liquid pump configuration
+├── syringe_pump_0.cfg             # DEPRECATED: No longer used (pump now on Arduino Micro)
+├── trigger_pump_arduino.cfg       # NEW: Decoupled pump control (Arduino serial + trigger pin + macros)
+├── toolchanger_gcode_macros.cfg   # UPDATED: M114/M112/M999 overrides for pump integration
 ├── tipset_config.cfg              # NEW: Tip configuration storage
 ├── microfluidics.cfg              # UPDATED: Fluidics macros (no hardcoded values)
 ├── variables.cfg 
@@ -203,6 +209,8 @@ The browser extension works seamlessly with the updated configuration files:
 - Raspberry Pi for camera tool (tested on Pi 5)
 - Arducam IMX519 camera module
 - Arduino for microfluidics control
+- Arduino Micro + TMC2209 for decoupled syringe pump
+- Powered USB hub (e.g., Atolla 4-port with 5V/3A adapter) for multiple Arduinos
 - Linear actuator servo for liquid dispenser
 - NeoPixel LEDs for tool status
 - Dock/carriage sensor switches per tool
@@ -249,7 +257,9 @@ The browser extension works seamlessly with the updated configuration files:
    camera_calibration.cfg   # Pixel-to-printer calibration tools
    
    # Supporting systems
-   syringe_pump_0.cfg       # Liquid pump configuration
+   syringe_pump_0.cfg       # DEPRECATED — no longer used
+   trigger_pump_arduino.cfg # Decoupled pump control (Arduino serial + trigger)
+   toolchanger_gcode_macros.cfg # M114/M112/M999 overrides for pump
    microfluidics.cfg        # Wash station control
    tool_probe.cfg           # Z-offset probing
    smart_filament_sensor.cfg # Runout detection
@@ -603,6 +613,145 @@ klipper_camera_service.py → Unified MQTT communication
 **Sensor Monitoring:**
 - `dakash/gpio/sensors/request` - Sensor status requests
 - `dakash/gpio/sensors/status` - Sensor status responses
+
+## Decoupled Syringe Pump Architecture
+
+### Why Decoupled?
+
+The syringe pump stepper is no longer controlled by Klipper's extruder system (`syringe_pump_0.cfg` is deprecated). A dedicated Arduino Micro runs the pump motor independently, communicating over USB serial. This decouples XY motion feedrate from pump feedrate, enabling sub-300µm line widths by running XY at F8000–F18000 while the pump runs at its minimum streaming threshold F4000.
+
+### Hardware
+
+- **Arduino Micro** (NOT Nano — Nano causes ground loop issues at 24V)
+- **TMC2209** stepper driver on perfboard (not a shield — DRV8825 shields are not recommended)
+- NEMA17 syringe pump motor
+- **12V motor supply** (NOT 24V — 24V causes thermal failures without correct Vref)
+- 10µF capacitor across VMOT and GND
+- **Powered USB hub required** (e.g., Atolla 4-port with 5V/3A adapter) — Pi USB ports insufficient for multiple Arduinos
+- Two Arduino Micros total: one for microfluidics (existing), one for pump (new)
+
+**TMC2209 Wiring:**
+| Signal | Pin |
+|--------|-----|
+| STEP | D3 |
+| DIR | D4 |
+| EN | D5 |
+| MS1 | 5V |
+| MS2 | 5V (1/16 microstepping) |
+| TRIG | D2 (internal pullup, no external resistor) |
+| VMOT | 12V |
+| VDD | 5V from Micro |
+
+**Octopus Trigger Pin:** PE5 (FAN header) → Arduino Micro D2
+- `SET_PIN VALUE=0` triggers pump (falling edge)
+- `SET_PIN VALUE=1` is idle
+
+**TMC2209 Vref:** Target 0.10V (~300mA). Set with VMOT connected but motor disconnected.
+
+### udev Rules
+
+Stable device names via `/etc/udev/rules.d/99-arduino-pumps.rules`:
+```
+SUBSYSTEM=="tty", KERNELS=="1-1.1", ATTRS{idVendor}=="2341", ATTRS{idProduct}=="8037", SYMLINK+="ttyPUMP"
+SUBSYSTEM=="tty", KERNELS=="1-1.3.3", ATTRS{idVendor}=="2341", ATTRS{idProduct}=="8037", SYMLINK+="ttyMICROFLUIDICS"
+```
+Always plug each Arduino into the same physical USB hub port.
+
+### Arduino Sketch
+
+Located at `arduino/syringe_pump_v21/syringe_pump_v21.ino`.
+
+**Calibration:** `rotation_distance: 24.534`, microsteps: 16 (TMC2209 standalone), STEPS_PER_UL = (200 × 16) / 24.534 ≈ 130.4 steps/µL — 1 E unit = 1 µL.
+
+**Default state on boot:** TRIGGEROFF (trigger disarmed).
+
+**Serial command interface (115200 baud):**
+
+| Command | Behavior |
+|---------|----------|
+| `TRIGGERON` | Arm trigger listener |
+| `TRIGGEROFF` | Disarm — serial commands only |
+| `D1 E<vol> F<rate>` | Armed: store silently. Not armed: execute immediately |
+| `A1 E<vol> F<rate>` | Always executes immediately (aspirate) |
+| `G1 E<vol> F<rate>` | Same as D1 (Klipper compatible) |
+| `TD <ms>` | Set trigger delay (default 50ms) |
+| `P114` | Report pump state |
+| `P0` | Emergency stop — disable driver |
+| `P999` | Clear estop |
+
+**Trigger behavior:**
+1. `TRIGGERON` arms the listener
+2. Falling edge on D2 (Klipper `SET_PIN VALUE=0`) fires dispense
+3. Waits TD ms, then executes stored D1 command once
+4. Auto re-arms — only `TRIGGEROFF` disarms
+5. If no D1 command stored, trigger fires but does nothing
+
+### Klipper Plugin Requirement
+
+`~/klipper/klippy/extras/arduino_serial.py` must support `load_config_prefix` for named instances:
+- `[arduino_serial]` → `SEND_ARDUINO`
+- `[arduino_serial pump_arduino]` → `SEND_PUMP_ARDUINO`
+
+### Klipper Config Files
+
+**NEW: `trigger_pump_arduino.cfg`** — complete pump control:
+- `[arduino_serial pump_arduino]` with `serial_port: /dev/ttyPUMP`
+- `[output_pin dispense_trigger]` on pin PE5 (value=1, shutdown_value=1)
+- `[gcode_macro LIQUID_TOOL_CONFIG]` — variable holder for trigger state
+- All pump macros (see below)
+
+**MODIFIED: `toolchanger_gcode_macros.cfg`** — M-code overrides:
+- `M114` → calls Klipper M114.1 + pump P114
+- `M112` → kills trigger pin + sends P0 to pump + calls Klipper M112.1
+- `M999` → sends P999 to pump + calls FIRMWARE_RESTART
+
+**MODIFIED: `microfluidics.cfg`** — serial port updated to `/dev/ttyMICROFLUIDICS`
+
+**DEPRECATED: `syringe_pump_0.cfg`** — must be removed from `printer.cfg` includes (conflicts with new architecture)
+
+### Pump Macro Reference
+
+All macros are in `trigger_pump_arduino.cfg`:
+
+| Macro | Description |
+|-------|-------------|
+| `PUMP_STATUS` | Shows Klipper stored params + queries Arduino P114 |
+| `PUMP_ESTOP` | SET_PIN VALUE=1 + P0 + clears trigger_armed |
+| `PUMP_RESET` | Sends P999, clears estop |
+| `PUMP_ASPIRATE VOL=50 RATE=2000` | Immediate aspirate |
+| `PUMP_DISPENSE VOL=5 RATE=4000` | Immediate dispense |
+| `PUMP_SET_TRIGGER_RATE RATE=4000` | Sets rate + stores in variable |
+| `PUMP_SET_TRIGGER_DELAY MS=50` | Sends TD + stores in variable |
+| `PUMP_LOAD_TRIGGER VOL=5 RATE=4000` | Stores D1 command in Klipper + sends to Arduino |
+| `PUMP_TRIGGER_ON` | SET_PIN VALUE=0 (fires falling edge) |
+| `PUMP_TRIGGER_OFF` | SET_PIN VALUE=1 (returns to idle) |
+| `PUMP_SETUP RATE=4000 DELAY=50` | Configures rate + delay + ensures idle |
+| `PUMP_PRIME FILL=50 PRIME=3` | Aspirate then prime tip |
+| `PUMP_RETRACT VOL=2` | Aspirate to break meniscus |
+| `PUMP_TRIGGERON VOL=5 RATE=4000 DELAY=50` | Arms trigger + loads D1 command |
+| `PUMP_TRIGGEROFF` | Disarms trigger + returns pin to idle |
+| `PUMP_UPDATE_TRIGGER VOL=3 RATE=4000` | Updates params mid-run without disarming |
+| `DISPENSE_LINE_DECOUPLED X=135 Y=65 XY_RATE=10000` | XY move with pump trigger |
+| `SEND_PUMP_ARDUINO COMMAND="..."` | Direct serial command to pump Arduino |
+
+### Typical Workflow
+
+```gcode
+PUMP_SETUP RATE=4000 DELAY=50
+PUMP_PRIME FILL=50 PRIME=3
+PUMP_TRIGGERON VOL=5 RATE=4000 DELAY=80
+DISPENSE_LINE_DECOUPLED X=135 Y=65 XY_RATE=10000
+PUMP_TRIGGEROFF
+PUMP_RETRACT VOL=2
+```
+
+### Important Notes
+
+- **Arduino Nano is NOT compatible** — ground loop issues when connected to Pi USB while printer runs at 24V. Use Arduino Micro only.
+- **DRV8825 shield boards are NOT recommended** — use bare TMC2209 breakout on perfboard.
+- **24V VMOT kills drivers** if Vref is not set correctly first — always set Vref before connecting motor power.
+- **Powered USB hub is required** — Pi USB ports cause undervoltage with multiple Arduinos.
+- **`syringe_pump_0.cfg` must be removed** from `printer.cfg` includes — it conflicts with the new architecture.
 
 ## Safety Features
 

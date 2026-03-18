@@ -10,6 +10,7 @@ Unlike traditional toolchangers that focus solely on FDM extruders, the Rister s
 - **Liquid Dispenser (L0)**: Precision liquid handling with linear actuator pipette
 - **Camera Tool (C0)**: Programmable focus imaging with MQTT control
 - **Microfluidics Integration**: Arduino-controlled wash station for liquid handling
+- **Decoupled Syringe Pump**: Arduino Micro + TMC2209 with hardware trigger for independent pump feedrate
 
 Each tool type uses optimized communication protocols and provides comprehensive sensor feedback for reliable operation.
 
@@ -25,6 +26,7 @@ Each tool type uses optimized communication protocols and provides comprehensive
 - **Tool State Validation**: Real-time monitoring and error detection
 - **Web-Based Camera Control**: Flask interface with programmable focus
 - **Precision Liquid Handling**: Syringe pump with valve control and wash station
+- **Decoupled Pump Architecture**: Hardware-triggered dispensing decouples XY feedrate from pump feedrate for sub-300µm lines
 - **Configuration Files**: 20+ Klipper .cfg files for comprehensive system integration
 - **Python Modules**: Custom Klipper extras (camera_dock_calibrate.py) for specialized functionality
 - **G-code Macros**: Unified command interface with 50+ custom macros
@@ -47,8 +49,8 @@ Each tool type uses optimized communication protocols and provides comprehensive
 
 **Specialized Hardware**
 - **Camera**: Arducam IMX519 with programmable focus (0-30 range)
-- **Syringe Pump**: Stepper motor controlled via extruder interface
-- **Microfluidics**: Arduino-controlled wash station with pumps and valves
+- **Syringe Pump**: Arduino Micro + TMC2209 stepper driver (decoupled from Klipper motion)
+- **Microfluidics**: Arduino Micro-controlled wash station with pumps and valves
 - **Sensors**: Per-tool dock/carriage detection switches
 - **LEDs**: NeoPixel status indicators for each tool
 
@@ -64,8 +66,10 @@ Each tool type uses optimized communication protocols and provides comprehensive
 - Klipper Pi IP: 192.168.1.89 (MQTT broker)
 - Topics: `dakash/camera/*` and `dakash/gpio/*`
 
-**Serial (Microfluidics)**
-- Arduino connection: `/dev/ttyACM1`
+**Serial (Microfluidics & Pump Arduino)**
+- Microfluidics Arduino: `/dev/ttyMICROFLUIDICS` (wash station)
+- Pump Arduino: `/dev/ttyPUMP` (decoupled syringe pump)
+- Stable device names via udev rules
 - Wash/waste pump control
 - Pressure compensation vessel
 
@@ -81,6 +85,7 @@ Each tool type uses optimized communication protocols and provides comprehensive
 **Klipper Extras Module (CRITICAL):**
 ```
 ~/klipper/klippy/extras/camera_dock_calibrate.py  # Camera dock calibration module
+~/klipper/klippy/extras/arduino_serial.py  # Arduino serial connection (must support load_config_prefix)
 ```
 
 **Klipper Configuration Files:**
@@ -97,8 +102,10 @@ Each tool type uses optimized communication protocols and provides comprehensive
 ├── liquid_dispenser_0.cfg         # L0 liquid handling
 ├── camera_tool_0.cfg              # C0 camera tool
 │
-├── syringe_pump_0.cfg             # Liquid pump configuration
-├── microfluidics.cfg              # Wash station control
+├── syringe_pump_0.cfg             # DEPRECATED: No longer used (pump now on Arduino Micro)
+├── trigger_pump_arduino.cfg       # NEW: Decoupled pump control (Arduino serial + trigger pin + macros)
+├── toolchanger_gcode_macros.cfg   # UPDATED: M114/M112/M999 overrides for pump integration
+├── microfluidics.cfg              # UPDATED: serial port → /dev/ttyMICROFLUIDICS
 ├── tool_probe.cfg                 # Z-offset probing
 ├── smart_filament_sensor.cfg      # Runout detection
 └── [additional configuration files]
@@ -126,6 +133,8 @@ Each tool type uses optimized communication protocols and provides comprehensive
 - Raspberry Pi for camera tool (tested on Pi 5)
 - Arducam IMX519 camera module
 - Arduino for microfluidics control
+- Arduino Micro + TMC2209 for decoupled syringe pump
+- Powered USB hub (e.g., Atolla 4-port with 5V/3A adapter) for multiple Arduinos
 - Linear actuator servo for liquid dispenser
 - NeoPixel LEDs for tool status
 - Dock/carriage sensor switches per tool
@@ -167,7 +176,9 @@ Each tool type uses optimized communication protocols and provides comprehensive
    camera_tool_0.cfg        # C0 camera tool
    
    # Supporting systems
-   syringe_pump_0.cfg       # Liquid pump configuration
+   syringe_pump_0.cfg       # DEPRECATED — no longer used
+   trigger_pump_arduino.cfg # Decoupled pump control (Arduino serial + trigger)
+   toolchanger_gcode_macros.cfg # M114/M112/M999 overrides for pump
    microfluidics.cfg        # Wash station control
    tool_probe.cfg           # Z-offset probing
    smart_filament_sensor.cfg # Runout detection
@@ -310,14 +321,68 @@ camera_rod_install_msg_gcode:
 
 ### Arduino Microfluidics Setup
 
-1. **Connect Arduino to Klipper Pi via USB**
+1. **Connect Arduino to Klipper Pi via powered USB hub**
 2. **Program Arduino with microfluidics control firmware**
 3. **Configure serial port in `microfluidics.cfg`:**
    ```
    [arduino_serial]
-   serial_port: /dev/ttyACM1  # Update if different
+   serial_port: /dev/ttyMICROFLUIDICS
    baud_rate: 115200
    ```
+
+### Decoupled Syringe Pump Setup
+
+The syringe pump uses a dedicated Arduino Micro + TMC2209, communicating over USB serial independently from Klipper's motion system. This decouples XY feedrate from pump feedrate for sub-300µm line widths.
+
+1. **Hardware assembly:**
+   - Arduino Micro + TMC2209 on perfboard (NOT a shield, NOT DRV8825)
+   - 12V motor supply (NOT 24V — causes thermal failures)
+   - 10µF capacitor across VMOT and GND
+   - TMC2209 wiring: STEP→D3, DIR→D4, EN→D5, MS1→5V, MS2→5V (1/16), TRIG→D2 (internal pullup)
+   - Octopus PE5 (FAN header) → Arduino Micro D2 (trigger pin)
+   - Set TMC2209 Vref to 0.10V (~300mA) before connecting motor power
+
+2. **Flash Arduino sketch:**
+   ```bash
+   # Open arduino/syringe_pump_v21/syringe_pump_v21.ino in Arduino IDE
+   # Select Board: Arduino Micro, Port: /dev/ttyACM*
+   # Upload
+   ```
+
+3. **Install udev rules** (`/etc/udev/rules.d/99-arduino-pumps.rules`):
+   ```
+   SUBSYSTEM=="tty", KERNELS=="1-1.1", ATTRS{idVendor}=="2341", ATTRS{idProduct}=="8037", SYMLINK+="ttyPUMP"
+   SUBSYSTEM=="tty", KERNELS=="1-1.3.3", ATTRS{idVendor}=="2341", ATTRS{idProduct}=="8037", SYMLINK+="ttyMICROFLUIDICS"
+   ```
+   ```bash
+   sudo udevadm control --reload-rules && sudo udevadm trigger
+   ```
+   Always plug each Arduino into the same physical USB hub port.
+
+4. **Update Klipper config:**
+   - Add `[include trigger_pump_arduino.cfg]` to `printer.cfg`
+   - Add `[include toolchanger_gcode_macros.cfg]` to `printer.cfg`
+   - **Remove** `[include syringe_pump_0.cfg]` from `printer.cfg` (conflicts with new architecture)
+
+5. **Update `arduino_serial.py` plugin:**
+   - `~/klipper/klippy/extras/arduino_serial.py` must support `load_config_prefix` for named instances
+   - `[arduino_serial]` → `SEND_ARDUINO`
+   - `[arduino_serial pump_arduino]` → `SEND_PUMP_ARDUINO`
+
+6. **Test pump communication:**
+   ```bash
+   # Verify device symlink
+   ls -la /dev/ttyPUMP
+   
+   # Test serial (should print pump state)
+   screen /dev/ttyPUMP 115200
+   # Type: P114 <enter>
+   ```
+
+7. **Important notes:**
+   - **Arduino Nano is NOT compatible** — ground loop issues at 24V. Use Arduino Micro only.
+   - **Powered USB hub required** — Pi USB ports cause undervoltage with multiple Arduinos.
+   - **24V VMOT kills drivers** if Vref is not set correctly first.
 
 ## Usage
 
@@ -757,10 +822,11 @@ mosquitto_sub -h localhost -t "dakash/+/+" -v
 - Resolution up to 4656×3496
 
 **Liquid Handling:**
-- Stepper motor syringe pump
+- Decoupled syringe pump (Arduino Micro + TMC2209)
 - Linear actuator servo (180° range)
 - Microfluidics valves and pumps
-- Arduino Uno for wash station control
+- Arduino Micro for wash station control
+- Powered USB hub for multiple Arduinos
 
 ### Wiring Requirements
 
@@ -820,6 +886,42 @@ The system tracks detailed usage statistics for each tool:
 - **MQTT**: Flexible, networked for camera systems  
 - **Serial**: Simple, direct for microfluidics
 - **HTTP**: User-friendly web interface
+
+### Decoupled Syringe Pump
+
+The pump runs independently from Klipper's motion system via `trigger_pump_arduino.cfg`.
+
+**Pump Macro Reference:**
+
+| Macro | Description |
+|-------|-------------|
+| `PUMP_STATUS` | Shows Klipper stored params + queries Arduino P114 |
+| `PUMP_ESTOP` | Emergency stop pump |
+| `PUMP_RESET` | Clear pump estop |
+| `PUMP_ASPIRATE VOL=50 RATE=2000` | Immediate aspirate |
+| `PUMP_DISPENSE VOL=5 RATE=4000` | Immediate dispense |
+| `PUMP_SETUP RATE=4000 DELAY=50` | Configure rate + delay |
+| `PUMP_PRIME FILL=50 PRIME=3` | Aspirate then prime tip |
+| `PUMP_RETRACT VOL=2` | Aspirate to break meniscus |
+| `PUMP_TRIGGERON VOL=5 RATE=4000 DELAY=50` | Arm trigger + load command |
+| `PUMP_TRIGGEROFF` | Disarm trigger |
+| `PUMP_UPDATE_TRIGGER VOL=3 RATE=4000` | Update params mid-run |
+| `DISPENSE_LINE_DECOUPLED X=135 Y=65 XY_RATE=10000` | XY move with pump trigger |
+
+**Typical workflow:**
+```gcode
+PUMP_SETUP RATE=4000 DELAY=50
+PUMP_PRIME FILL=50 PRIME=3
+PUMP_TRIGGERON VOL=5 RATE=4000 DELAY=80
+DISPENSE_LINE_DECOUPLED X=135 Y=65 XY_RATE=10000
+PUMP_TRIGGEROFF
+PUMP_RETRACT VOL=2
+```
+
+**M-code overrides** (in `toolchanger_gcode_macros.cfg`):
+- `M114` → reports Klipper position + pump state (P114)
+- `M112` → emergency stops both Klipper and pump
+- `M999` → clears pump estop + firmware restart
 
 ### Research Applications
 
