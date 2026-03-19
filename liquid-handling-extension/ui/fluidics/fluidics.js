@@ -6,6 +6,7 @@ export class FluidicsControl {
     this.selectedTipIndex = -1;
     this.activeTipIndex = 0;
     this.syncInterval = null;
+    this.triggerArmed = false;
   }
 
   async initialize() {
@@ -190,31 +191,63 @@ export class FluidicsControl {
       <!-- Syringe Pump -->
       <div class="section">
         <h3 class="section-title">💉 Syringe Pump</h3>
-        
-        <!-- Position Display -->
-        <div style="background: #e8f5e9; padding: 12px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #4CAF50;">
-          <div style="display: flex; justify-content: space-between; align-items: center;">
-            <label style="font-weight: 600; color: #2e7d32;">Current Position:</label>
-            <span id="syringe-position" style="font-size: 18px; font-weight: bold; color: #1b5e20; font-family: monospace;">0.0 steps</span>
-          </div>
-          <button id="refresh-position" class="btn btn-secondary" style="width: 100%; margin-top: 8px; font-size: 12px;">🔄 Refresh Position</button>
+
+        <!-- Emergency Stop -->
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <button id="estop" class="btn btn-danger" style="flex: 1; font-size: 14px; font-weight: bold;">🛑 E-STOP (P0)</button>
+          <button id="clear-estop" class="btn" style="flex: 1; font-size: 14px;">✅ Clear Stop (P999)</button>
         </div>
-        
+
+        <!-- Trigger Control -->
+        <div style="background: #fff3e0; padding: 12px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #FF9800;">
+          <label style="font-weight: 600; display: block; margin-bottom: 8px;">🎯 Trigger</label>
+          <div style="display: flex; gap: 8px; margin-bottom: 8px;">
+            <button id="trigger-on" class="btn" style="flex: 1; background: #4CAF50; color: white;">TRIGGER ON</button>
+            <button id="trigger-off" class="btn btn-danger" style="flex: 1;">TRIGGER OFF</button>
+          </div>
+          <div id="trigger-status" style="text-align: center; font-weight: 600; color: #e65100; margin-bottom: 8px;">Trigger: OFF</div>
+          <div id="trigger-fire-container" style="display: none;">
+            <button id="trigger-fire" class="btn btn-warning" style="width: 100%; font-size: 14px;">⚡ Fire Trigger (SET_PIN PIN=syringe_trigger VALUE=0)</button>
+          </div>
+        </div>
+
+        <!-- Store & Trigger Delay -->
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <div style="flex: 2;">
+            <label>Store (STORE E F):</label>
+            <div style="display: flex; gap: 4px;">
+              <input type="number" id="store-volume" value="100" style="flex: 1;" placeholder="E (vol)">
+              <input type="number" id="store-rate" value="2000" style="flex: 1;" placeholder="F (rate)">
+              <button id="store-cmd" class="btn btn-secondary" style="white-space: nowrap;">STORE</button>
+            </div>
+          </div>
+          <div style="flex: 1;">
+            <label>Trigger Delay (ms):</label>
+            <div style="display: flex; gap: 4px;">
+              <input type="number" id="trigger-delay" value="50" style="flex: 1;" placeholder="ms">
+              <button id="set-td" class="btn btn-secondary">TD</button>
+            </div>
+          </div>
+        </div>
+
+        <!-- Aspirate / Dispense -->
         <div class="form-row cols-2" style="margin-bottom: 10px;">
           <div>
-            <label>Steps:</label>
+            <label>Volume (E):</label>
             <input type="number" id="syringe-steps" value="130">
           </div>
           <div>
-            <label>Feedrate:</label>
+            <label>Feedrate (F):</label>
             <input type="number" id="syringe-feedrate" value="3000">
           </div>
         </div>
         <div class="btn-group">
-          <button id="aspirate" class="btn btn-secondary">⬆️ Aspirate</button>
-          <button id="dispense" class="btn">⬇️ Dispense</button>
-          <button id="zero-syringe" class="btn btn-danger">Zero</button>
+          <button id="aspirate" class="btn btn-secondary">⬆️ Aspirate (A1)</button>
+          <button id="dispense" class="btn">⬇️ Dispense (D1)</button>
         </div>
+
+        <!-- Status -->
+        <button id="pump-status" class="btn btn-gray" style="width: 100%; margin-top: 8px; font-size: 12px;">📊 Status (P114)</button>
       </div>
 
       <!-- Valves -->
@@ -502,25 +535,36 @@ export class FluidicsControl {
       this.updateServoPosition();
     });
 
-    // Syringe pump
-    container.querySelector('#aspirate')?.addEventListener('click', async () => {
-      await this.aspirate();
-      // Wait for move to complete, then refresh position
-      setTimeout(() => this.updateSyringePosition(), 1000);
+    // Syringe pump - Arduino controller
+    container.querySelector('#aspirate')?.addEventListener('click', () => this.aspirate());
+    container.querySelector('#dispense')?.addEventListener('click', () => this.dispense());
+    container.querySelector('#estop')?.addEventListener('click', () => this.api.sendGcode('P0'));
+    container.querySelector('#clear-estop')?.addEventListener('click', () => this.api.sendGcode('P999'));
+    container.querySelector('#trigger-on')?.addEventListener('click', () => {
+      this.api.sendGcode('TRIGGERON');
+      this.triggerArmed = true;
+      this.updateTriggerUI();
     });
-    container.querySelector('#dispense')?.addEventListener('click', async () => {
-      await this.dispense();
-      // Wait for move to complete, then refresh position
-      setTimeout(() => this.updateSyringePosition(), 1000);
+    container.querySelector('#trigger-off')?.addEventListener('click', () => {
+      this.api.sendGcode('TRIGGEROFF');
+      this.triggerArmed = false;
+      this.updateTriggerUI();
     });
-    container.querySelector('#zero-syringe')?.addEventListener('click', async () => {
-      // G92 E0 sets current extruder position as zero
-      await this.api.sendGcode('G92 E0');
-      setTimeout(() => this.updateSyringePosition(), 500);
+    container.querySelector('#trigger-fire')?.addEventListener('click', () => {
+      this.api.sendGcode('SET_PIN PIN=syringe_trigger VALUE=0');
+      // Reset trigger pin after brief pulse
+      setTimeout(() => this.api.sendGcode('SET_PIN PIN=syringe_trigger VALUE=1'), 100);
     });
-    container.querySelector('#refresh-position')?.addEventListener('click', () => {
-      this.updateSyringePosition();
+    container.querySelector('#store-cmd')?.addEventListener('click', () => {
+      const vol = document.getElementById('store-volume').value;
+      const rate = document.getElementById('store-rate').value;
+      this.api.sendGcode(`STORE E${vol} F${rate}`);
     });
+    container.querySelector('#set-td')?.addEventListener('click', () => {
+      const ms = document.getElementById('trigger-delay').value;
+      this.api.sendGcode(`TD ${ms}`);
+    });
+    container.querySelector('#pump-status')?.addEventListener('click', () => this.api.sendGcode('P114'));
 
     // Valve controls
     container.querySelector('#valve-all')?.addEventListener('click', () => this.selectAllValves(true));
@@ -838,46 +882,31 @@ export class FluidicsControl {
   }
 
   aspirate() {
-    const steps = document.getElementById('syringe-steps').value;
+    const vol = document.getElementById('syringe-steps').value;
     const feedrate = document.getElementById('syringe-feedrate').value;
-    // Use raw G-code: M83 for relative mode, negative E for aspirate (pull back)
-    this.api.sendGcode(`M83\nG1 E-${steps} F${feedrate}`);
+    this.api.sendGcode(`A1 E${vol} F${feedrate}`);
   }
 
   dispense() {
-    const steps = document.getElementById('syringe-steps').value;
+    const vol = document.getElementById('syringe-steps').value;
     const feedrate = document.getElementById('syringe-feedrate').value;
-    // Use raw G-code: M83 for relative mode, positive E for dispense (push forward)
-    this.api.sendGcode(`M83\nG1 E${steps} F${feedrate}`);
+    this.api.sendGcode(`D1 E${vol} F${feedrate}`);
+  }
+
+  updateTriggerUI() {
+    const status = document.getElementById('trigger-status');
+    const fireContainer = document.getElementById('trigger-fire-container');
+    if (status) {
+      status.textContent = this.triggerArmed ? 'Trigger: ARMED' : 'Trigger: OFF';
+      status.style.color = this.triggerArmed ? '#2e7d32' : '#e65100';
+    }
+    if (fireContainer) {
+      fireContainer.style.display = this.triggerArmed ? 'block' : 'none';
+    }
   }
 
   async updateSyringePosition() {
-    try {
-      // Read E position from gcode_move (4th element is E axis)
-      const endpoint = this.api.activeEndpoint || 'http://192.168.1.89:7125';
-      const response = await fetch(`${endpoint}/printer/objects/query?gcode_move`);
-      const data = await response.json();
-
-      let ePosition = 0;
-      if (data && data.result && data.result.status && data.result.status.gcode_move) {
-        const gcodePos = data.result.status.gcode_move.gcode_position;
-        if (gcodePos && gcodePos.length > 3) {
-          ePosition = gcodePos[3]; // E is the 4th axis (index 3)
-        }
-      }
-
-      // Update the display
-      const positionDisplay = document.getElementById('syringe-position');
-      if (positionDisplay) {
-        positionDisplay.textContent = `${parseFloat(ePosition).toFixed(1)} steps`;
-      }
-    } catch (error) {
-      console.error('Error fetching syringe position:', error);
-      const positionDisplay = document.getElementById('syringe-position');
-      if (positionDisplay) {
-        positionDisplay.textContent = 'Error reading position';
-      }
-    }
+    // Syringe pump is now controlled by Arduino - no Klipper position to read
   }
 
   async updateServoPosition() {

@@ -16,7 +16,11 @@ A professional browser extension for controlling Klipper-based liquid handling a
 - Tip management system with customizable parameters
 - **NEW: Macro assignment for wash/waste/eject actions**
 - Pipette height control (servo positioning)
-- Syringe pump operations (aspirate/dispense)
+- **NEW: Arduino-based syringe pump control** (A1/D1 commands via serial)
+- Trigger-based dispensing with arm/disarm and fire controls
+- STORE command for pre-loading dispense parameters
+- Configurable trigger delay (TD)
+- Emergency stop (P0) and clear stop (P999)
 - Multi-valve control (A, B, C, D)
 - **NEW: Enhanced drypad control with linear actuator position and delay settings**
 - Quick actions: wash, waste, eject, home, drypad touch
@@ -159,6 +163,14 @@ MIT License - Free to use and modify for your liquid handling automation needs.
 For issues or feature requests, please refer to the source repository.
 
 ## Version History
+
+### v1.2.0 (2026-03-19)
+- **NEW: Arduino-based syringe pump control** - Replaced Klipper extruder G-code (G1 E/M83) with Arduino serial commands (A1/D1)
+- **NEW: Trigger system** - Arm/disarm trigger (TRIGGERON/TRIGGEROFF), fire button only shown when armed
+- **NEW: STORE command** - Pre-load dispense parameters on the microcontroller
+- **NEW: Trigger delay (TD)** - Configurable delay in milliseconds between trigger and dispense
+- **NEW: Emergency stop (P0)** and clear stop (P999) buttons
+- **NEW: Pump status (P114)** - Query Arduino state
 
 ### v1.1.0 (2025-01-02)
 - **NEW: Macro assignment for wash/waste/eject actions** - Select saved G-code macros to run for quick actions
