@@ -197,6 +197,10 @@ export class FluidicsControl {
           <button id="estop" class="btn btn-danger" style="flex: 1; font-size: 14px; font-weight: bold;">🛑 E-STOP (P0)</button>
           <button id="clear-estop" class="btn" style="flex: 1; font-size: 14px;">✅ Clear Stop (P999)</button>
         </div>
+        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+          <button id="motor-on" class="btn" style="flex: 1; font-size: 14px; background: #4CAF50; color: white;">⚡ Motor ON</button>
+          <button id="motor-off" class="btn btn-danger" style="flex: 1; font-size: 14px;">🔌 Motor OFF</button>
+        </div>
 
         <!-- Trigger Control -->
         <div style="background: #fff3e0; padding: 12px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #FF9800;">
@@ -207,18 +211,18 @@ export class FluidicsControl {
           </div>
           <div id="trigger-status" style="text-align: center; font-weight: 600; color: #e65100; margin-bottom: 8px;">Trigger: OFF</div>
           <div id="trigger-fire-container" style="display: none;">
-            <button id="trigger-fire" class="btn btn-warning" style="width: 100%; font-size: 14px;">⚡ Fire Trigger (SET_PIN PIN=syringe_trigger VALUE=0)</button>
+            <button id="trigger-fire" class="btn btn-warning" style="width: 100%; font-size: 14px;">⚡ Fire Trigger</button>
           </div>
         </div>
 
         <!-- Store & Trigger Delay -->
         <div style="display: flex; gap: 8px; margin-bottom: 12px;">
           <div style="flex: 2;">
-            <label>Store (STORE E F):</label>
+            <label>Load Trigger (PUMP_LOAD_TRIGGER VOL RATE):</label>
             <div style="display: flex; gap: 4px;">
-              <input type="number" id="store-volume" value="100" style="flex: 1;" placeholder="E (vol)">
-              <input type="number" id="store-rate" value="2000" style="flex: 1;" placeholder="F (rate)">
-              <button id="store-cmd" class="btn btn-secondary" style="white-space: nowrap;">STORE</button>
+              <input type="number" id="store-volume" value="100" style="flex: 1;" placeholder="VOL">
+              <input type="number" id="store-rate" value="2000" style="flex: 1;" placeholder="RATE">
+              <button id="store-cmd" class="btn btn-secondary" style="white-space: nowrap;">LOAD</button>
             </div>
           </div>
           <div style="flex: 1;">
@@ -538,33 +542,33 @@ export class FluidicsControl {
     // Syringe pump - Arduino controller
     container.querySelector('#aspirate')?.addEventListener('click', () => this.aspirate());
     container.querySelector('#dispense')?.addEventListener('click', () => this.dispense());
-    container.querySelector('#estop')?.addEventListener('click', () => this.api.sendGcode('P0'));
-    container.querySelector('#clear-estop')?.addEventListener('click', () => this.api.sendGcode('P999'));
+    container.querySelector('#estop')?.addEventListener('click', () => this.api.sendGcode('SEND_PUMP_ARDUINO COMMAND="P0"'));
+    container.querySelector('#clear-estop')?.addEventListener('click', () => this.api.sendGcode('SEND_PUMP_ARDUINO COMMAND="P999"'));
+    container.querySelector('#motor-on')?.addEventListener('click', () => this.api.sendGcode('SEND_PUMP_ARDUINO COMMAND="MOTORON"'));
+    container.querySelector('#motor-off')?.addEventListener('click', () => this.api.sendGcode('SEND_PUMP_ARDUINO COMMAND="MOTOROFF"'));
     container.querySelector('#trigger-on')?.addEventListener('click', () => {
-      this.api.sendGcode('TRIGGERON');
+      this.api.sendGcode('SEND_PUMP_ARDUINO COMMAND="TRIGGERON"');
       this.triggerArmed = true;
       this.updateTriggerUI();
     });
     container.querySelector('#trigger-off')?.addEventListener('click', () => {
-      this.api.sendGcode('TRIGGEROFF');
+      this.api.sendGcode('SEND_PUMP_ARDUINO COMMAND="TRIGGEROFF"');
       this.triggerArmed = false;
       this.updateTriggerUI();
     });
     container.querySelector('#trigger-fire')?.addEventListener('click', () => {
-      this.api.sendGcode('SET_PIN PIN=syringe_trigger VALUE=0');
-      // Reset trigger pin after brief pulse
-      setTimeout(() => this.api.sendGcode('SET_PIN PIN=syringe_trigger VALUE=1'), 100);
+      this.api.sendGcode('TRIGGER_FIRE');
     });
     container.querySelector('#store-cmd')?.addEventListener('click', () => {
       const vol = document.getElementById('store-volume').value;
       const rate = document.getElementById('store-rate').value;
-      this.api.sendGcode(`STORE E${vol} F${rate}`);
+      this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="STORE E${vol} F${rate}"`);
     });
     container.querySelector('#set-td')?.addEventListener('click', () => {
       const ms = document.getElementById('trigger-delay').value;
-      this.api.sendGcode(`TD ${ms}`);
+      this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="TD ${ms}"`);
     });
-    container.querySelector('#pump-status')?.addEventListener('click', () => this.api.sendGcode('P114'));
+    container.querySelector('#pump-status')?.addEventListener('click', () => this.api.sendGcode('SEND_PUMP_ARDUINO COMMAND="P114"'));
 
     // Valve controls
     container.querySelector('#valve-all')?.addEventListener('click', () => this.selectAllValves(true));
@@ -884,13 +888,13 @@ export class FluidicsControl {
   aspirate() {
     const vol = document.getElementById('syringe-steps').value;
     const feedrate = document.getElementById('syringe-feedrate').value;
-    this.api.sendGcode(`A1 E${vol} F${feedrate}`);
+    this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="A1 E${vol} F${feedrate}"`);
   }
 
   dispense() {
     const vol = document.getElementById('syringe-steps').value;
     const feedrate = document.getElementById('syringe-feedrate').value;
-    this.api.sendGcode(`D1 E${vol} F${feedrate}`);
+    this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="D1 E${vol} F${feedrate}"`);
   }
 
   updateTriggerUI() {

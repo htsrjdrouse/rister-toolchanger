@@ -164,6 +164,14 @@ For issues or feature requests, please refer to the source repository.
 
 ## Version History
 
+### v1.2.2 (2026-03-20)
+- **FIX: STORE command** - Now sends `STORE E{vol} F{rate}` format instead of `PUMP_LOAD_TRIGGER VOL= RATE=`
+- **FIX: Fire Trigger** - Simplified to send `TRIGGER_FIRE` command instead of SET_PIN toggle; cleaned up button label
+
+### v1.2.1 (2026-03-19)
+- **FIX: Trigger system** - Fixed trigger fire functionality
+- **NEW: Motor ON/OFF buttons** - Dedicated buttons to enable/disable syringe pump motor
+
 ### v1.2.0 (2026-03-19)
 - **NEW: Arduino-based syringe pump control** - Replaced Klipper extruder G-code (G1 E/M83) with Arduino serial commands (A1/D1)
 - **NEW: Trigger system** - Arm/disarm trigger (TRIGGERON/TRIGGEROFF), fire button only shown when armed
