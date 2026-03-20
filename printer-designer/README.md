@@ -39,6 +39,16 @@ A web-based tool for designing printer bed layouts and generating G-code for liq
 - **Mouse coordinate tracking**: Hover over the 3D preview to see real-time X/Y position overlay
 - Export ready-to-run G-code
 
+### 🔌 Decoupled Pump Mode (Arduino Controller)
+- **Independent XY and pump feedrates** — XY runs at F8000–F18000 while pump runs at F4000 minimum for sub-300µm lines
+- **Arduino-based syringe pump** — Separate microcontroller (Arduino Micro + TMC2209) handles pump stepping
+- **Trigger pin control** — Klipper output pin starts/stops the Arduino pump during dispense moves
+- **Configurable trigger delay** — Millisecond delay between trigger and pump start for timing calibration
+- **STORE command** — Pre-load dispense parameters (`STORE E{vol} F{rate}`) on the Arduino
+- **TRIGGER_FIRE** — Single command to fire the trigger
+- **Real-time line width estimation** — Shows estimated geometric width based on pump/XY ratio
+- **Seamless toggle** — Switch between coupled (Klipper extruder) and decoupled (Arduino) modes
+
 ### ⚗️ Calibration Array Generator
 - **Automated parameter sweeps**: Find optimal E multiplier and acceleration in one print
 - **Sweep 1**: Vary E multiplier (5 lines) with fixed acceleration
@@ -163,6 +173,10 @@ G1 Z0.5 F500      ; Lower to dispense height
 | **E Multiplier** | Global extrusion volume multiplier |
 | **Per-Line Overrides** | Individual E multiplier and acceleration per line |
 | **Zigzag Lines** | Alternate direction for faster printing (multi-line) |
+| **Decoupled Pump** | Toggle Arduino pump mode (independent XY/pump feedrates) |
+| **Pump Feedrate** | Arduino pump rate in mm/min (min F4000 for 30G needle) |
+| **Trigger Delay** | Delay in ms between trigger pin HIGH and pump start |
+| **Trigger Pin** | Klipper output pin name (must match printer.cfg) |
 
 #### Per-Line Overrides
 
