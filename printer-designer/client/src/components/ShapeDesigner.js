@@ -73,6 +73,12 @@ const DEFAULT_SETTINGS = {
   
   // Multi-line options
   zigzagLines: false,    // Alternate direction for faster printing
+
+  // Arduino trigger mode
+  triggerMode: false,       // Use Arduino trigger instead of Klipper extruder
+  triggerVolume: 100,       // STORE E value (volume)
+  triggerRate: 2000,        // STORE F value (rate)
+  triggerDelay: 50,         // TD delay in ms
 };
 
 const STORAGE_KEY = 'shapeDesignerSettings';
@@ -480,7 +486,9 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     // Setup
     lines.push('G21 ; mm units');
     lines.push('G90 ; absolute positioning (XYZ)');
-    lines.push('G92 E0 ; reset extruder position to zero');
+    if (!s.triggerMode) {
+      lines.push('G92 E0 ; reset extruder position to zero');
+    }
     lines.push('');
     
     // Before printing section
@@ -554,7 +562,14 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
         lines.push(s.primeGcode.trim());
       }
       
-      lines.push(`G1 Y${yEnd.toFixed(3)} E${currentE.toFixed(2)} F${s.feedrate}`);
+      if (s.triggerMode) {
+        lines.push(`SEND_PUMP_ARDUINO COMMAND="STORE E${s.triggerVolume} F${s.triggerRate}"`);
+        lines.push(`SEND_PUMP_ARDUINO COMMAND="TD ${s.triggerDelay}"`);
+        lines.push(`G1 Y${yEnd.toFixed(3)} F${s.feedrate} ; XY move`);
+        lines.push('TRIGGER_FIRE');
+      } else {
+        lines.push(`G1 Y${yEnd.toFixed(3)} E${currentE.toFixed(2)} F${s.feedrate}`);
+      }
       
       // Insert post-dispense G-code after dispense
       if (s.postDispenseGcode && s.postDispenseGcode.trim()) {
@@ -825,6 +840,38 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
           </div>
           <div className="settings-section">
             <div className="settings-group">
+              <label style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px' }}>
+                <input
+                  type="checkbox"
+                  checked={settings.triggerMode || false}
+                  onChange={(e) => updateSetting('triggerMode', e.target.checked)}
+                />
+                <span>Arduino Trigger Mode</span>
+              </label>
+              <small style={{ color: '#888', fontSize: '10px', display: 'block', marginBottom: '12px' }}>
+                {settings.triggerMode
+                  ? 'Using STORE/TD/TRIGGER_FIRE commands (replaces Klipper extruder E moves)'
+                  : 'Using Klipper extruder G1 E moves'}
+              </small>
+
+              {settings.triggerMode && (
+                <>
+                  <label>
+                    <span>STORE Volume (E)</span>
+                    <NumInput step="1" min="1" value={settings.triggerVolume} onChange={(v) => updateSetting('triggerVolume', v)} fallback={100} integer />
+                  </label>
+                  <label>
+                    <span>STORE Rate (F)</span>
+                    <NumInput step="100" min="100" value={settings.triggerRate} onChange={(v) => updateSetting('triggerRate', v)} fallback={2000} integer />
+                  </label>
+                  <label>
+                    <span>Trigger Delay ms (TD)</span>
+                    <NumInput step="10" min="0" value={settings.triggerDelay} onChange={(v) => updateSetting('triggerDelay', v)} fallback={50} integer />
+                  </label>
+                </>
+              )}
+
+              {!settings.triggerMode && (<>
               <label>
                 <span>E Units Mode</span>
                 <select
@@ -862,6 +909,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
                   ))}
                 </select>
               </label>
+              </>)}
             </div>
           </div>
           
@@ -924,6 +972,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
                 />
               </label>
             </div>
+            {!settings.triggerMode && (
             <div className="settings-group">
               <label>
                 <span>E Multiplier</span>
@@ -1005,6 +1054,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
                 )}
               </div>
             </div>
+            )}
           </div>
           
           <div className="panel-header">
