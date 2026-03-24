@@ -1,16 +1,42 @@
-#include <Servo.h>
-Servo myservo1;  // create servo object to control a servo
-Servo myservo2;  // create servo object to control a servo
-Servo myservo3;  // create servo object to control a servo
-Servo myservo4;  // create servo object to control a servo
-Servo myservo5;  // create servo object to control a servo
+// ═══════════════════════════════════════════════════════════════════
+// HTS Resources — Microfluidics Controller
+// Arduino Micro
+//
+// Changes from original:
+//   - String replaced with char arrays (no heap fragmentation)
+//   - Accepts both \n and \r as line terminator (works with screen)
+//   - Added "ok" response to every command (Klipper compatibility)
+//   - strtok used for setvalves_angle parsing (no substring allocations)
+//   - parseCommand returns void (currpos was unused)
+//   - setvalves_angle now turns on 5V before moving servos (fix)
+//   - linearact now has 100ms delay after 5V on before moving servo
+//
+// Commands:
+//   washon / washoff
+//   dryon / dryoff
+//   pcvon / pcvoff
+//   manpcv / feedbackpcv
+//   turnon5v / turnoff5v
+//   setwashval <0-255>
+//   setdryval <0-255>
+//   setpcvval <0-255>
+//   linearact <angle>         — servo5, linear actuator
+//   setvalves_angle <mask> <a> <b> <c> <d>  — servos 1-4
+//   readpin
+//   info
+// ═══════════════════════════════════════════════════════════════════
 
+#include <Servo.h>
 #include <Wire.h>
 #include <SoftwareSerial.h>
 
+Servo myservo1;   // valve 1
+Servo myservo2;   // valve 2
+Servo myservo3;   // valve 3
+Servo myservo4;   // valve 4
+Servo myservo5;   // linear actuator
 
-const int sensorPin = A2;  // Sensor output connected to digital pin 2
-
+const int sensorPin   = A2;
 #define THERMISTOR_PIN A0
 
 int valveservo1 = 11;
@@ -18,195 +44,231 @@ int valveservo2 = 13;
 int valveservo3 = 12;
 int valveservo4 = 8;
 int valveservo5 = 3;
-int washpin = 10; 
-int drypin = 9; 
-int pcvpin = 6; 
-int heatpin = 5; 
+int washpin     = 10;
+int drypin      = 9;
+int pcvpin      = 6;
+int heatpin     = 5;
 int turnon5vpin = 5;
-int tempsensor = A0;
-//int levelsensor = A1;
+int tempsensor  = A0;
+
 int washval = 255;
-int dryval = 255;
-int pcvval = 255;
+int dryval  = 255;
+int pcvval  = 255;
 
-String command;
-float currpos;
 int fillflag = 1;
-int htcnt = 0;
-int pumpdelayct = 0;
-int pumpdelay = 0;
-int pumponflag = 0;
 
-
+// ── Fixed char buffer — no dynamic String allocation ──────────────
+#define CMD_BUF_SIZE 80
+char cmdBuf[CMD_BUF_SIZE];
+int  cmdIdx = 0;
 
 void setup() {
-  // put your setup code here, to run once:
   Serial.begin(115200);
-  //myservo.attach(valveservo);
+
   myservo1.attach(valveservo1, 500, 2500);
   myservo2.attach(valveservo2, 500, 2500);
   myservo3.attach(valveservo3, 500, 2500);
   myservo4.attach(valveservo4, 500, 2500);
   myservo5.attach(valveservo5, 500, 2500);
-  analogWrite(pcvpin, 0); 
-  analogWrite(washpin,0);
-  analogWrite(drypin, 0);
-  analogWrite(heatpin, 0);
+
+  analogWrite(pcvpin,      0);
+  analogWrite(washpin,     0);
+  analogWrite(drypin,      0);
+  analogWrite(heatpin,     0);
   analogWrite(turnon5vpin, 0);
 
   pinMode(sensorPin, INPUT_PULLUP);
-  //pinMode(pcvpin, OUTPUT);
-  
-  currpos = 0;
+
+  Serial.println("ok");
 }
 
 void loop() {
-
-  if (fillflag == 0){
-
-  if (digitalRead(sensorPin) == LOW) {  // Liquid detected
-    analogWrite(pcvpin, pcvval);    // Turn on pump
-  } else {
-    analogWrite(pcvpin, 0);            // Turn off pump
-  }
-    
+  // PCV feedback loop
+  if (fillflag == 0) {
+    if (digitalRead(sensorPin) == LOW) {
+      analogWrite(pcvpin, pcvval);
+    } else {
+      analogWrite(pcvpin, 0);
+    }
   }
 
-
-
- if(Serial.available())
- {
+  // Serial input — accepts \n or \r as terminator
+  while (Serial.available()) {
     char c = Serial.read();
-    if (c== '\n')
-    {
-      currpos = parseCommand(command, currpos);
-      command = "";
+    if (c == '\n' || c == '\r') {
+      if (cmdIdx > 0) {
+        cmdBuf[cmdIdx] = '\0';
+        parseCommand(cmdBuf);
+        cmdIdx = 0;
+        cmdBuf[0] = '\0';
+      }
+    } else {
+      if (cmdIdx < CMD_BUF_SIZE - 1) {
+        cmdBuf[cmdIdx++] = c;
+      }
+      // silently drop chars if buffer full
     }
-    else 
-    {
-      command +=c;
-    }
- }
- delay(30);
+  }
+
+  delay(30);
 }
 
-float parseCommand(String com, int currpos)
-{
+void parseCommand(char* com) {
 
-  if(com.equalsIgnoreCase("washon")){
+  // ── washon ──────────────────────────────────────────────────────
+  if (strcasecmp(com, "washon") == 0) {
     analogWrite(washpin, washval);
     delay(100);
-  }  
-  else if(com.equalsIgnoreCase("washoff")){
+    Serial.println("ok");
+  }
+
+  // ── washoff ─────────────────────────────────────────────────────
+  else if (strcasecmp(com, "washoff") == 0) {
     analogWrite(washpin, 0);
     delay(100);
-  }  
-  else if(com.equalsIgnoreCase("dryon")){
+    Serial.println("ok");
+  }
+
+  // ── dryon ───────────────────────────────────────────────────────
+  else if (strcasecmp(com, "dryon") == 0) {
     analogWrite(drypin, dryval);
     delay(100);
-  }  
-  else if(com.equalsIgnoreCase("dryoff")){
+    Serial.println("ok");
+  }
+
+  // ── dryoff ──────────────────────────────────────────────────────
+  else if (strcasecmp(com, "dryoff") == 0) {
     analogWrite(drypin, 0);
     delay(100);
-  } 
-  else if(com.equalsIgnoreCase("readpin")){
-  Serial.println(digitalRead(sensorPin));
-  }
-  else if(com.equalsIgnoreCase("info")){
-    Serial.println("wash_dry_pcv_electrocaloric_kill_stepper_valve");
-  }
-  else if(com.equalsIgnoreCase("turnon5v")){
-    analogWrite(turnon5vpin, 255);
-  } 
-  else if(com.equalsIgnoreCase("turnoff5v")){
-    analogWrite(turnon5vpin, 0);
+    Serial.println("ok");
   }
 
-  else if(com.equalsIgnoreCase("manpcv")){
+  // ── pcvon ───────────────────────────────────────────────────────
+  else if (strcasecmp(com, "pcvon") == 0) {
+    if (fillflag == 1) analogWrite(pcvpin, pcvval);
+    Serial.println("ok");
+  }
+
+  // ── pcvoff ──────────────────────────────────────────────────────
+  else if (strcasecmp(com, "pcvoff") == 0) {
+    if (fillflag == 1) analogWrite(pcvpin, 0);
+    Serial.println("ok");
+  }
+
+  // ── manpcv ──────────────────────────────────────────────────────
+  else if (strcasecmp(com, "manpcv") == 0) {
     fillflag = 1;
     analogWrite(pcvpin, 0);
+    Serial.println("ok");
   }
-  else if(com.equalsIgnoreCase("feedbackpcv")){
+
+  // ── feedbackpcv ─────────────────────────────────────────────────
+  else if (strcasecmp(com, "feedbackpcv") == 0) {
     fillflag = 0;
-  }  
-  else if(com.equalsIgnoreCase("pcvon")){
-    if (fillflag == 1){
-     analogWrite(pcvpin, pcvval);
-    }
-  }  
-  else if(com.equalsIgnoreCase("pcvoff")){
-    if (fillflag == 1){
-     analogWrite(pcvpin, 0);
-    }
-  } 
-   else if (com.substring(0,10) == "setwashval") {
-    washval = com.substring(11).toInt();
-  }
-   else if (com.substring(0,9) == "setdryval") {
-    dryval = com.substring(10).toInt();
-  }
-   else if (com.substring(0,9) == "setpcvval") {
-    pcvval = com.substring(10).toInt();
-  }
-    else if (com.substring(0,9) == "linearact") {
-    myservo5.write(com.substring(com.indexOf("linearact")+10).toInt());
+    Serial.println("ok");
   }
 
-else if (com.substring(0, 15).equalsIgnoreCase("setvalves_angle")) {
-    // Parse: "setvalves_angle 1000 0 180 30 45"
-    // Format: setvalves_angle MASK angle_a angle_b angle_c angle_d
-    
-    // Find all spaces
-    int space1 = com.indexOf(' ');
-    int space2 = com.indexOf(' ', space1 + 1);
-    int space3 = com.indexOf(' ', space2 + 1);
-    int space4 = com.indexOf(' ', space3 + 1);
-    int space5 = com.indexOf(' ', space4 + 1);
-    
-    String maskStr = com.substring(space1 + 1, space2);
-    int angle_a = com.substring(space2 + 1, space3).toInt();
-    int angle_b = com.substring(space3 + 1, space4).toInt();
-    int angle_c = com.substring(space4 + 1, space5).toInt();
-    int angle_d = com.substring(space5 + 1).toInt();
-    
-    // Debug output
-    /*
-    Serial.print("Mask: ");
-    Serial.println(maskStr);
-    Serial.print("Angles: A=");
-    Serial.print(angle_a);
-    Serial.print(" B=");
-    Serial.print(angle_b);
-    Serial.print(" C=");
-    Serial.print(angle_c);
-    Serial.print(" D=");
-    Serial.println(angle_d);
-    */
-    // Set each servo based on mask
-    if (maskStr[0] == '1') {
-        myservo1.write(angle_a);
-        //Serial.println("Servo A moved");
-        delay(100);
-    }
-    if (maskStr[1] == '1') {
-        myservo2.write(angle_b);
-        //Serial.println("Servo B moved");
-        delay(100);
-    }
-    if (maskStr[2] == '1') {
-        myservo3.write(angle_c);
-        //Serial.println("Servo C moved");
-        delay(100);
-    }
-    if (maskStr[3] == '1') {
-        myservo4.write(angle_d);
-        //Serial.println("Servo D moved");
-        delay(100);
-    }
-    
-    delay(1200); // Allow servos to fully move
-    //Serial.println("Servo move complete");
-}
+  // ── turnon5v ────────────────────────────────────────────────────
+  else if (strcasecmp(com, "turnon5v") == 0) {
+    analogWrite(turnon5vpin, 255);
+    Serial.println("ok");
+  }
 
-   return currpos;
+  // ── turnoff5v ───────────────────────────────────────────────────
+  else if (strcasecmp(com, "turnoff5v") == 0) {
+    analogWrite(turnon5vpin, 0);
+    Serial.println("ok");
+  }
+
+  // ── readpin ─────────────────────────────────────────────────────
+  else if (strcasecmp(com, "readpin") == 0) {
+    Serial.println(digitalRead(sensorPin));
+    Serial.println("ok");
+  }
+
+  // ── info ────────────────────────────────────────────────────────
+  else if (strcasecmp(com, "info") == 0) {
+    Serial.println("wash_dry_pcv_electrocaloric_kill_stepper_valve");
+    Serial.println("ok");
+  }
+
+  // ── setwashval <0-255> ──────────────────────────────────────────
+  else if (strncasecmp(com, "setwashval", 10) == 0) {
+    washval = atoi(com + 11);
+    Serial.print("washval: ");
+    Serial.println(washval);
+    Serial.println("ok");
+  }
+
+  // ── setdryval <0-255> ───────────────────────────────────────────
+  else if (strncasecmp(com, "setdryval", 9) == 0) {
+    dryval = atoi(com + 10);
+    Serial.print("dryval: ");
+    Serial.println(dryval);
+    Serial.println("ok");
+  }
+
+  // ── setpcvval <0-255> ───────────────────────────────────────────
+  else if (strncasecmp(com, "setpcvval", 9) == 0) {
+    pcvval = atoi(com + 10);
+    Serial.print("pcvval: ");
+    Serial.println(pcvval);
+    Serial.println("ok");
+  }
+
+  // ── linearact <angle> ───────────────────────────────────────────
+  // servo5 — linear actuator
+  else if (strncasecmp(com, "linearact", 9) == 0) {
+    int angle = atoi(com + 10);
+    analogWrite(turnon5vpin, 255);  // turn on 5V
+    delay(100);                      // wait for rail to stabilize
+    myservo5.write(angle);           // move linear actuator (servo5)
+    Serial.print("linearact: ");
+    Serial.println(angle);
+    Serial.println("ok");
+    delay(1200);                     // wait for servo to reach position
+    analogWrite(turnon5vpin, 0);    // turn off 5V
+  }
+
+  // ── setvalves_angle <mask> <a> <b> <c> <d> ─────────────────────
+  // Controls servos 1-4 (valve servos)
+  // e.g. setvalves_angle 1010 0 90 35 180
+  // mask digit 1 = move that servo, 0 = skip
+  else if (strncasecmp(com, "setvalves_angle", 15) == 0) {
+    // Work on a copy so strtok doesn't corrupt cmdBuf
+    char tmp[CMD_BUF_SIZE];
+    strncpy(tmp, com, CMD_BUF_SIZE - 1);
+    tmp[CMD_BUF_SIZE - 1] = '\0';
+
+    char* tok = strtok(tmp, " ");   // "setvalves_angle"
+    tok = strtok(NULL, " ");        // mask e.g. "1010"
+
+    char maskStr[5] = {0};
+    if (tok) strncpy(maskStr, tok, 4);
+
+    int angles[4] = {0, 0, 0, 0};
+    for (int i = 0; i < 4; i++) {
+      tok = strtok(NULL, " ");
+      if (tok) angles[i] = atoi(tok);
+    }
+
+    analogWrite(turnon5vpin, 255);  // turn on 5V for all valve servos
+    delay(100);                      // wait for rail to stabilize
+
+    if (maskStr[0] == '1') { myservo1.write(angles[0]); delay(100); }
+    if (maskStr[1] == '1') { myservo2.write(angles[1]); delay(100); }
+    if (maskStr[2] == '1') { myservo3.write(angles[2]); delay(100); }
+    if (maskStr[3] == '1') { myservo4.write(angles[3]); delay(100); }
+
+    delay(1200);                    // wait for servos to reach position
+    analogWrite(turnon5vpin, 0);   // turn off 5V
+    Serial.println("ok");
+  }
+
+  // ── unknown command ─────────────────────────────────────────────
+  else {
+    Serial.print("unknown: ");
+    Serial.println(com);
+    Serial.println("ok");
+  }
 }

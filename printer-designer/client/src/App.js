@@ -204,17 +204,11 @@ function AppContent() {
         >
           ⚙️ G-code Builder
         </button>
-        <button 
+        <button
           className={`tab-btn ${activeTab === 'shapes' ? 'active' : ''}`}
           onClick={() => setActiveTab('shapes')}
         >
           🔬 Shape Designer
-        </button>
-        <button 
-          className={`tab-btn ${activeTab === 'calibration' ? 'active' : ''}`}
-          onClick={() => setActiveTab('calibration')}
-        >
-          ⚗️ Calibration Array
         </button>
       </nav>
 
@@ -266,14 +260,11 @@ function AppContent() {
               />
             )}
             {activeTab === 'shapes' && (
-              <ShapeDesigner 
+              <ShapeDesigner
                 design={currentDesign}
                 onSave={saveDesign}
                 isPublisher={isPublisher}
               />
-            )}
-            {activeTab === 'calibration' && (
-              <CalibrationArrayGenerator />
             )}
           </>
         )}

@@ -59,7 +59,7 @@ const DEFAULT_SETTINGS = {
   eUnits: 'calibrated',  // 'calibrated' = 1 E = 1 µL (firmware calibrated), 'mm' = raw mm (use syringe area)
   
   // Per-line overrides
-  perLineOverrides: [],  // Array of {eMultiplier, accel} per line
+  perLineOverrides: [],  // Array of {delay, volume, speed} per line
   
   // Prime and post-dispense G-code
   primeGcode: '',        // G-code to insert before each dispense line
@@ -1005,46 +1005,56 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
                 
                 {overridesExpanded && (
                   <div style={{ marginTop: '8px', fontSize: '11px' }}>
-                    <div style={{ 
-                      display: 'grid', 
-                      gridTemplateColumns: '60px 1fr 1fr',
+                    <div style={{
+                      display: 'grid',
+                      gridTemplateColumns: '60px 1fr 1fr 1fr',
                       gap: '4px',
                       marginBottom: '4px',
                       fontWeight: 'bold',
                       color: '#888'
                     }}>
                       <div>Line</div>
-                      <div>E Mult</div>
-                      <div>Accel (mm/s²)</div>
+                      <div>Delay (T50)</div>
+                      <div>Volume (E100)</div>
+                      <div>Speed (F9000)</div>
                     </div>
                     {Array.from({ length: settings.numLines }, (_, i) => {
-                      const override = (settings.perLineOverrides || [])[i] || { 
-                        eMultiplier: settings.eMultiplier, 
-                        accel: settings.dispenseAccel 
+                      const override = (settings.perLineOverrides || [])[i] || {
+                        delay: 50,
+                        volume: 100,
+                        speed: 9000
                       };
                       return (
-                        <div key={i} style={{ 
-                          display: 'grid', 
-                          gridTemplateColumns: '60px 1fr 1fr',
+                        <div key={i} style={{
+                          display: 'grid',
+                          gridTemplateColumns: '60px 1fr 1fr 1fr',
                           gap: '4px',
                           marginBottom: '2px'
                         }}>
                           <div style={{ paddingTop: '4px' }}>Line {i + 1}</div>
                           <NumInput
-                            step="0.1"
-                            min="0.1"
-                            value={override.eMultiplier}
-                            onChange={(v) => updateLineOverride(i, 'eMultiplier', v)}
-                            fallback={1.0}
+                            step="1"
+                            min="0"
+                            value={override.delay}
+                            onChange={(v) => updateLineOverride(i, 'delay', v)}
+                            fallback={50}
                             style={{ width: '100%', padding: '2px 4px', fontSize: '11px' }}
                           />
                           <NumInput
-                            step="50"
-                            min="50"
-                            value={override.accel}
-                            onChange={(v) => updateLineOverride(i, 'accel', v)}
-                            fallback={500}
-                            integer
+                            step="1"
+                            min="1"
+                            value={override.volume}
+                            onChange={(v) => updateLineOverride(i, 'volume', v)}
+                            fallback={100}
+                            style={{ width: '100%', padding: '2px 4px', fontSize: '11px' }}
+                          />
+                          <NumInput
+                            step="100"
+                            min="100"
+                            value={override.speed}
+                            onChange={(v) => updateLineOverride(i, 'speed', v)}
+                            fallback={9000}
+                            style={{ width: '100%', padding: '2px 4px', fontSize: '11px' }}
                             style={{ width: '100%', padding: '2px 4px', fontSize: '11px' }}
                           />
                         </div>
