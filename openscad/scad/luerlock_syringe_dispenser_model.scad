@@ -6,7 +6,8 @@ include <washstation.scad>
 //translate([0,3,-22])color("pink")translate([337-12.5,427,300-15+0.2+0.8])rotate([0,180,90])luer_lock_case_lid();
 
 //include <organized_openscad.scad>
-translate([400-70+3-210,426.5+3+124,330-3+50-124])rotate([0,0,-90])color("lime")luerlock_dispenser_assy_remover();
+luerlock_nozzle_case();
+//translate([400-70+3-210,426.5+3+124,330-3+50-124])rotate([0,0,-90])color("lime")luerlock_dispenser_assy_remover();
 //luer_lock_microwell();
 //luer_lock_alignment_key();
 
@@ -642,8 +643,9 @@ translate([319+20.4,427,309])rotate([0,180,0])tuberculin_syringe_015ml();
 translate([319+30.6,427,309])rotate([0,180,0])tuberculin_syringe_015ml();
 */
 translate([0-2,0,0])for(i=[0:3]){
-translate([319+(11.5*i),427,309])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d2=7.2,d1=6.4,h=6.5,$fn=50);
-translate([319+(11.5*i),427,309])rotate([0,180,0])tuberculin_syringe_015ml();
+//#translate([319+(11.5*i),427,309])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d2=7.2,d1=6.4,h=6.5,$fn=50);
+#translate([319+(11.5*i),427,309-20])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d2=8.1,d1=8.1,h=6.5+22,$fn=50);
+//#translate([319+(11.5*i),427,309])rotate([0,180,0])tuberculin_syringe_015ml();
 }
 
 }
