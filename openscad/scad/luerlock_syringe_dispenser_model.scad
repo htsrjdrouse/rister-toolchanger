@@ -644,7 +644,7 @@ translate([319+30.6,427,309])rotate([0,180,0])tuberculin_syringe_015ml();
 */
 translate([0-2,0,0])for(i=[0:3]){
 //#translate([319+(11.5*i),427,309])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d2=7.2,d1=6.4,h=6.5,$fn=50);
-#translate([319+(11.5*i),427,309-20])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d2=8.1,d1=8.1,h=6.5+22,$fn=50);
+#translate([319+(11.5*i),427,309-20])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d2=8.25,d1=8.25,h=6.5+22,$fn=50);
 //#translate([319+(11.5*i),427,309])rotate([0,180,0])tuberculin_syringe_015ml();
 }
 
