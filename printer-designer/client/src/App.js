@@ -5,7 +5,6 @@ import ObjectEditor from './components/ObjectEditor';
 import TipManagement from './components/TipManagement';
 import GcodeBuilder from './components/GcodeBuilder';
 import ShapeDesigner from './components/ShapeDesigner';
-import CalibrationArrayGenerator from './components/CalibrationArrayGenerator';
 import LoginModal from './components/LoginModal';
 
 function AppContent() {
@@ -29,9 +28,7 @@ function AppContent() {
 
   // Listen for navigation events
   useEffect(() => {
-    const handleNavigate = () => setActiveTab('calibration');
-    window.addEventListener('navigate-to-calibration', handleNavigate);
-    return () => window.removeEventListener('navigate-to-calibration', handleNavigate);
+    // No-op: calibration tab removed
   }, []);
 
   // Auto-load published design for viewers

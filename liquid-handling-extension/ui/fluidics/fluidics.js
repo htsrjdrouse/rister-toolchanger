@@ -7,6 +7,8 @@ export class FluidicsControl {
     this.activeTipIndex = 0;
     this.syncInterval = null;
     this.triggerArmed = false;
+    this.valveState = 'UNKNOWN';
+    this.power5v = false;
   }
 
   async initialize() {
@@ -256,26 +258,67 @@ export class FluidicsControl {
 
       <!-- Valves -->
       <div class="section">
-        <h3 class="section-title">🔄 Valves</h3>
-        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 10px;">
-          <label style="cursor: pointer;"><input type="checkbox" id="valve-a"> Valve A</label>
-          <label style="cursor: pointer;"><input type="checkbox" id="valve-b"> Valve B</label>
-          <label style="cursor: pointer;"><input type="checkbox" id="valve-c"> Valve C</label>
-          <label style="cursor: pointer;"><input type="checkbox" id="valve-d"> Valve D</label>
+        <h3 class="section-title">🔄 Valve Control</h3>
+
+        <!-- State Indicator -->
+        <div id="valve-state-bar" style="background: #e0e0e0; padding: 10px; border-radius: 6px; margin-bottom: 12px; text-align: center; font-weight: 700; font-size: 14px; color: #555;">
+          State: ${this.valveState || 'UNKNOWN'} &nbsp;|&nbsp; 5V: ${this.power5v ? '<span style="color:#4CAF50;">ON</span>' : '<span style="color:#999;">OFF</span>'}
         </div>
+
+        <!-- Mask Selector -->
+        <div style="margin-bottom: 12px;">
+          <label style="font-weight: 600; margin-bottom: 6px; display: block;">Valve Mask</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <div style="display: flex; gap: 4px;">
+              ${[1,2,3,4].map(n => `
+                <button id="valve-toggle-${n}" class="btn btn-gray" style="width: 44px; font-size: 12px; padding: 6px 0; opacity: 1;" title="Valve ${n}">V${n}</button>
+              `).join('')}
+            </div>
+            <input type="text" id="valve-mask" value="1111" maxlength="4" style="width: 60px; text-align: center; font-family: monospace; font-size: 14px; font-weight: 700;">
+            <button id="valve-all" class="btn btn-gray" style="font-size: 11px; padding: 6px 10px;">All</button>
+            <button id="valve-none" class="btn btn-gray" style="font-size: 11px; padding: 6px 10px;">None</button>
+          </div>
+        </div>
+
+        <!-- Position Buttons -->
         <div class="btn-group" style="margin-bottom: 10px;">
-          <button id="valve-all" class="btn btn-gray">All</button>
-          <button id="valve-none" class="btn btn-gray">None</button>
+          <button id="valve-input" class="btn" style="background: #2196F3; color: white;">INPUT (0°)</button>
+          <button id="valve-output" class="btn" style="background: #4CAF50; color: white;">OUTPUT (90°)</button>
+          <button id="valve-bypass" class="btn" style="background: #9e9e9e; color: white;">BYPASS (35°)</button>
+          <button id="valve-flush" class="btn" style="background: #FF9800; color: white;">FLUSH (180°)</button>
         </div>
-        <div class="btn-group">
-          <button id="valve-input" class="btn btn-secondary">INPUT</button>
-          <button id="valve-output" class="btn">OUTPUT</button>
-          <button id="valve-bypass" class="btn btn-warning">BYPASS</button>
-          <button id="valve-flush" class="btn btn-danger">FLUSH</button>
+
+        <!-- 5V Controls -->
+        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+          <button id="valve-5v-on" class="btn" style="flex: 1; background: #4CAF50; color: white;">⚡ 5V ON</button>
+          <button id="valve-5v-off" class="btn btn-danger" style="flex: 1;">🔌 5V OFF</button>
         </div>
-        <div style="margin-top: 8px; padding: 8px; background: #ffebee; border-radius: 4px; font-size: 11px;">
-          <strong>FLUSH (180°):</strong> Bypasses syringe - direct flow from PCV to output
+
+        <!-- Timing -->
+        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+          <div style="flex: 1;"><label>Delay A (ms):</label><input type="number" id="valve-delay-a" value="100" min="0" style="width: 100%;"></div>
+          <div style="flex: 1;"><label>Delay B (ms):</label><input type="number" id="valve-delay-b" value="100" min="0" style="width: 100%;"></div>
         </div>
+
+        <div style="padding: 8px; background: #fff3e0; border-radius: 4px; font-size: 11px;">
+          <strong>Angles:</strong> INPUT=0° (aspirate) | OUTPUT=90° (dispense) | BYPASS=35° (closed) | FLUSH=180° (PCV direct)
+        </div>
+      </div>
+
+      <!-- Synchronized Dispense -->
+      <div class="section">
+        <h3 class="section-title">🎯 Sync Dispense</h3>
+        <div class="form-row cols-3" style="margin-bottom: 10px;">
+          <div><label>Mask:</label><input type="text" id="sync-mask" value="1111" maxlength="4" style="font-family: monospace; text-align: center;"></div>
+          <div><label>Volume (µL):</label><input type="number" id="sync-vol" value="5"></div>
+          <div><label>Rate:</label><input type="number" id="sync-rate" value="4000"></div>
+        </div>
+        <div class="form-row cols-3" style="margin-bottom: 10px;">
+          <div><label>Target X:</label><input type="number" id="sync-x" value="135" step="0.1"></div>
+          <div><label>Target Y:</label><input type="number" id="sync-y" value="65" step="0.1"></div>
+          <div><label>XY Feedrate:</label><input type="number" id="sync-xy-rate" value="10000"></div>
+        </div>
+        <button id="sync-dispense" class="btn" style="width: 100%; background: #4CAF50; color: white; font-size: 14px; font-weight: 600;">🎯 Dispense with Valves</button>
       </div>
 
       <!-- Pump Control -->
@@ -571,12 +614,34 @@ export class FluidicsControl {
     container.querySelector('#pump-status')?.addEventListener('click', () => this.api.sendGcode('SEND_PUMP_ARDUINO COMMAND="P114"'));
 
     // Valve controls
-    container.querySelector('#valve-all')?.addEventListener('click', () => this.selectAllValves(true));
-    container.querySelector('#valve-none')?.addEventListener('click', () => this.selectAllValves(false));
+    container.querySelector('#valve-all')?.addEventListener('click', () => this.setValveMask('1111'));
+    container.querySelector('#valve-none')?.addEventListener('click', () => this.setValveMask('0000'));
     container.querySelector('#valve-input')?.addEventListener('click', () => this.setValves('INPUT'));
     container.querySelector('#valve-output')?.addEventListener('click', () => this.setValves('OUTPUT'));
     container.querySelector('#valve-bypass')?.addEventListener('click', () => this.setValves('BYPASS'));
     container.querySelector('#valve-flush')?.addEventListener('click', () => this.setValves('FLUSH'));
+    container.querySelector('#valve-5v-on')?.addEventListener('click', () => {
+      this.api.sendGcode('SEND_ARDUINO COMMAND="turnon5v"');
+      this.power5v = true;
+      this.updateValveStateUI();
+    });
+    container.querySelector('#valve-5v-off')?.addEventListener('click', () => {
+      this.api.sendGcode('SEND_ARDUINO COMMAND="turnoff5v"');
+      this.power5v = false;
+      this.updateValveStateUI();
+    });
+    // Valve toggle buttons
+    [1,2,3,4].forEach(n => {
+      container.querySelector(`#valve-toggle-${n}`)?.addEventListener('click', () => this.toggleValveBit(n));
+    });
+    // Mask text input sync
+    container.querySelector('#valve-mask')?.addEventListener('input', () => this.syncTogglesFromMask());
+
+    // Sync dispense
+    container.querySelector('#sync-dispense')?.addEventListener('click', () => this.syncDispense());
+
+    // Initialize valve toggle button visuals
+    this.syncTogglesFromMask();
 
     // Pump controls
     container.querySelector('#wash-on')?.addEventListener('click', () => {
@@ -882,7 +947,6 @@ export class FluidicsControl {
   setPresetAngle(angle) {
     document.getElementById('servo-angle').value = angle;
     this.api.sendGcode(`LINEARACTSERVOMOVE ANGLE=${angle} HOLD=1000`);
-    
   }
 
   aspirate() {
@@ -949,27 +1013,72 @@ export class FluidicsControl {
   }
 
   getValveMask() {
-    const a = document.getElementById('valve-a')?.checked ? '1' : '0';
-    const b = document.getElementById('valve-b')?.checked ? '1' : '0';
-    const c = document.getElementById('valve-c')?.checked ? '1' : '0';
-    const d = document.getElementById('valve-d')?.checked ? '1' : '0';
-    return a + b + c + d;
+    return document.getElementById('valve-mask')?.value || '1111';
+  }
+
+  setValveMask(mask) {
+    const el = document.getElementById('valve-mask');
+    if (el) el.value = mask;
+    this.syncTogglesFromMask();
+  }
+
+  toggleValveBit(n) {
+    const mask = this.getValveMask().split('');
+    mask[n - 1] = mask[n - 1] === '1' ? '0' : '1';
+    this.setValveMask(mask.join(''));
+  }
+
+  syncTogglesFromMask() {
+    const mask = this.getValveMask();
+    [1,2,3,4].forEach(n => {
+      const btn = document.getElementById(`valve-toggle-${n}`);
+      if (btn) {
+        const on = mask[n - 1] === '1';
+        btn.style.background = on ? '#667eea' : '#bdbdbd';
+        btn.style.color = 'white';
+      }
+    });
   }
 
   selectAllValves(state) {
-    ['valve-a', 'valve-b', 'valve-c', 'valve-d'].forEach(id => {
-      const el = document.getElementById(id);
-      if (el) el.checked = state;
-    });
+    this.setValveMask(state ? '1111' : '0000');
   }
 
   setValves(mode) {
     const mask = this.getValveMask();
-    if (mask === '0000') {
-      return;  // No valve selected
-    }
-    this.api.sendGcode(`VALVE_${mode} MASK=${mask}`);
-    
+    if (mask === '0000') return;
+    const delayA = document.getElementById('valve-delay-a')?.value || '100';
+    const delayB = document.getElementById('valve-delay-b')?.value || '100';
+    const sequence = [
+      'SEND_ARDUINO COMMAND="turnon5v"',
+      `G4 P${delayA}`,
+      `VALVE_${mode} MASK=${mask}`,
+      `G4 P${delayB}`,
+      'SEND_ARDUINO COMMAND="turnoff5v"'
+    ].join('\n');
+    this.api.sendGcode(sequence);
+    this.valveState = mode;
+    this.updateValveStateUI();
+  }
+
+  updateValveStateUI() {
+    const bar = document.getElementById('valve-state-bar');
+    if (!bar) return;
+    const colors = { INPUT: '#2196F3', OUTPUT: '#4CAF50', BYPASS: '#9e9e9e', FLUSH: '#FF9800', UNKNOWN: '#555' };
+    const color = colors[this.valveState] || '#555';
+    bar.innerHTML = `State: <span style="color:${color};">${this.valveState}</span> &nbsp;|&nbsp; 5V: ${this.power5v ? '<span style="color:#4CAF50;">ON</span>' : '<span style="color:#999;">OFF</span>'}`;
+  }
+
+  syncDispense() {
+    const mask = document.getElementById('sync-mask')?.value || '1111';
+    const vol = document.getElementById('sync-vol')?.value || '5';
+    const rate = document.getElementById('sync-rate')?.value || '4000';
+    const x = document.getElementById('sync-x')?.value || '135';
+    const y = document.getElementById('sync-y')?.value || '65';
+    const xyRate = document.getElementById('sync-xy-rate')?.value || '10000';
+    this.api.sendGcode(`DISPENSE_WITH_VALVES MASK=${mask} VOL=${vol} RATE=${rate} X=${x} Y=${y} XY_RATE=${xyRate}`);
+    this.valveState = 'BYPASS';
+    this.updateValveStateUI();
   }
 
   async saveDrypadSettings() {

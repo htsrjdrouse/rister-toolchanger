@@ -21,7 +21,8 @@ A professional browser extension for controlling Klipper-based liquid handling a
 - STORE command for pre-loading dispense parameters
 - Configurable trigger delay (TD)
 - Emergency stop (P0) and clear stop (P999)
-- Multi-valve control (A, B, C, D)
+- **NEW: 4-servo valve control** with mask selector, state indicator, and 5V rail management
+- **NEW: Synchronized dispense mode** (DISPENSE_WITH_VALVES macro)
 - **NEW: Enhanced drypad control with linear actuator position and delay settings**
 - Quick actions: wash, waste, eject, home, drypad touch
 
@@ -84,6 +85,39 @@ You can modify these endpoints in `shared/api.js` if needed.
 3. Click "Position to Object" or "Position to Array"
 4. Build your sequence
 5. Save, download, or run directly on the printer
+
+### Valve Control
+The system has 4 servo-controlled valves on an Arduino Micro (`/dev/ttyMICROFLUIDICS`).
+
+**Valve Positions:**
+| Position | Angle | Description |
+|----------|-------|-------------|
+| BYPASS   | 35°   | Default/closed state — safe resting position |
+| OUTPUT   | 90°   | Dispense — liquid flows from syringe to tip |
+| INPUT    | 0°    | Aspirate — liquid drawn from reservoir into syringe |
+| FLUSH    | 180°  | PCV direct to output, bypasses syringe entirely |
+
+**Mask Parameter:** A 4-digit binary string where each digit controls one servo (1=move, 0=skip):
+- `1111` = all 4 valves
+- `1010` = valves 1 and 3 only
+- `0001` = valve 4 only
+
+Use the toggle buttons (V1–V4) or type a mask directly in the text input.
+
+**5V Rail Management:** Servo power is pulsed on only during valve moves (~350ms total) to extend servo longevity. The Klipper macros (`VALVE_OUTPUT`, etc.) handle this automatically. Manual 5V ON/OFF buttons are provided for debugging.
+
+**Valve switch timing:** ~350ms (50ms 5V stabilize + 150ms servo settle + overhead).
+
+**Angles** are stored in `variables.cfg` and can be reconfigured via `CONFIGURE_SERVO_ANGLES`.
+
+### Synchronized Dispensing
+The "Sync Dispense" section sends the `DISPENSE_WITH_VALVES` Klipper macro which:
+1. Powers 5V rail and opens valves to OUTPUT
+2. Loads trigger with volume/rate parameters
+3. Arms trigger, moves to target XY, then disarms
+4. Returns valves to BYPASS and powers down 5V
+
+Parameters: Mask, Volume (µL), Rate, Target X/Y, XY Feedrate.
 
 ## Data Storage
 
@@ -163,6 +197,12 @@ MIT License - Free to use and modify for your liquid handling automation needs.
 For issues or feature requests, please refer to the source repository.
 
 ## Version History
+
+### v1.3.0 (2026-03-25)
+- **NEW: 4-servo valve control panel** — mask selector with V1–V4 toggle buttons, INPUT/OUTPUT/BYPASS/FLUSH position buttons with color coding
+- **NEW: Valve state indicator** — shows current valve position and 5V rail state
+- **NEW: Manual 5V ON/OFF controls** — for debugging servo rail power
+- **NEW: Synchronized dispense mode** — sends `DISPENSE_WITH_VALVES` macro with mask, volume, rate, and target XY parameters
 
 ### v1.2.2 (2026-03-20)
 - **FIX: STORE command** - Now sends `STORE E{vol} F{rate}` format instead of `PUMP_LOAD_TRIGGER VOL= RATE=`

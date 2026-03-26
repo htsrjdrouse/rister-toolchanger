@@ -694,7 +694,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
     <div className="shape-designer">
       <div className="shape-designer-header">
         <h2>💧 Dispenser Line Generator</h2>
-        <p>Generate G-code for parallel line dispensing • <span style={{color: 'var(--accent)', cursor: 'pointer'}} onClick={() => window.dispatchEvent(new CustomEvent('navigate-to-calibration'))}>⚗️ Need to find optimal E mult/accel? Try Calibration Array →</span></p>
+        <p>Generate G-code for parallel line dispensing</p>
       </div>
       
       <div className="shape-designer-content">
@@ -1067,6 +1067,58 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
             )}
           </div>
           
+          <div className="panel-header">
+            <h3>⏱️ Timing Calculator</h3>
+          </div>
+          <div className="settings-section">
+            <div style={{ fontSize: '12px', lineHeight: '1.8' }}>
+              {(() => {
+                const travelTime = (settings.lineLength || 70) * 60 / (settings.feedrate || 300);
+                const travelFeedrate = settings.travelFeedrate || 3000;
+                const spacing = settings.lineSpacing || 1;
+                const hopTime = settings.numLines > 1 ? (spacing * 60 / travelFeedrate) : 0;
+
+                let dispenseTime = 0;
+                let triggerDelayS = 0;
+                if (settings.triggerMode) {
+                  // Arduino: F is mm/min (same as Klipper), E is µL (=mm via rotation_distance)
+                  // time = E * 60 / F seconds
+                  dispenseTime = (settings.triggerVolume || 100) * 60 / (settings.triggerRate || 2000);
+                  triggerDelayS = (settings.triggerDelay || 0) / 1000;
+                }
+
+                const perLineTotal = travelTime + (settings.triggerMode ? (dispenseTime + triggerDelayS) : 0);
+                const totalAllLines = perLineTotal * (settings.numLines || 1) + hopTime * Math.max(0, (settings.numLines || 1) - 1);
+
+                return (
+                  <>
+                    <div style={{ color: '#2196F3' }}>
+                      <strong>Travel:</strong> {settings.lineLength}mm @ {settings.feedrate}mm/min = <strong>{travelTime.toFixed(3)}s</strong>
+                    </div>
+                    {settings.triggerMode && (
+                      <div style={{ color: '#4CAF50' }}>
+                        <strong>Dispense:</strong> E{settings.triggerVolume}µL @ F{settings.triggerRate}mm/min = <strong>{dispenseTime.toFixed(3)}s</strong> + TD {settings.triggerDelay}ms = <strong>{(dispenseTime + triggerDelayS).toFixed(3)}s</strong>
+                      </div>
+                    )}
+                    {settings.numLines > 1 && (
+                      <div style={{ color: '#FF9800' }}>
+                        <strong>Hop:</strong> {spacing}mm @ {travelFeedrate}mm/min = <strong>{(hopTime * 1000).toFixed(1)}ms</strong>
+                      </div>
+                    )}
+                    <div style={{ marginTop: '6px', padding: '6px 8px', background: 'rgba(102,126,234,0.1)', borderRadius: '4px', fontWeight: 'bold' }}>
+                      Per line: {perLineTotal.toFixed(3)}s &nbsp;|&nbsp; Total ({settings.numLines} lines): {totalAllLines.toFixed(3)}s
+                    </div>
+                    {!settings.triggerMode && (
+                      <div style={{ color: '#888', fontSize: '10px', marginTop: '4px' }}>
+                        Enable Arduino Trigger Mode to see dispense timing
+                      </div>
+                    )}
+                  </>
+                );
+              })()}
+            </div>
+          </div>
+
           <div className="panel-header">
             <h3>🔧 Prime & Post-Dispense</h3>
           </div>

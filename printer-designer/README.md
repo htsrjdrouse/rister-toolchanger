@@ -41,7 +41,7 @@ A web-based tool for designing printer bed layouts and generating G-code for liq
 
 ### 🔌 Decoupled Pump Mode (Arduino Controller)
 - **Independent XY and pump feedrates** — XY runs at F8000–F18000 while pump runs at F4000 minimum for sub-300µm lines
-- **Arduino-based syringe pump** — Separate microcontroller (Arduino Micro + TMC2209) handles pump stepping
+- **Arduino-based syringe pump** — Separate microcontroller (Arduino Micro + A4988) handles pump stepping
 - **Trigger pin control** — Klipper output pin starts/stops the Arduino pump during dispense moves
 - **Configurable trigger delay** — Millisecond delay between trigger and pump start for timing calibration
 - **STORE command** — Pre-load dispense parameters (`STORE E{vol} F{rate}`) on the Arduino
@@ -49,13 +49,12 @@ A web-based tool for designing printer bed layouts and generating G-code for liq
 - **Real-time line width estimation** — Shows estimated geometric width based on pump/XY ratio
 - **Seamless toggle** — Switch between coupled (Klipper extruder) and decoupled (Arduino) modes
 
-### ⚗️ Calibration Array Generator
-- **Automated parameter sweeps**: Find optimal E multiplier and acceleration in one print
-- **Sweep 1**: Vary E multiplier (5 lines) with fixed acceleration
-- **Sweep 2**: Vary acceleration (5 lines) with fixed E multiplier
-- **Center value marking**: Middle line (★) represents your current best value
-- **Dual sweep output**: Both sweeps in single G-code file with proper spacing
-- **Use case**: Quickly identify best settings for consistent line quality
+### ⏱️ Timing Calculator
+- **Dispense time**: Calculated from Arduino pump parameters (E × 60 / F seconds, where F is mm/min)
+- **Travel time**: Line length / (feedrate / 60) for XY moves
+- **Hop time**: Inter-line travel time at travel feedrate
+- **Per-line and total timing**: Auto-updates as parameters change
+- **Valve synchronization**: Use calculated times to coordinate valve open/close with dispense moves
 
 ### 🔐 Publisher/Viewer Mode
 - Optional password protection for editing
@@ -114,8 +113,7 @@ printer-designer/
 │   │   │   ├── ObjectEditor.js       # Visual bed editor
 │   │   │   ├── TipManagement.js      # Dispenser tip config
 │   │   │   ├── GcodeBuilder.js       # G-code sequence builder
-│   │   │   ├── ShapeDesigner.js      # Line pattern generator
-│   │   │   ├── CalibrationArrayGenerator.js # Calibration sweeps
+│   │   │   ├── ShapeDesigner.js      # Line pattern generator + timing calculator
 │   │   │   ├── NumInput.js           # Reusable numeric input component
 │   │   │   └── LoginModal.js         # Auth UI
 │   │   ├── context/
@@ -176,7 +174,21 @@ G1 Z0.5 F500      ; Lower to dispense height
 | **Decoupled Pump** | Toggle Arduino pump mode (independent XY/pump feedrates) |
 | **Pump Feedrate** | Arduino pump rate in mm/min (min F4000 for 30G needle) |
 | **Trigger Delay** | Delay in ms between trigger pin HIGH and pump start |
-| **Trigger Pin** | Klipper output pin name (must match printer.cfg) |
+
+### ⏱️ Timing Calculator
+
+The timing calculator (in the Shape Designer panel) auto-computes timing for valve synchronization:
+
+| Calculation | Formula | Notes |
+|-------------|---------|-------|
+| **Travel time** | `lineLength × 60 / feedrate` | XY move time per line (seconds) |
+| **Dispense time** | `E × 60 / F` | Arduino pump time (F is mm/min, same as Klipper) |
+| **Trigger delay** | `TD / 1000` | Converted from ms to seconds |
+| **Hop time** | `lineSpacing × 60 / travelFeedrate` | Inter-line travel (seconds) |
+| **Per-line total** | travel + dispense + trigger delay | Total time for one line |
+| **Job total** | (per-line × numLines) + (hops × (numLines-1)) | Full print time estimate |
+
+The Arduino pump uses the same feedrate convention as Klipper: F is in mm/min. With `rotation_distance: 24.534` and `microsteps: 16`, 1 E unit = 1 µL. So `STORE E100 F2000` dispenses 100µL at 2000mm/min = 3.0 seconds.
 
 #### Per-Line Overrides
 
@@ -249,51 +261,6 @@ M204 S3000  ; Restore acceleration
 - `M204 S{value}` sets acceleration at start of line set
 - Per-line acceleration changes only emit `M204` when value differs from previous line
 - Acceleration restored to travel value after all lines complete
-
-### Calibration Array Generator
-
-The **⚗️ Calibration Array** tab generates test patterns to find optimal E multiplier and acceleration values in a single print run.
-
-**Settings Sync:**
-- All hardware and motion settings (line length, spacing, volume, speeds, Z heights, start position) are automatically synced from **Shape Designer**
-- Prime/post-dispense G-code, before/after printing G-code, and zigzag setting are inherited from Shape Designer
-- Configure hardware settings in Shape Designer first, then use Calibration Array to generate test sweeps
-
-**Workflow:**
-1. Configure hardware settings in **Shape Designer** tab (line length, spacing, volume, speeds, etc.)
-2. Switch to **Calibration Array** tab
-3. Select which sweep(s) to run: Sweep 1 (E multiplier), Sweep 2 (acceleration), or both
-4. Set your current "best guess" values as center points
-5. Configure step sizes for each parameter
-6. Generate G-code
-7. Print and visually inspect results
-8. Identify the best line in each sweep
-9. Use those values in Shape Designer per-line overrides
-
-**Calibration-Specific Parameters:**
-
-| Parameter | Description |
-|-----------|-------------|
-| **Active Sweep** | Choose Sweep 1 only, Sweep 2 only, or both sweeps |
-| **Sweep 1: E Multiplier** | Varies E multiplier across 5 lines with fixed acceleration |
-| **Sweep 2: Acceleration** | Varies acceleration across 5 lines with fixed E multiplier |
-| **Center Value** | Your current best value (marked with ★ in middle line) |
-| **Step Size** | How much to vary between lines |
-| **Sweep Gap** | Horizontal spacing between sweep groups (only used when both sweeps selected) |
-
-**Example Configuration:**
-- Sweep 1: Center E=1.50, Step=0.10 → Lines at 1.30, 1.40, 1.50★, 1.60, 1.70
-- Sweep 2: Center Accel=600, Step=150 → Lines at 300, 450, 600★, 750, 900 mm/s²
-
-**Output:**
-- Single G-code file with selected sweep(s)
-- Each line labeled with its parameters in comments
-- Zigzag pattern if enabled in Shape Designer
-- Prime/post-dispense G-code from Shape Designer applied to each line
-- Before/after printing G-code from Shape Designer included
-
-**Use Case:**
-If you're unsure whether your under-dispense is due to E multiplier or acceleration, run both sweeps. The best-looking line in each sweep tells you the optimal value for that parameter. For faster iteration, run only the sweep you need to calibrate.
 
 ## 🔌 API Reference
 
