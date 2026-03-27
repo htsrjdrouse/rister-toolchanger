@@ -9,12 +9,17 @@ export class FluidicsControl {
     this.triggerArmed = false;
     this.valveState = 'UNKNOWN';
     this.power5v = false;
+    this.pumpAccelSteps = 500;
+    this.settingsSaveIndicator = null;
   }
 
   async initialize() {
     const config = this.storage.getAll();
     this.tips = config.tips || [];
     this.activeTipIndex = config.activeTipIndex || 0;
+
+    // Load fluidics settings from storage
+    this.loadSettings();
 
     // Ensure at least one default tip exists
     if (this.tips.length === 0) {
@@ -35,6 +40,27 @@ export class FluidicsControl {
 
     // Start periodic sync to track external tip changes
     this.startActiveTipSync();
+  }
+
+  loadSettings() {
+    const settings = this.storage.getFluidicsSettings();
+    this.pumpAccelSteps = settings.accelSteps || 500;
+  }
+
+  async saveSetting(key, value) {
+    await this.storage.setFluidicsSetting(key, value);
+    this.showSettingsSaved();
+  }
+
+  showSettingsSaved() {
+    // Show a brief "Saved" indicator
+    const indicator = document.getElementById('settings-saved-indicator');
+    if (indicator) {
+      indicator.style.opacity = '1';
+      setTimeout(() => {
+        indicator.style.opacity = '0';
+      }, 1000);
+    }
   }
 
   // Sync active tip index from Klipper's variables.cfg
@@ -194,6 +220,17 @@ export class FluidicsControl {
       <div class="section">
         <h3 class="section-title">💉 Syringe Pump</h3>
 
+        <!-- Settings Saved Indicator -->
+        <div id="settings-saved-indicator" style="position: absolute; top: 10px; right: 10px; background: #4CAF50; color: white; padding: 4px 12px; border-radius: 12px; font-size: 11px; opacity: 0; transition: opacity 0.3s; pointer-events: none;">
+          ✓ Saved
+        </div>
+
+        <!-- Pump Status Display -->
+        <div id="pump-status-display" style="background: #e3f2fd; padding: 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #2196F3; font-family: monospace; font-size: 11px; min-height: 40px;">
+          <div style="font-weight: 600; margin-bottom: 4px;">Arduino Status:</div>
+          <div id="pump-status-text" style="color: #666;">Click "Status (P114)" to query</div>
+        </div>
+
         <!-- Emergency Stop -->
         <div style="display: flex; gap: 8px; margin-bottom: 12px;">
           <button id="estop" class="btn btn-danger" style="flex: 1; font-size: 14px; font-weight: bold;">🛑 E-STOP (P0)</button>
@@ -202,6 +239,21 @@ export class FluidicsControl {
         <div style="display: flex; gap: 8px; margin-bottom: 12px;">
           <button id="motor-on" class="btn" style="flex: 1; font-size: 14px; background: #4CAF50; color: white;">⚡ Motor ON</button>
           <button id="motor-off" class="btn btn-danger" style="flex: 1; font-size: 14px;">🔌 Motor OFF</button>
+        </div>
+
+        <!-- Acceleration Ramp Control -->
+        <div style="background: #f3e5f5; padding: 12px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #9C27B0;">
+          <label style="font-weight: 600; display: block; margin-bottom: 6px;" title="Acceleration ramp prevents skipped steps at high feedrates. 0=disabled, 200=short (E5-E20), 500=default (F10000+), 1000=long (F15000+)">
+            ⚡ Accel Ramp Steps <span style="font-size: 11px; color: #666;">(SA command)</span>
+          </label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <input type="number" id="accel-steps" value="${this.pumpAccelSteps}" min="0" max="2000" style="flex: 1;">
+            <span id="accel-current" style="font-family: monospace; font-size: 11px; color: #666; min-width: 80px;">Current: ${this.pumpAccelSteps}</span>
+            <button id="apply-accel" class="btn" style="white-space: nowrap;">Apply SA</button>
+          </div>
+          <div style="font-size: 10px; color: #666; margin-top: 4px;">
+            0=off | 200=short (E5-E20) | 500=default (F10k+) | 1000=long (F15k+)
+          </div>
         </div>
 
         <!-- Trigger Control -->
@@ -220,17 +272,17 @@ export class FluidicsControl {
         <!-- Store & Trigger Delay -->
         <div style="display: flex; gap: 8px; margin-bottom: 12px;">
           <div style="flex: 2;">
-            <label>Load Trigger (PUMP_LOAD_TRIGGER VOL RATE):</label>
+            <label>Load Trigger (STORE E F):</label>
             <div style="display: flex; gap: 4px;">
-              <input type="number" id="store-volume" value="100" style="flex: 1;" placeholder="VOL">
-              <input type="number" id="store-rate" value="2000" style="flex: 1;" placeholder="RATE">
+              <input type="number" id="store-volume" value="${this.storage.getFluidicsSettings().storeVolume}" style="flex: 1;" placeholder="VOL">
+              <input type="number" id="store-rate" value="${this.storage.getFluidicsSettings().storeRate}" style="flex: 1;" placeholder="RATE">
               <button id="store-cmd" class="btn btn-secondary" style="white-space: nowrap;">LOAD</button>
             </div>
           </div>
           <div style="flex: 1;">
             <label>Trigger Delay (ms):</label>
             <div style="display: flex; gap: 4px;">
-              <input type="number" id="trigger-delay" value="50" style="flex: 1;" placeholder="ms">
+              <input type="number" id="trigger-delay" value="${this.storage.getFluidicsSettings().triggerDelay}" style="flex: 1;" placeholder="ms">
               <button id="set-td" class="btn btn-secondary">TD</button>
             </div>
           </div>
@@ -239,12 +291,12 @@ export class FluidicsControl {
         <!-- Aspirate / Dispense -->
         <div class="form-row cols-2" style="margin-bottom: 10px;">
           <div>
-            <label>Volume (E):</label>
-            <input type="number" id="syringe-steps" value="130">
+            <label>Volume (E µL):</label>
+            <input type="number" id="syringe-steps" value="${this.storage.getFluidicsSettings().pumpVolume}">
           </div>
           <div>
             <label>Feedrate (F):</label>
-            <input type="number" id="syringe-feedrate" value="3000">
+            <input type="number" id="syringe-feedrate" value="${this.storage.getFluidicsSettings().pumpFeedrate}">
           </div>
         </div>
         <div class="btn-group">
@@ -252,8 +304,11 @@ export class FluidicsControl {
           <button id="dispense" class="btn">⬇️ Dispense (D1)</button>
         </div>
 
-        <!-- Status -->
-        <button id="pump-status" class="btn btn-gray" style="width: 100%; margin-top: 8px; font-size: 12px;">📊 Status (P114)</button>
+        <!-- Status & Reset -->
+        <div style="display: flex; gap: 8px; margin-top: 8px;">
+          <button id="pump-status" class="btn btn-gray" style="flex: 1; font-size: 12px;">📊 Status (P114)</button>
+          <button id="reset-settings" class="btn btn-gray" style="font-size: 11px; padding: 6px 10px;" title="Reset all pump and valve settings to factory defaults">🔄 Reset</button>
+        </div>
       </div>
 
       <!-- Valves -->
@@ -296,29 +351,20 @@ export class FluidicsControl {
 
         <!-- Timing -->
         <div style="display: flex; gap: 8px; margin-bottom: 10px;">
-          <div style="flex: 1;"><label>Delay A (ms):</label><input type="number" id="valve-delay-a" value="100" min="0" style="width: 100%;"></div>
-          <div style="flex: 1;"><label>Delay B (ms):</label><input type="number" id="valve-delay-b" value="100" min="0" style="width: 100%;"></div>
+          <div style="flex: 1;">
+            <label title="Wait after turnon5v before servo command (5V stabilize)">5V Stabilize (ms):</label>
+            <input type="number" id="valve-delay-a" value="${this.storage.getFluidicsSettings().stabilizeMs}" min="0" style="width: 100%;">
+          </div>
+          <div style="flex: 1;">
+            <label title="Wait after valve servo command before turnoff5v. Increase if valves don't reach target position. Range: 150ms (fast) to 3200ms (heavy load)">Valve Settle (ms):</label>
+            <input type="number" id="valve-delay-b" value="${this.storage.getFluidicsSettings().valveSettleMs}" min="0" style="width: 100%;">
+          </div>
         </div>
 
         <div style="padding: 8px; background: #fff3e0; border-radius: 4px; font-size: 11px;">
           <strong>Angles:</strong> INPUT=0° (aspirate) | OUTPUT=90° (dispense) | BYPASS=35° (closed) | FLUSH=180° (PCV direct)
+          <br><strong>Timing:</strong> 5V stabilize (${this.storage.getFluidicsSettings().stabilizeMs}ms) + Valve settle (${this.storage.getFluidicsSettings().valveSettleMs}ms) = ~${this.storage.getFluidicsSettings().stabilizeMs + this.storage.getFluidicsSettings().valveSettleMs}ms total
         </div>
-      </div>
-
-      <!-- Synchronized Dispense -->
-      <div class="section">
-        <h3 class="section-title">🎯 Sync Dispense</h3>
-        <div class="form-row cols-3" style="margin-bottom: 10px;">
-          <div><label>Mask:</label><input type="text" id="sync-mask" value="1111" maxlength="4" style="font-family: monospace; text-align: center;"></div>
-          <div><label>Volume (µL):</label><input type="number" id="sync-vol" value="5"></div>
-          <div><label>Rate:</label><input type="number" id="sync-rate" value="4000"></div>
-        </div>
-        <div class="form-row cols-3" style="margin-bottom: 10px;">
-          <div><label>Target X:</label><input type="number" id="sync-x" value="135" step="0.1"></div>
-          <div><label>Target Y:</label><input type="number" id="sync-y" value="65" step="0.1"></div>
-          <div><label>XY Feedrate:</label><input type="number" id="sync-xy-rate" value="10000"></div>
-        </div>
-        <button id="sync-dispense" class="btn" style="width: 100%; background: #4CAF50; color: white; font-size: 14px; font-weight: 600;">🎯 Dispense with Valves</button>
       </div>
 
       <!-- Pump Control -->
@@ -606,12 +652,43 @@ export class FluidicsControl {
       const vol = document.getElementById('store-volume').value;
       const rate = document.getElementById('store-rate').value;
       this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="STORE E${vol} F${rate}"`);
+      this.saveSetting('storeVolume', parseInt(vol));
+      this.saveSetting('storeRate', parseInt(rate));
     });
     container.querySelector('#set-td')?.addEventListener('click', () => {
       const ms = document.getElementById('trigger-delay').value;
       this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="TD ${ms}"`);
+      this.saveSetting('triggerDelay', parseInt(ms));
     });
-    container.querySelector('#pump-status')?.addEventListener('click', () => this.api.sendGcode('SEND_PUMP_ARDUINO COMMAND="P114"'));
+    container.querySelector('#pump-status')?.addEventListener('click', async () => {
+      await this.queryPumpStatus();
+    });
+
+    // Acceleration ramp controls
+    container.querySelector('#apply-accel')?.addEventListener('click', () => {
+      const steps = document.getElementById('accel-steps').value;
+      this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="SA ${steps}"`);
+      this.pumpAccelSteps = parseInt(steps);
+      this.saveSetting('accelSteps', parseInt(steps));
+      // Update current display
+      const currentDisplay = document.getElementById('accel-current');
+      if (currentDisplay) {
+        currentDisplay.textContent = `Current: ${steps}`;
+      }
+    });
+
+    // Reset settings button
+    container.querySelector('#reset-settings')?.addEventListener('click', async () => {
+      if (confirm('Reset all pump and valve settings to factory defaults?')) {
+        await this.storage.resetFluidicsSettings();
+        this.loadSettings();
+        this.render();
+        alert('Settings reset to defaults. Page will reload.');
+      }
+    });
+
+    // Auto-save all input fields when they change
+    this.setupAutoSaveListeners(container);
 
     // Valve controls
     container.querySelector('#valve-all')?.addEventListener('click', () => this.setValveMask('1111'));
@@ -636,9 +713,6 @@ export class FluidicsControl {
     });
     // Mask text input sync
     container.querySelector('#valve-mask')?.addEventListener('input', () => this.syncTogglesFromMask());
-
-    // Sync dispense
-    container.querySelector('#sync-dispense')?.addEventListener('click', () => this.syncDispense());
 
     // Initialize valve toggle button visuals
     this.syncTogglesFromMask();
@@ -691,6 +765,93 @@ export class FluidicsControl {
 
     // Quick actions
     this.attachQuickActionListeners();
+  }
+
+  setupAutoSaveListeners(container) {
+    // Map of input IDs to storage keys
+    const fieldMappings = {
+      'syringe-steps': 'pumpVolume',
+      'syringe-feedrate': 'pumpFeedrate',
+      'trigger-delay': 'triggerDelay',
+      'accel-steps': 'accelSteps',
+      'store-volume': 'storeVolume',
+      'store-rate': 'storeRate',
+      'valve-mask': 'valveMask',
+      'valve-delay-a': 'stabilizeMs',
+      'valve-delay-b': 'valveSettleMs'
+    };
+
+    // Add change listeners to all mapped fields
+    Object.keys(fieldMappings).forEach(fieldId => {
+      const element = container.querySelector(`#${fieldId}`);
+      if (element) {
+        element.addEventListener('change', () => {
+          const value = element.type === 'number' ? parseFloat(element.value) : element.value;
+          this.saveSetting(fieldMappings[fieldId], value);
+        });
+      }
+    });
+  }
+
+  async queryPumpStatus() {
+    // Query the Arduino for status
+    await this.api.sendGcode('SEND_PUMP_ARDUINO COMMAND="P114"');
+
+    // Wait a bit for response, then try to fetch and parse it
+    // Note: In a real implementation, you'd need to poll the Klipper console output
+    // or have a mechanism to capture the Arduino's response
+    setTimeout(() => {
+      // For now, just update the display to show we queried
+      const statusDisplay = document.getElementById('pump-status-text');
+      if (statusDisplay) {
+        statusDisplay.innerHTML = 'Status queried - check Klipper console for response<br>Format: vol=X rate=X delay=X armed=X motor=X dir=X estop=X accel=X steps_ul=X';
+      }
+    }, 500);
+
+    // TODO: Implement actual response parsing when Arduino serial response is captured
+    // For now, this is a placeholder. The full implementation would need:
+    // 1. Capture serial output from Klipper's RESPOND command
+    // 2. Parse the P114 response line
+    // 3. Extract accel= value and update the display
+  }
+
+  parsePumpStatus(response) {
+    // Parse P114 response format: "vol=50.00 rate=4000 delay=50 armed=1 motor=1 dir=disp estop=0 accel=500 steps_ul=130.4 ok"
+    const params = {};
+    const tokens = response.split(/\s+/);
+
+    tokens.forEach(token => {
+      const [key, value] = token.split('=');
+      if (key && value) {
+        params[key] = value;
+      }
+    });
+
+    // Update acceleration display if present
+    if (params.accel !== undefined) {
+      this.pumpAccelSteps = parseInt(params.accel);
+      const currentDisplay = document.getElementById('accel-current');
+      if (currentDisplay) {
+        currentDisplay.textContent = `Current: ${params.accel}`;
+      }
+    }
+
+    // Update status display
+    const statusDisplay = document.getElementById('pump-status-text');
+    if (statusDisplay) {
+      statusDisplay.innerHTML = `
+        <strong>Vol:</strong> ${params.vol || '?'} µL |
+        <strong>Rate:</strong> ${params.rate || '?'} |
+        <strong>Delay:</strong> ${params.delay || '?'}ms |
+        <strong>Accel:</strong> ${params.accel || '?'}<br>
+        <strong>Armed:</strong> ${params.armed === '1' ? 'YES' : 'NO'} |
+        <strong>Motor:</strong> ${params.motor === '1' ? 'ON' : 'OFF'} |
+        <strong>Dir:</strong> ${params.dir || '?'} |
+        <strong>E-Stop:</strong> ${params.estop === '1' ? 'YES' : 'NO'}
+      `;
+    }
+
+    return params;
   }
 
   attachQuickActionListeners() {
@@ -953,12 +1114,16 @@ export class FluidicsControl {
     const vol = document.getElementById('syringe-steps').value;
     const feedrate = document.getElementById('syringe-feedrate').value;
     this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="A1 E${vol} F${feedrate}"`);
+    this.saveSetting('pumpVolume', parseFloat(vol));
+    this.saveSetting('pumpFeedrate', parseInt(feedrate));
   }
 
   dispense() {
     const vol = document.getElementById('syringe-steps').value;
     const feedrate = document.getElementById('syringe-feedrate').value;
     this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="D1 E${vol} F${feedrate}"`);
+    this.saveSetting('pumpVolume', parseFloat(vol));
+    this.saveSetting('pumpFeedrate', parseInt(feedrate));
   }
 
   updateTriggerUI() {
@@ -1047,8 +1212,8 @@ export class FluidicsControl {
   setValves(mode) {
     const mask = this.getValveMask();
     if (mask === '0000') return;
-    const delayA = document.getElementById('valve-delay-a')?.value || '100';
-    const delayB = document.getElementById('valve-delay-b')?.value || '100';
+    const delayA = document.getElementById('valve-delay-a')?.value || '50';
+    const delayB = document.getElementById('valve-delay-b')?.value || '3200';
     const sequence = [
       'SEND_ARDUINO COMMAND="turnon5v"',
       `G4 P${delayA}`,
@@ -1059,6 +1224,11 @@ export class FluidicsControl {
     this.api.sendGcode(sequence);
     this.valveState = mode;
     this.updateValveStateUI();
+
+    // Save valve timing settings
+    this.saveSetting('stabilizeMs', parseInt(delayA));
+    this.saveSetting('valveSettleMs', parseInt(delayB));
+    this.saveSetting('valveMask', mask);
   }
 
   updateValveStateUI() {
@@ -1067,18 +1237,6 @@ export class FluidicsControl {
     const colors = { INPUT: '#2196F3', OUTPUT: '#4CAF50', BYPASS: '#9e9e9e', FLUSH: '#FF9800', UNKNOWN: '#555' };
     const color = colors[this.valveState] || '#555';
     bar.innerHTML = `State: <span style="color:${color};">${this.valveState}</span> &nbsp;|&nbsp; 5V: ${this.power5v ? '<span style="color:#4CAF50;">ON</span>' : '<span style="color:#999;">OFF</span>'}`;
-  }
-
-  syncDispense() {
-    const mask = document.getElementById('sync-mask')?.value || '1111';
-    const vol = document.getElementById('sync-vol')?.value || '5';
-    const rate = document.getElementById('sync-rate')?.value || '4000';
-    const x = document.getElementById('sync-x')?.value || '135';
-    const y = document.getElementById('sync-y')?.value || '65';
-    const xyRate = document.getElementById('sync-xy-rate')?.value || '10000';
-    this.api.sendGcode(`DISPENSE_WITH_VALVES MASK=${mask} VOL=${vol} RATE=${rate} X=${x} Y=${y} XY_RATE=${xyRate}`);
-    this.valveState = 'BYPASS';
-    this.updateValveStateUI();
   }
 
   async saveDrypadSettings() {

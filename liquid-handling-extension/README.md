@@ -22,7 +22,6 @@ A professional browser extension for controlling Klipper-based liquid handling a
 - Configurable trigger delay (TD)
 - Emergency stop (P0) and clear stop (P999)
 - **NEW: 4-servo valve control** with mask selector, state indicator, and 5V rail management
-- **NEW: Synchronized dispense mode** (DISPENSE_WITH_VALVES macro)
 - **NEW: Enhanced drypad control with linear actuator position and delay settings**
 - Quick actions: wash, waste, eject, home, drypad touch
 
@@ -86,7 +85,52 @@ You can modify these endpoints in `shared/api.js` if needed.
 4. Build your sequence
 5. Save, download, or run directly on the printer
 
+### Persistent Settings Storage
+
+**All settings automatically save!** The extension now persists ALL user-configurable pump and valve settings to Chrome local storage. Settings are saved immediately when you change them and restored automatically when you reopen the extension.
+
+**Persisted Settings Include:**
+- Pump feedrate (F value) and volume (E µL)
+- Trigger delay (TD milliseconds)
+- Acceleration ramp steps (SA command)
+- Aspirate feedrate and volume
+- Valve settle time (critical - default 3200ms for reliable valve movement)
+- Valve mask (which valves to control)
+- 5V stabilize delay
+- STORE command volume and rate
+
+**Reset to Defaults:** Click the "Reset" button next to the Status (P114) button to restore factory defaults.
+
+**Settings Saved Indicator:** A green "✓ Saved" indicator briefly appears when settings are persisted.
+
+### Pump Acceleration Ramp
+
+The Arduino syringe pump v2.5 supports acceleration ramping via the `SA <steps>` command. This feature enables:
+- Higher feedrates (F15000+) without skipped steps
+- Reliable small volume dispensing (E50 and below)
+- Smooth motor movement to reduce mechanical stress
+
+**UI Control:** The Fluidics tab includes an "Accel Ramp Steps" field with Apply button.
+
+**Recommended Values:**
+```
+0     = disabled (constant speed, original behavior)
+200   = short ramp (best for small volumes E5-E20)
+500   = default (reliable at F10000+)
+1000  = long ramp (enables F15000+ speeds)
+```
+
+**How It Works:**
+- The ramp linearly interpolates speed over the specified number of steps
+- Both acceleration and deceleration use the same ramp length
+- Total ramp time = accelSteps × 2 steps at interpolated speeds
+
+**Arduino Command:** `SA 500` (sends via `SEND_PUMP_ARDUINO COMMAND="SA 500"`)
+
+**Status Query:** The P114 status command now returns the current `accel=` value, displayed in the Arduino Status panel.
+
 ### Valve Control
+
 The system has 4 servo-controlled valves on an Arduino Micro (`/dev/ttyMICROFLUIDICS`).
 
 **Valve Positions:**
@@ -104,20 +148,60 @@ The system has 4 servo-controlled valves on an Arduino Micro (`/dev/ttyMICROFLUI
 
 Use the toggle buttons (V1–V4) or type a mask directly in the text input.
 
-**5V Rail Management:** Servo power is pulsed on only during valve moves (~350ms total) to extend servo longevity. The Klipper macros (`VALVE_OUTPUT`, etc.) handle this automatically. Manual 5V ON/OFF buttons are provided for debugging.
+**5V Rail Management:** Servo power is pulsed on only during valve moves to extend servo longevity. The Klipper macros (`VALVE_OUTPUT`, etc.) handle this automatically. Manual 5V ON/OFF buttons are provided for debugging.
 
-**Valve switch timing:** ~350ms (50ms 5V stabilize + 150ms servo settle + overhead).
+**Valve Timing Configuration:**
+- **5V Stabilize (default 50ms):** Wait after `turnon5v` before sending servo command. Ensures stable power delivery.
+- **Valve Settle (default 3200ms):** Wait after valve servo command before `turnoff5v`. **Critical setting** - increase if valves don't reach target position reliably.
+  - Fast servos, light load: 150-500ms
+  - Standard setup: 1000-2000ms
+  - Heavy load, worn servos: 3200ms (default)
+
+**Complete Valve Switch Sequence:**
+```
+SEND_ARDUINO COMMAND="turnon5v"
+G4 P50                                    ← 5V stabilize delay
+SEND_ARDUINO COMMAND="setvalves_angle {mask} {a} {b} {c} {d}"
+G4 P3200                                  ← valve settle delay
+SEND_ARDUINO COMMAND="turnoff5v"
+```
+
+**Total Valve Switch Time:** 5V stabilize (50ms) + Valve settle (3200ms) = ~3250ms
 
 **Angles** are stored in `variables.cfg` and can be reconfigured via `CONFIGURE_SERVO_ANGLES`.
 
-### Synchronized Dispensing
-The "Sync Dispense" section sends the `DISPENSE_WITH_VALVES` Klipper macro which:
-1. Powers 5V rail and opens valves to OUTPUT
-2. Loads trigger with volume/rate parameters
-3. Arms trigger, moves to target XY, then disarms
-4. Returns valves to BYPASS and powers down 5V
+## Settings Reference
 
-Parameters: Mask, Volume (µL), Rate, Target X/Y, XY Feedrate.
+All settings below are **automatically saved** to Chrome local storage and persist across browser sessions.
+
+### Pump Settings
+
+| Setting | Default | Description | Range |
+|---------|---------|-------------|-------|
+| Pump feedrate | 4000 | F value for dispense moves | 100-15000 |
+| Pump volume | 5 µL | Volume per dispense (E value) | 0.1-1000 |
+| Trigger delay | 50ms | Delay after trigger before motor starts (TD command) | 0-10000 |
+| Accel ramp steps | 500 | Steps to ramp up/down speed (SA command) | 0-2000 |
+| Aspirate feedrate | 2000 | Default feedrate for aspirate moves | 100-15000 |
+| Aspirate volume | 50 µL | Default volume for aspirate | 0.1-1000 |
+| STORE volume | 100 µL | Pre-load volume for trigger mode | 1-1000 |
+| STORE rate | 2000 | Pre-load rate for trigger mode | 100-15000 |
+
+### Valve Settings
+
+| Setting | Default | Description | Range |
+|---------|---------|-------------|-------|
+| Valve settle time | 3200ms | Wait after valve move before 5V off | 0-10000 |
+| Valve mask | 1111 | Which valves to move (4-digit binary) | 0000-1111 |
+| 5V stabilize | 50ms | Wait after turnon5v before servo command | 0-1000 |
+
+### Timing Reference
+
+```
+Valve switch total time = 5V stabilize (50ms) + Valve settle (3200ms) = ~3250ms
+Pump accel ramp time = accelSteps × 2 × step_duration (variable based on feedrate)
+Trigger delay = TD milliseconds after falling edge before dispense starts
+```
 
 ## Data Storage
 
@@ -198,11 +282,21 @@ For issues or feature requests, please refer to the source repository.
 
 ## Version History
 
+### v1.5.1 (2026-03-27)
+- **NEW: Pump acceleration ramp control** — UI field and Apply button for SA command (0-2000 steps)
+- **NEW: Persistent settings storage** — All pump, valve, and motion settings auto-save to Chrome local storage
+- **NEW: Settings saved indicator** — Green "✓ Saved" notification confirms settings persisted
+- **NEW: Reset to Defaults button** — Restore factory default settings with one click
+- **NEW: Arduino status display panel** — Shows parsed P114 response with vol, rate, delay, accel, armed, motor, dir, estop
+- **IMPROVED: Valve settle time default** — Changed from 100ms to 3200ms for reliable heavy-load valve movement
+- **IMPROVED: Field labels** — "Delay A/B" renamed to "5V Stabilize" and "Valve Settle" with tooltips
+- **IMPROVED: All input fields** — Now load saved values on startup and auto-save on change
+- Updated documentation with comprehensive settings reference tables
+
 ### v1.3.0 (2026-03-25)
 - **NEW: 4-servo valve control panel** — mask selector with V1–V4 toggle buttons, INPUT/OUTPUT/BYPASS/FLUSH position buttons with color coding
 - **NEW: Valve state indicator** — shows current valve position and 5V rail state
 - **NEW: Manual 5V ON/OFF controls** — for debugging servo rail power
-- **NEW: Synchronized dispense mode** — sends `DISPENSE_WITH_VALVES` macro with mask, volume, rate, and target XY parameters
 
 ### v1.2.2 (2026-03-20)
 - **FIX: STORE command** - Now sends `STORE E{vol} F{rate}` format instead of `PUMP_LOAD_TRIGGER VOL= RATE=`

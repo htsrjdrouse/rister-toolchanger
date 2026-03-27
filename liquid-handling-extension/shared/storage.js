@@ -7,7 +7,20 @@ export class StorageManager {
       tips: [],
       activeTipIndex: 0,
       savedMacros: [],
-      version: '1.3.9'
+      fluidicsSettings: {
+        pumpFeedrate: 4000,
+        pumpVolume: 5,
+        triggerDelay: 50,
+        accelSteps: 500,
+        aspirateFeedrate: 2000,
+        aspirateVolume: 50,
+        valveSettleMs: 3200,
+        valveMask: '1111',
+        stabilizeMs: 50,
+        storeVolume: 100,
+        storeRate: 2000
+      },
+      version: '1.5.1'
     };
   }
 
@@ -16,7 +29,26 @@ export class StorageManager {
     const stored = await chrome.storage.local.get('liquidHandlingConfig');
     if (stored.liquidHandlingConfig) {
       this.config = { ...this.config, ...stored.liquidHandlingConfig };
-      
+
+      // Initialize fluidicsSettings if not present (migration from older versions)
+      if (!this.config.fluidicsSettings) {
+        this.config.fluidicsSettings = {
+          pumpFeedrate: 4000,
+          pumpVolume: 5,
+          triggerDelay: 50,
+          accelSteps: 500,
+          aspirateFeedrate: 2000,
+          aspirateVolume: 50,
+          valveSettleMs: 3200,
+          valveMask: '1111',
+          stabilizeMs: 50,
+          storeVolume: 100,
+          storeRate: 2000
+        };
+        await this.save();
+        console.log('Initialized fluidicsSettings with defaults');
+      }
+
       // Migrate existing tips to add new fields if they don't exist
       if (this.config.tips && this.config.tips.length > 0) {
         let needsSave = false;
@@ -309,6 +341,35 @@ export class StorageManager {
       console.error('Import failed:', error);
       return false;
     }
+  }
+
+  // Fluidics settings methods
+  getFluidicsSettings() {
+    return this.config.fluidicsSettings;
+  }
+
+  async setFluidicsSetting(key, value) {
+    if (this.config.fluidicsSettings) {
+      this.config.fluidicsSettings[key] = value;
+      await this.save();
+    }
+  }
+
+  async resetFluidicsSettings() {
+    this.config.fluidicsSettings = {
+      pumpFeedrate: 4000,
+      pumpVolume: 5,
+      triggerDelay: 50,
+      accelSteps: 500,
+      aspirateFeedrate: 2000,
+      aspirateVolume: 50,
+      valveSettleMs: 3200,
+      valveMask: '1111',
+      stabilizeMs: 50,
+      storeVolume: 100,
+      storeRate: 2000
+    };
+    await this.save();
   }
 
   // Array coordinate calculation

@@ -161,6 +161,19 @@
     }
   ],
   "activeTipIndex": 0,
+  "fluidicsSettings": {
+    "pumpFeedrate": 4000,
+    "pumpVolume": 5,
+    "triggerDelay": 50,
+    "accelSteps": 500,
+    "aspirateFeedrate": 2000,
+    "aspirateVolume": 50,
+    "valveSettleMs": 3200,
+    "valveMask": "1111",
+    "stabilizeMs": 50,
+    "storeVolume": 100,
+    "storeRate": 2000
+  },
   "savedMacros": [
     {
       "content": "; G-code Sequence: Sample_Collection_Sequence\n; Generated: 2025-12-04T22:05:52.333Z\n; Ready to execute in Mainsail console\n\n;X:59.000 Y:347.000 Z:9.4 E:0.000\n;ENABLE_LINEARACTUATOR_SERVO_L0\n;SET_SERVO SERVO=linearactuator_servo_l0 ANGLE=130\n;X:59.000 Y:355.000 Z:9.4 E:0.000\n\nG90  ; Absolute positioning\nG1 Z100 F1500\nG1 X65 F3000  \nG4 P500\nG1 Y340 F3000\nENABLE_LINEARACTUATOR_SERVO_L0\nSET_SERVO SERVO=linearactuator_servo_l0 ANGLE=150\nG4 P500\nG1 Z40 F1500\nG1 Y358 F3000\nG4 P500\nG1 X57 F1000\nG1 Z47 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X77 F1000\nG1 Z50 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X57 F1000\nG1 Z52 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X77 F1000\nG1 Z53 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X57 F1000\nG1 Z55 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG4 P500\nG1 Z100 F1000\nG4 P500\nENABLE_LINEARACTUATOR_SERVO_L0\nG4 P500\nDISABLE_LINEARACTUATOR_SERVO_L0\nG4 P500",
@@ -191,5 +204,5 @@
       "content": "; G-code Sequence: Sample_Collection_Sequence\n; Generated: 2025-12-04T22:05:52.333Z\n; Ready to execute in Mainsail console\n\n;X:59.000 Y:347.000 Z:9.4 E:0.000\n;ENABLE_LINEARACTUATOR_SERVO_L0\n;SET_SERVO SERVO=linearactuator_servo_l0 ANGLE=130\n;X:59.000 Y:355.000 Z:9.4 E:0.000\n\nG90  ; Absolute positioning\nG1 Z100 F1500\nG1 X65 F3000  \nG4 P500\nG1 Y340 F3000\nENABLE_LINEARACTUATOR_SERVO_L0\nSET_SERVO SERVO=linearactuator_servo_l0 ANGLE=150\nG4 P500\nG1 Z40 F1500\nG1 Y358 F3000\nG4 P500\nG1 X57 F1000\nG1 Z47 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X77 F1000\nG1 Z50 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X57 F1000\nG1 Z52 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X77 F1000\nG1 Z53 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X57 F1000\nG1 Z55 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG4 P500\nG1 Z100 F1000\nG4 P500\nENABLE_LINEARACTUATOR_SERVO_L0\nG4 P500\nDISABLE_LINEARACTUATOR_SERVO_L0\nG4 P500"
     }
   ],
-  "version": "1.1.0"
+  "version": "1.5.1"
 }
