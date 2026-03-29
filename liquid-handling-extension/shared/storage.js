@@ -18,7 +18,18 @@ export class StorageManager {
         valveMask: '1111',
         stabilizeMs: 50,
         storeVolume: 100,
-        storeRate: 2000
+        storeRate: 2000,
+        seq_primeVol: 20,
+        seq_primeFeedrate: 10000,
+        seq_primeDelayMs: 1000,
+        seq_dispVol: 50,
+        seq_dispFeedrate: 14000,
+        seq_dispDelayMs: 500,
+        seq_retractVol: 60,
+        seq_retractFeedrate: 6000,
+        seq_retractDelayMs: 100,
+        seq_accelSteps: 50,
+        seq_lastPreset: 'Custom'
       },
       version: '1.5.1'
     };
@@ -43,10 +54,40 @@ export class StorageManager {
           valveMask: '1111',
           stabilizeMs: 50,
           storeVolume: 100,
-          storeRate: 2000
+          storeRate: 2000,
+          seq_primeVol: 20,
+          seq_primeFeedrate: 10000,
+          seq_primeDelayMs: 1000,
+          seq_dispVol: 50,
+          seq_dispFeedrate: 14000,
+          seq_dispDelayMs: 500,
+          seq_retractVol: 60,
+          seq_retractFeedrate: 6000,
+          seq_retractDelayMs: 100,
+          seq_accelSteps: 50,
+          seq_lastPreset: 'Custom'
         };
         await this.save();
         console.log('Initialized fluidicsSettings with defaults');
+      }
+
+      // Migrate: add sequence fields if missing
+      const seqDefaults = {
+        seq_primeVol: 20, seq_primeFeedrate: 10000, seq_primeDelayMs: 1000,
+        seq_dispVol: 50, seq_dispFeedrate: 14000, seq_dispDelayMs: 500,
+        seq_retractVol: 60, seq_retractFeedrate: 6000, seq_retractDelayMs: 100,
+        seq_accelSteps: 50, seq_lastPreset: 'Custom'
+      };
+      let seqMigrated = false;
+      for (const [k, v] of Object.entries(seqDefaults)) {
+        if (this.config.fluidicsSettings[k] === undefined) {
+          this.config.fluidicsSettings[k] = v;
+          seqMigrated = true;
+        }
+      }
+      if (seqMigrated) {
+        await this.save();
+        console.log('Migrated fluidicsSettings with dispense sequence defaults');
       }
 
       // Migrate existing tips to add new fields if they don't exist
@@ -367,7 +408,18 @@ export class StorageManager {
       valveMask: '1111',
       stabilizeMs: 50,
       storeVolume: 100,
-      storeRate: 2000
+      storeRate: 2000,
+      seq_primeVol: 20,
+      seq_primeFeedrate: 10000,
+      seq_primeDelayMs: 1000,
+      seq_dispVol: 50,
+      seq_dispFeedrate: 14000,
+      seq_dispDelayMs: 500,
+      seq_retractVol: 60,
+      seq_retractFeedrate: 6000,
+      seq_retractDelayMs: 100,
+      seq_accelSteps: 50,
+      seq_lastPreset: 'Custom'
     };
     await this.save();
   }

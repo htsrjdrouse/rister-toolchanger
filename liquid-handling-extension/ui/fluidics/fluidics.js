@@ -11,6 +11,7 @@ export class FluidicsControl {
     this.power5v = false;
     this.pumpAccelSteps = 500;
     this.settingsSaveIndicator = null;
+    this.lastSentSeqAccel = null;
   }
 
   async initialize() {
@@ -309,6 +310,65 @@ export class FluidicsControl {
           <button id="pump-status" class="btn btn-gray" style="flex: 1; font-size: 12px;">📊 Status (P114)</button>
           <button id="reset-settings" class="btn btn-gray" style="font-size: 11px; padding: 6px 10px;" title="Reset all pump and valve settings to factory defaults">🔄 Reset</button>
         </div>
+      </div>
+
+      <!-- Dispense Sequence -->
+      <div class="section">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 12px;">
+          <h3 class="section-title" style="margin: 0;">🧪 Dispense Sequence</h3>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <label style="font-size: 11px; margin: 0;">Preset:</label>
+            <select id="seq-preset" style="width: 180px; font-size: 12px;">
+              <option value="Custom">Custom</option>
+              <option value="~190 µL (47.5/nozzle)">~190 µL (47.5/nozzle)</option>
+              <option value="~160 µL (40/nozzle)">~160 µL (40/nozzle)</option>
+              <option value="~85 µL (21/nozzle)">~85 µL (21/nozzle)</option>
+              <option value="~50 µL (12.5/nozzle)">~50 µL (12.5/nozzle)</option>
+              <option value="~40 µL (10/nozzle)">~40 µL (10/nozzle)</option>
+            </select>
+            <label style="font-size: 11px; margin: 0;">SA:</label>
+            <input type="number" id="seq-accel" value="${this.storage.getFluidicsSettings().seq_accelSteps}" min="0" max="2000" style="width: 60px; font-size: 12px;">
+          </div>
+        </div>
+
+        <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 12px;">
+          <!-- Prime -->
+          <div style="background: #e8f5e9; padding: 10px; border-radius: 6px; border: 1px solid #4CAF50;">
+            <label style="font-weight: 700; display: block; margin-bottom: 6px; color: #2e7d32;">PRIME</label>
+            <div style="margin-bottom: 4px;"><label style="font-size: 11px;">Vol (µL):</label><input type="number" id="seq-prime-vol" value="${this.storage.getFluidicsSettings().seq_primeVol}" min="0" style="width: 100%;"></div>
+            <div style="margin-bottom: 4px;"><label style="font-size: 11px;">Feedrate:</label><input type="number" id="seq-prime-f" value="${this.storage.getFluidicsSettings().seq_primeFeedrate}" min="0" style="width: 100%;"></div>
+            <div><label style="font-size: 11px;">Delay (ms):</label><input type="number" id="seq-prime-delay" value="${this.storage.getFluidicsSettings().seq_primeDelayMs}" min="0" style="width: 100%;"></div>
+            <div style="font-size: 10px; color: #666; margin-top: 4px;">0 = skip prime</div>
+          </div>
+          <!-- Main Dispense -->
+          <div style="background: #e3f2fd; padding: 10px; border-radius: 6px; border: 1px solid #2196F3;">
+            <label style="font-weight: 700; display: block; margin-bottom: 6px; color: #1565c0;">MAIN DISPENSE</label>
+            <div style="margin-bottom: 4px;"><label style="font-size: 11px;">Vol (µL):</label><input type="number" id="seq-disp-vol" value="${this.storage.getFluidicsSettings().seq_dispVol}" min="0" style="width: 100%;"></div>
+            <div style="margin-bottom: 4px;"><label style="font-size: 11px;">Feedrate:</label><input type="number" id="seq-disp-f" value="${this.storage.getFluidicsSettings().seq_dispFeedrate}" min="0" style="width: 100%;"></div>
+            <div><label style="font-size: 11px;">Delay (ms):</label><input type="number" id="seq-disp-delay" value="${this.storage.getFluidicsSettings().seq_dispDelayMs}" min="0" style="width: 100%;"></div>
+          </div>
+          <!-- Retract -->
+          <div style="background: #fff3e0; padding: 10px; border-radius: 6px; border: 1px solid #FF9800;">
+            <label style="font-weight: 700; display: block; margin-bottom: 6px; color: #e65100;">RETRACT</label>
+            <div style="margin-bottom: 4px;"><label style="font-size: 11px;">Vol (µL):</label><input type="number" id="seq-retract-vol" value="${this.storage.getFluidicsSettings().seq_retractVol}" min="0" style="width: 100%;"></div>
+            <div style="margin-bottom: 4px;"><label style="font-size: 11px;">Feedrate:</label><input type="number" id="seq-retract-f" value="${this.storage.getFluidicsSettings().seq_retractFeedrate}" min="0" style="width: 100%;"></div>
+            <div><label style="font-size: 11px;">Delay (ms):</label><input type="number" id="seq-retract-delay" value="${this.storage.getFluidicsSettings().seq_retractDelayMs}" min="0" style="width: 100%;"></div>
+            <div style="font-size: 10px; color: #666; margin-top: 4px;">0 = skip retract</div>
+          </div>
+        </div>
+
+        <!-- Live Preview -->
+        <div style="background: #1e1e1e; color: #00ff00; padding: 8px 10px; border-radius: 4px; font-family: monospace; font-size: 11px; margin-bottom: 12px; word-break: break-all;">
+          <span style="color: #888;">Preview:</span> <span id="seq-preview"></span>
+        </div>
+
+        <!-- Action Buttons -->
+        <div style="display: flex; gap: 8px;">
+          <button id="seq-dispense-now" class="btn" style="flex: 1; font-size: 13px;">⬇️ Dispense Now</button>
+          <button id="seq-store-trigger" class="btn btn-secondary" style="flex: 1; font-size: 13px;">🎯 Store for Trigger</button>
+          <button id="seq-clear" class="btn btn-danger" style="flex: 1; font-size: 13px;">🗑️ Clear Sequence</button>
+        </div>
+        <div id="seq-status" style="text-align: center; font-size: 11px; margin-top: 6px; min-height: 16px; transition: opacity 0.3s;"></div>
       </div>
 
       <!-- Valves -->
@@ -687,6 +747,9 @@ export class FluidicsControl {
       }
     });
 
+    // Dispense Sequence controls
+    this.initSequencePanel(container);
+
     // Auto-save all input fields when they change
     this.setupAutoSaveListeners(container);
 
@@ -778,7 +841,8 @@ export class FluidicsControl {
       'store-rate': 'storeRate',
       'valve-mask': 'valveMask',
       'valve-delay-a': 'stabilizeMs',
-      'valve-delay-b': 'valveSettleMs'
+      'valve-delay-b': 'valveSettleMs',
+      'seq-accel': 'seq_accelSteps'
     };
 
     // Add change listeners to all mapped fields
@@ -1315,6 +1379,184 @@ export class FluidicsControl {
       this.api.sendGcode(macro.content);
     } else {
       console.warn(`Macro "${macroName}" not found`);
+    }
+  }
+
+  // ── Dispense Sequence ──────────────────────────────────────────
+
+  static SEQ_PRESETS = [
+    { label: 'Custom' },
+    { label: '~190 µL (47.5/nozzle)', primeVol:50, dispVol:120, retractVol:120 },
+    { label: '~160 µL (40/nozzle)',   primeVol:40, dispVol:90,  retractVol:90  },
+    { label: '~85 µL (21/nozzle)',    primeVol:20, dispVol:80,  retractVol:80  },
+    { label: '~50 µL (12.5/nozzle)',  primeVol:20, dispVol:70,  retractVol:80  },
+    { label: '~40 µL (10/nozzle)',    primeVol:20, dispVol:50,  retractVol:60  },
+  ];
+
+  initSequencePanel(container) {
+    const ids = ['seq-prime-vol','seq-prime-f','seq-prime-delay',
+                 'seq-disp-vol','seq-disp-f','seq-disp-delay',
+                 'seq-retract-vol','seq-retract-f','seq-retract-delay','seq-accel'];
+    const storageKeys = ['seq_primeVol','seq_primeFeedrate','seq_primeDelayMs',
+                         'seq_dispVol','seq_dispFeedrate','seq_dispDelayMs',
+                         'seq_retractVol','seq_retractFeedrate','seq_retractDelayMs','seq_accelSteps'];
+
+    // Live update preview + save + switch to Custom on any field edit
+    ids.forEach((id, i) => {
+      const el = container.querySelector(`#${id}`);
+      if (!el) return;
+      const handler = () => {
+        const v = parseFloat(el.value) || 0;
+        this.saveSetting(storageKeys[i], v);
+        this.updateSeqPreview();
+        // Switch preset to Custom when user edits a field
+        const presetEl = container.querySelector('#seq-preset');
+        if (presetEl && presetEl.value !== 'Custom') {
+          presetEl.value = 'Custom';
+          this.saveSetting('seq_lastPreset', 'Custom');
+        }
+      };
+      el.addEventListener('input', handler);
+    });
+
+    // Preset dropdown
+    const presetEl = container.querySelector('#seq-preset');
+    if (presetEl) {
+      // Restore last preset selection
+      presetEl.value = this.storage.getFluidicsSettings().seq_lastPreset || 'Custom';
+      presetEl.addEventListener('change', () => {
+        const preset = FluidicsControl.SEQ_PRESETS.find(p => p.label === presetEl.value);
+        if (preset && preset.primeVol !== undefined) {
+          const fieldMap = {
+            'seq-prime-vol': preset.primeVol,
+            'seq-disp-vol': preset.dispVol,
+            'seq-retract-vol': preset.retractVol,
+            'seq-prime-f': 10000, 'seq-prime-delay': 1000,
+            'seq-disp-f': 14000, 'seq-disp-delay': 500,
+            'seq-retract-f': 6000, 'seq-retract-delay': 100,
+          };
+          Object.entries(fieldMap).forEach(([fid, val]) => {
+            const el = container.querySelector(`#${fid}`);
+            if (el) el.value = val;
+          });
+          // Save all preset values
+          const keyMap = {
+            'seq-prime-vol':'seq_primeVol','seq-prime-f':'seq_primeFeedrate','seq-prime-delay':'seq_primeDelayMs',
+            'seq-disp-vol':'seq_dispVol','seq-disp-f':'seq_dispFeedrate','seq-disp-delay':'seq_dispDelayMs',
+            'seq-retract-vol':'seq_retractVol','seq-retract-f':'seq_retractFeedrate','seq-retract-delay':'seq_retractDelayMs',
+          };
+          Object.entries(keyMap).forEach(([fid, sk]) => {
+            this.saveSetting(sk, fieldMap[fid]);
+          });
+        }
+        this.saveSetting('seq_lastPreset', presetEl.value);
+        this.updateSeqPreview();
+      });
+    }
+
+    // Action buttons
+    container.querySelector('#seq-dispense-now')?.addEventListener('click', () => this.seqDispenseNow());
+    container.querySelector('#seq-store-trigger')?.addEventListener('click', () => this.seqStoreTrigger());
+    container.querySelector('#seq-clear')?.addEventListener('click', () => this.seqClear());
+
+    // Initial preview
+    this.updateSeqPreview();
+  }
+
+  getSeqValues() {
+    return {
+      primeVol:      parseFloat(document.getElementById('seq-prime-vol')?.value) || 0,
+      primeFeedrate: parseFloat(document.getElementById('seq-prime-f')?.value) || 10000,
+      primeDelayMs:  parseFloat(document.getElementById('seq-prime-delay')?.value) || 1000,
+      dispVol:       parseFloat(document.getElementById('seq-disp-vol')?.value) || 0,
+      dispFeedrate:  parseFloat(document.getElementById('seq-disp-f')?.value) || 14000,
+      dispDelayMs:   parseFloat(document.getElementById('seq-disp-delay')?.value) || 500,
+      retractVol:    parseFloat(document.getElementById('seq-retract-vol')?.value) || 0,
+      retractFeedrate: parseFloat(document.getElementById('seq-retract-f')?.value) || 6000,
+      retractDelayMs:  parseFloat(document.getElementById('seq-retract-delay')?.value) || 100,
+      accelSteps:    parseFloat(document.getElementById('seq-accel')?.value) || 0,
+    };
+  }
+
+  buildDispenseCmd(prefix = 'DISPENSE') {
+    const v = this.getSeqValues();
+    const parts = [];
+    if (v.primeVol > 0) parts.push(`P${v.primeVol}`, `PF${v.primeFeedrate}`, `PD${v.primeDelayMs}`);
+    parts.push(`E${v.dispVol}`, `F${v.dispFeedrate}`, `DD${v.dispDelayMs}`);
+    if (v.retractVol > 0) parts.push(`R${v.retractVol}`, `RF${v.retractFeedrate}`, `RD${v.retractDelayMs}`);
+    return `${prefix} ${parts.join(' ')}`;
+  }
+
+  updateSeqPreview() {
+    const el = document.getElementById('seq-preview');
+    if (el) el.textContent = this.buildDispenseCmd('DISPENSE');
+  }
+
+  showSeqStatus(msg, ok = true) {
+    const el = document.getElementById('seq-status');
+    if (!el) return;
+    el.textContent = msg;
+    el.style.color = ok ? '#4CAF50' : '#f44336';
+    el.style.opacity = '1';
+    setTimeout(() => { el.style.opacity = '0'; }, 2000);
+  }
+
+  seqValidate() {
+    const v = this.getSeqValues();
+    const fields = [v.primeVol, v.primeFeedrate, v.primeDelayMs,
+                    v.dispVol, v.dispFeedrate, v.dispDelayMs,
+                    v.retractVol, v.retractFeedrate, v.retractDelayMs, v.accelSteps];
+    if (fields.some(f => isNaN(f) || f < 0)) {
+      this.showSeqStatus('Invalid: all fields must be ≥ 0', false);
+      return false;
+    }
+    return true;
+  }
+
+  async seqSendAccelIfNeeded() {
+    const sa = this.getSeqValues().accelSteps;
+    if (this.lastSentSeqAccel !== sa) {
+      await this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="SA ${sa}"`);
+      this.lastSentSeqAccel = sa;
+    }
+  }
+
+  async seqDispenseNow() {
+    if (!this.seqValidate()) return;
+    try {
+      await this.seqSendAccelIfNeeded();
+      await this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="${this.buildDispenseCmd('DISPENSE')}"`);
+      this.showSeqStatus('✓ Dispense sent');
+    } catch (e) {
+      this.showSeqStatus('✗ ' + e.message, false);
+    }
+  }
+
+  async seqStoreTrigger() {
+    if (!this.seqValidate()) return;
+    try {
+      const sa = this.getSeqValues().accelSteps;
+      await this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="SA ${sa}"`);
+      this.lastSentSeqAccel = sa;
+      await this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="${this.buildDispenseCmd('SDISPENSE')}"`);
+      await this.api.sendGcode('SEND_PUMP_ARDUINO COMMAND="TRIGGERON"');
+      this.triggerArmed = true;
+      this.updateTriggerUI();
+      this.showSeqStatus('✓ Stored & trigger armed');
+    } catch (e) {
+      this.showSeqStatus('✗ ' + e.message, false);
+    }
+  }
+
+  async seqClear() {
+    try {
+      await this.api.sendGcode('SEND_PUMP_ARDUINO COMMAND="SDISPENSE P0 E0 R0"');
+      await this.api.sendGcode('SEND_PUMP_ARDUINO COMMAND="TRIGGEROFF"');
+      this.triggerArmed = false;
+      this.updateTriggerUI();
+      this.showSeqStatus('✓ Sequence cleared');
+    } catch (e) {
+      this.showSeqStatus('✗ ' + e.message, false);
     }
   }
 

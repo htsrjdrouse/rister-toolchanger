@@ -129,6 +129,52 @@ The Arduino syringe pump v2.5 supports acceleration ramping via the `SA <steps>`
 
 **Status Query:** The P114 status command now returns the current `accel=` value, displayed in the Arduino Status panel.
 
+### Dispense Sequence
+
+The Arduino syringe pump v2.6 supports a full prime→dispense→retract cycle in a single command. The extension UI provides a dedicated panel for building and sending these commands.
+
+**Command format:**
+```
+DISPENSE P20 PF10000 PD1000 E50 F14000 DD500 R60 RF6000 RD100
+```
+
+**Parameters:**
+
+| Param | Meaning | Default | Notes |
+|-------|---------|---------|-------|
+| P     | Prime volume (µL) | 0 (skip) | 0 = skip prime phase |
+| PF    | Prime feedrate | 10000 | |
+| PD    | Prime settle delay (ms) | 1000 | |
+| E     | Main dispense volume (µL) | 50 | |
+| F     | Main dispense feedrate | 14000 | |
+| DD    | Dispense settle delay (ms) | 500 | |
+| R     | Retract volume (µL) | 0 (skip) | 0 = skip retract phase |
+| RF    | Retract feedrate | 6000 | |
+| RD    | Retract settle delay (ms) | 100 | |
+
+All parameters are optional. Unspecified params keep their currently stored value on the Arduino.
+
+**Calibration Presets (4-nozzle, SA 50):**
+
+| Preset | P | E | R | Total (4×) | Per nozzle |
+|--------|---|---|---|------------|------------|
+| ~190 µL | 50 | 120 | 120 | ~190 µL | 47.5 µL |
+| ~160 µL | 40 | 90  | 90  | ~160 µL | 40.0 µL |
+| ~85 µL  | 20 | 80  | 80  | ~85 µL  | 21.2 µL |
+| ~50 µL  | 20 | 70  | 80  | ~50 µL  | 12.5 µL |
+| ~40 µL  | 20 | 50  | 60  | ~40 µL  | 10.0 µL |
+
+All presets use: PF=10000, F=14000, RF=6000, PD=1000, DD=500, RD=100.
+Note: ~50 µL and ~40 µL have retract > main dispense (+10 µL) — this is intentional to prevent satellite droplet formation at small volumes.
+
+**Dispense Now** — Sends SA (if changed) then `DISPENSE ...` for immediate execution.
+
+**Store for Trigger** — Sends SA → `SDISPENSE ...` → `TRIGGERON`. The Arduino stores the sequence and waits for a trigger signal to execute.
+
+**Clear Sequence** — Sends `SDISPENSE P0 E0 R0` then `TRIGGEROFF` to disarm.
+
+**SA (Accel Steps)** — The sequence panel has its own SA field (default 50) separate from the main pump accel control. This is sent before every dispense/store operation.
+
 ### Valve Control
 
 The system has 4 servo-controlled valves on an Arduino Micro (`/dev/ttyMICROFLUIDICS`).
@@ -186,6 +232,21 @@ All settings below are **automatically saved** to Chrome local storage and persi
 | Aspirate volume | 50 µL | Default volume for aspirate | 0.1-1000 |
 | STORE volume | 100 µL | Pre-load volume for trigger mode | 1-1000 |
 | STORE rate | 2000 | Pre-load rate for trigger mode | 100-15000 |
+
+### Dispense Sequence Settings
+
+| Setting | Default | Description | Range |
+|---------|---------|-------------|-------|
+| Prime volume | 20 µL | Prime phase volume (0 = skip) | 0-1000 |
+| Prime feedrate | 10000 | Prime phase speed | 100-15000 |
+| Prime delay | 1000ms | Settle after prime | 0-10000 |
+| Dispense volume | 50 µL | Main dispense volume | 0-1000 |
+| Dispense feedrate | 14000 | Main dispense speed | 100-15000 |
+| Dispense delay | 500ms | Settle after dispense | 0-10000 |
+| Retract volume | 60 µL | Retract volume (0 = skip) | 0-1000 |
+| Retract feedrate | 6000 | Retract speed | 100-15000 |
+| Retract delay | 100ms | Settle after retract | 0-10000 |
+| Sequence SA | 50 | Accel steps for sequence commands | 0-2000 |
 
 ### Valve Settings
 
@@ -281,6 +342,14 @@ MIT License - Free to use and modify for your liquid handling automation needs.
 For issues or feature requests, please refer to the source repository.
 
 ## Version History
+
+### v1.6.0 (2026-03-28)
+- **NEW: Dispense Sequence panel** — Full prime→dispense→retract cycle in a single command (Arduino v2.6)
+- **NEW: Calibration presets dropdown** — 5 pre-calibrated volume presets for 4-nozzle configuration
+- **NEW: Live command preview** — Real-time monospace preview of the exact command string
+- **NEW: Dispense Now / Store for Trigger / Clear Sequence** — Three action buttons for immediate, trigger-based, or clearing dispense sequences
+- **NEW: Sequence SA field** — Dedicated accel steps control for sequence commands (default 50)
+- All 9 sequence parameters + SA + preset selection persist to Chrome local storage
 
 ### v1.5.1 (2026-03-27)
 - **NEW: Pump acceleration ramp control** — UI field and Apply button for SA command (0-2000 steps)
