@@ -270,25 +270,6 @@ export class FluidicsControl {
           </div>
         </div>
 
-        <!-- Store & Trigger Delay -->
-        <div style="display: flex; gap: 8px; margin-bottom: 12px;">
-          <div style="flex: 2;">
-            <label>Load Trigger (STORE E F):</label>
-            <div style="display: flex; gap: 4px;">
-              <input type="number" id="store-volume" value="${this.storage.getFluidicsSettings().storeVolume}" style="flex: 1;" placeholder="VOL">
-              <input type="number" id="store-rate" value="${this.storage.getFluidicsSettings().storeRate}" style="flex: 1;" placeholder="RATE">
-              <button id="store-cmd" class="btn btn-secondary" style="white-space: nowrap;">LOAD</button>
-            </div>
-          </div>
-          <div style="flex: 1;">
-            <label>Trigger Delay (ms):</label>
-            <div style="display: flex; gap: 4px;">
-              <input type="number" id="trigger-delay" value="${this.storage.getFluidicsSettings().triggerDelay}" style="flex: 1;" placeholder="ms">
-              <button id="set-td" class="btn btn-secondary">TD</button>
-            </div>
-          </div>
-        </div>
-
         <!-- Aspirate / Dispense -->
         <div class="form-row cols-2" style="margin-bottom: 10px;">
           <div>
@@ -708,18 +689,6 @@ export class FluidicsControl {
     container.querySelector('#trigger-fire')?.addEventListener('click', () => {
       this.api.sendGcode('TRIGGER_FIRE');
     });
-    container.querySelector('#store-cmd')?.addEventListener('click', () => {
-      const vol = document.getElementById('store-volume').value;
-      const rate = document.getElementById('store-rate').value;
-      this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="STORE E${vol} F${rate}"`);
-      this.saveSetting('storeVolume', parseInt(vol));
-      this.saveSetting('storeRate', parseInt(rate));
-    });
-    container.querySelector('#set-td')?.addEventListener('click', () => {
-      const ms = document.getElementById('trigger-delay').value;
-      this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="TD ${ms}"`);
-      this.saveSetting('triggerDelay', parseInt(ms));
-    });
     container.querySelector('#pump-status')?.addEventListener('click', async () => {
       await this.queryPumpStatus();
     });
@@ -835,10 +804,7 @@ export class FluidicsControl {
     const fieldMappings = {
       'syringe-steps': 'pumpVolume',
       'syringe-feedrate': 'pumpFeedrate',
-      'trigger-delay': 'triggerDelay',
       'accel-steps': 'accelSteps',
-      'store-volume': 'storeVolume',
-      'store-rate': 'storeRate',
       'valve-mask': 'valveMask',
       'valve-delay-a': 'stabilizeMs',
       'valve-delay-b': 'valveSettleMs',

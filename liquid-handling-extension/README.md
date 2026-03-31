@@ -18,8 +18,7 @@ A professional browser extension for controlling Klipper-based liquid handling a
 - Pipette height control (servo positioning)
 - **NEW: Arduino-based syringe pump control** (A1/D1 commands via serial)
 - Trigger-based dispensing with arm/disarm and fire controls
-- STORE command for pre-loading dispense parameters
-- Configurable trigger delay (TD)
+- **NEW: Dispense Sequence panel** — full prime→dispense→retract in one command with calibration presets
 - Emergency stop (P0) and clear stop (P999)
 - **NEW: 4-servo valve control** with mask selector, state indicator, and 5V rail management
 - **NEW: Enhanced drypad control with linear actuator position and delay settings**
@@ -91,13 +90,12 @@ You can modify these endpoints in `shared/api.js` if needed.
 
 **Persisted Settings Include:**
 - Pump feedrate (F value) and volume (E µL)
-- Trigger delay (TD milliseconds)
 - Acceleration ramp steps (SA command)
 - Aspirate feedrate and volume
+- Dispense sequence parameters (prime/dispense/retract volumes, feedrates, delays)
 - Valve settle time (critical - default 3200ms for reliable valve movement)
 - Valve mask (which valves to control)
 - 5V stabilize delay
-- STORE command volume and rate
 
 **Reset to Defaults:** Click the "Reset" button next to the Status (P114) button to restore factory defaults.
 
@@ -226,12 +224,9 @@ All settings below are **automatically saved** to Chrome local storage and persi
 |---------|---------|-------------|-------|
 | Pump feedrate | 4000 | F value for dispense moves | 100-15000 |
 | Pump volume | 5 µL | Volume per dispense (E value) | 0.1-1000 |
-| Trigger delay | 50ms | Delay after trigger before motor starts (TD command) | 0-10000 |
 | Accel ramp steps | 500 | Steps to ramp up/down speed (SA command) | 0-2000 |
 | Aspirate feedrate | 2000 | Default feedrate for aspirate moves | 100-15000 |
 | Aspirate volume | 50 µL | Default volume for aspirate | 0.1-1000 |
-| STORE volume | 100 µL | Pre-load volume for trigger mode | 1-1000 |
-| STORE rate | 2000 | Pre-load rate for trigger mode | 100-15000 |
 
 ### Dispense Sequence Settings
 
@@ -261,7 +256,6 @@ All settings below are **automatically saved** to Chrome local storage and persi
 ```
 Valve switch total time = 5V stabilize (50ms) + Valve settle (3200ms) = ~3250ms
 Pump accel ramp time = accelSteps × 2 × step_duration (variable based on feedrate)
-Trigger delay = TD milliseconds after falling edge before dispense starts
 ```
 
 ## Data Storage
