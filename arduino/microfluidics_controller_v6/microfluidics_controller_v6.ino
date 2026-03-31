@@ -1,6 +1,10 @@
 // ═══════════════════════════════════════════════════════════════════
-// HTS Resources — Microfluidics Controller v5
+// HTS Resources — Microfluidics Controller v6
 // Arduino Micro
+//
+// Changes from v5:
+//   - linearact and linearact_nopower settle delay increased from 300ms to 1000ms
+//     (300ms was insufficient for full 180° travel on heavier servos)
 //
 // Changes from v4:
 //   - turnon5vpin changed from analogWrite to digitalWrite
@@ -233,7 +237,7 @@ void parseCommand(char* com) {
   else if (strncasecmp(com, "linearact_nopower", 17) == 0) {
     int angle = atoi(com + 18);
     myservo5.write(angle);
-    delay(300);
+    delay(1000);
     Serial.println("ok");
   }
 
@@ -242,7 +246,7 @@ void parseCommand(char* com) {
     digitalWrite(turnon5vpin, HIGH);
     delay(100);
     myservo5.write(angle);
-    delay(300);
+    delay(1000);
     Serial.println("ok");
     digitalWrite(turnon5vpin, LOW);
   }

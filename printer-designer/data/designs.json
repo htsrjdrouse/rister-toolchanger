@@ -9,7 +9,7 @@
         {
           "X": "350",
           "Y": "350",
-          "Z": "1",
+          "Z": "29",
           "arraycolumn": "0",
           "arraycolumnsp": "9",
           "arrayrow": "0",
@@ -266,9 +266,37 @@
           "waste_x": 206,
           "waste_y": 345,
           "waste_z": 73
+        },
+        {
+          "drypad_delay": 2000,
+          "drypad_servo_move": 0,
+          "drypad_servo_touch": 30,
+          "drypad_time": 3000,
+          "drypad_x": 137,
+          "drypad_y": 302,
+          "drypad_z": 66,
+          "eject_macro": "eject",
+          "eject_servo_eject": 150,
+          "eject_servo_move": 0,
+          "eject_x": 65,
+          "eject_y": 340,
+          "eject_z": 40,
+          "name": "L0Tip3_32g_needle",
+          "wash_macro": "",
+          "wash_servo_move": 0,
+          "wash_servo_wash": 30,
+          "wash_x": 170,
+          "wash_y": 344,
+          "wash_z": 69,
+          "waste_macro": "",
+          "waste_servo_move": 0,
+          "waste_servo_waste": 30,
+          "waste_x": 206,
+          "waste_y": 345,
+          "waste_z": 73
         }
       ],
-      "activeTipIndex": 1,
+      "activeTipIndex": 0,
       "savedMacros": [
         {
           "content": "; G-code Sequence: Sample_Collection_Sequence\n; Generated: 2025-12-04T22:05:52.333Z\n; Ready to execute in Mainsail console\n\n;X:59.000 Y:347.000 Z:9.4 E:0.000\n;ENABLE_LINEARACTUATOR_SERVO_L0\n;SET_SERVO SERVO=linearactuator_servo_l0 ANGLE=130\n;X:59.000 Y:355.000 Z:9.4 E:0.000\n\nG90  ; Absolute positioning\nG1 Z100 F1500\nG1 X65 F3000  \nG4 P500\nG1 Y340 F3000\nENABLE_LINEARACTUATOR_SERVO_L0\nSET_SERVO SERVO=linearactuator_servo_l0 ANGLE=150\nG4 P500\nG1 Z40 F1500\nG1 Y358 F3000\nG4 P500\nG1 X57 F1000\nG1 Z47 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X77 F1000\nG1 Z50 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X57 F1000\nG1 Z52 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X77 F1000\nG1 Z53 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG1 X57 F1000\nG1 Z55 F500\nG4 P500\nG1 Z42 F500\nG4 P500\nG4 P500\nG1 Z100 F1000\nG4 P500\nENABLE_LINEARACTUATOR_SERVO_L0\nG4 P500\nDISABLE_LINEARACTUATOR_SERVO_L0\nG4 P500",
@@ -335,16 +363,28 @@
           "name": "spot_test"
         },
         {
-          "name": "line_spotter_titration_fixed_target",
-          "content": "; G-code Sequence: automation_sequence\n; Generated: 2026-02-02T23:14:09.738Z\n; Ready to execute in Mainsail console\n;M82\n; Move to nanoarray array A1\nG90  ; Absolute positioning\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P50  ; Pause 50ms for stabilization\nG1 Z100 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 X106.00 Y117.00 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nG1 Z65 F2000\nG4 P50  ; Pause 500ms for stabilization\nG1 Z62 F500\nG4 P50  ; Pause 500ms for stabilization\n\n; Nanoarray Dispenser G-code\n; Generated: 2026-02-11T22:08:25.530Z\n; Syringe: 1ml (4.78mm ID)\n; E Units: Calibrated (1 E = 1 µL)\n;\n; === Pattern ===\n; Lines: 1 × 70mm\n; Spacing: 2.5mm\n; Start: X107.5 Y117\n;\n; === Volume ===\n; Per line: 200.00 µL (E: 200.000 µL)\n; Flow rate: 2.8571 µL/mm\n; Needle: 25G (0.26mm ID)\n; E Multiplier: 10\n;\n\nG21 ; mm units\nG90 ; absolute positioning (XYZ)\n;M82 ; absolute extrusion mode\nG92 E0 ; reset extruder position to zero\n\nG1 Z54.5 F1000 ; move to start Z\nG1 X107.500 Y117.000 F3000 ; move to start XY\nG4 P50  ; Pause 50ms for stabilization\n; Line 1 (200.00 µL)\n;G1 E2 F2000 ; for priming\nVALVE_OUTPUT MASK=1111\n;G4 P10  ; Pause 500ms for stabilization\n;G1 E100 F2000\nG4 P10  ; Pause 500ms for stabilization\nLINEARACTSERVOON\nG4 P10  ; Pause 500ms for stabilization\nG1 Z51 F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\n\nG1 Y187.000 E10.00 F4000\n\nG1 Z53 F500 ; lift to travel height\n; Total dispensed: 200.00 µL (E: 0 -> 200.00, Δ200.00 µL\n\nG4 P100  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111\n\nG1 Z65 F500 ; lift to travel height\nG1 X106.00 Y187.00 F3000   ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111\nG4 P50  ; Pause 50ms for stabilization\nG1 Z100 F2000\nLINEARACTSERVOOFF\nG4 P50"
+          "content": "; G-code Sequence: automation_sequence\n; Generated: 2026-02-02T23:14:09.738Z\n; Ready to execute in Mainsail console\n;M82\n; Move to nanoarray array A1\nG90  ; Absolute positioning\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P50  ; Pause 50ms for stabilization\nG1 Z100 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 X106.00 Y117.00 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nG1 Z65 F2000\nG4 P50  ; Pause 500ms for stabilization\nG1 Z62 F500\nG4 P50  ; Pause 500ms for stabilization\n\n; Nanoarray Dispenser G-code\n; Generated: 2026-02-11T22:08:25.530Z\n; Syringe: 1ml (4.78mm ID)\n; E Units: Calibrated (1 E = 1 µL)\n;\n; === Pattern ===\n; Lines: 1 × 70mm\n; Spacing: 2.5mm\n; Start: X107.5 Y117\n;\n; === Volume ===\n; Per line: 200.00 µL (E: 200.000 µL)\n; Flow rate: 2.8571 µL/mm\n; Needle: 25G (0.26mm ID)\n; E Multiplier: 10\n;\n\nG21 ; mm units\nG90 ; absolute positioning (XYZ)\n;M82 ; absolute extrusion mode\nG92 E0 ; reset extruder position to zero\n\nG1 Z54.5 F1000 ; move to start Z\nG1 X107.500 Y117.000 F3000 ; move to start XY\nG4 P50  ; Pause 50ms for stabilization\n; Line 1 (200.00 µL)\n;G1 E2 F2000 ; for priming\nVALVE_OUTPUT MASK=1111\n;G4 P10  ; Pause 500ms for stabilization\n;G1 E100 F2000\nG4 P10  ; Pause 500ms for stabilization\nLINEARACTSERVOON\nG4 P10  ; Pause 500ms for stabilization\nG1 Z51 F500 ; lower to dispense height\nG4 P10  ; Pause 50ms for stabilization\n\nG1 Y187.000 E10.00 F4000\n\nG1 Z53 F500 ; lift to travel height\n; Total dispensed: 200.00 µL (E: 0 -> 200.00, Δ200.00 µL\n\nG4 P100  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111\n\nG1 Z65 F500 ; lift to travel height\nG1 X106.00 Y187.00 F3000   ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nVALVE_BYPASS MASK=1111\nG4 P50  ; Pause 50ms for stabilization\nG1 Z100 F2000\nLINEARACTSERVOOFF\nG4 P50",
+          "name": "line_spotter_titration_fixed_target"
+        },
+        {
+          "name": "valve_dispense_sync",
+          "content": "SEND_PUMP_ARDUINO COMMAND=\"STORE E150 F6000\"\nSEND_PUMP_ARDUINO COMMAND=\"TD 190\" ; this time delay  can be synced with the valve\nSEND_PUMP_ARDUINO COMMAND=\"TRIGGERON\"\nG4 P100\nVALVE_OUTPUT BYPASS=1111\nG4 P10\nTRIGGER_FIRE\n;Move to valve output\nSEND_ARDUINO COMMAND=\"turnon5v\"\nG4 P200\nVALVE_OUTPUT MASK=1111\nG4 P1000\nVALVE_BYPASS MASK=1111\nG4 P300\n\n\n;G4 P3500 ;here we need to optimize the time going from bypass to output\n;SEND_ARDUINO COMMAND=\"turnoff5v\""
+        },
+        {
+          "name": "Load_needle_dispenser_32g",
+          "content": "; G-code Sequence: Sample_Collection_Sequence\n; Generated: 2025-12-04T22:05:52.333Z\n; Ready to execute in Mainsail console\n\n; Move to small_dispenser_box array A1\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nG90  ; Absolute positioning\nG1 Z150 F1500\nG1 X330.00 Y110.80 F3000  ; Move to array position\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=130 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=90 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOON\nG4 P500  ; Pause 500ms for stabilization\nG1 Z81 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z95 F500\nG4 P500  ; Pause 500ms for stabilization\nG1 Z81 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z95 F500\nG4 P500  ; Pause 500ms for stabilization\nG1 Z100 F2000\nG4 P500  ; Pause 500ms for stabilization\nG1 Z150 F2000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOMOVE ANGLE=0 HOLD=1000\nG4 P500  ; Pause 500ms for stabilization\nLINEARACTSERVOOFF\nG4 P500  ; Pause 500ms for stabilization\nSELECT_TIP TIP=3\nG4 P500  ; Pause 500ms for stabilization"
+        },
+        {
+          "name": "dispense_aspirate",
+          "content": ";SEND_PUMP_ARDUINO COMMAND=\"SA 50\"\n\n; 190ul for 4 nozzles\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E50 F10000\"\n;G1 P1000\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E120 F14000\"\n;G4 P500\n;SEND_PUMP_ARDUINO COMMAND=\"A1 E120 F6000\"\n;G4 P100\n\n\n; 160ul for 4 nozzles\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E40 F10000\"\n;G1 P1000\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E90 F14000\"\n;G4 P500\n;SEND_PUMP_ARDUINO COMMAND=\"A1 E90 F6000\"\n;G4 P100\n\n\n; 85ul for 4 nozzles\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E20 F10000\"\n;G1 P1000\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E80 F14000\"\n;G4 P500\n;SEND_PUMP_ARDUINO COMMAND=\"A1 E80 F6000\"\n;G4 P100\n\n\n; 50ul for 4 nozzles\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E20 F10000\"\n;G1 P1000\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E70 F14000\"\n;G4 P500\n;SEND_PUMP_ARDUINO COMMAND=\"A1 E80 F6000\"\n;G4 P100\n\n\n\n\n\n; 40ul for 4 nozzles\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E20 F10000\"\n;G1 P1000\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E50 F14000\"\n;G4 P500\n;SEND_PUMP_ARDUINO COMMAND=\"A1 E60 F6000\"\n;G4 P100\n\n\n; 40ul for 4 nozzles\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E20 F10000\"\n;G1 P1000\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E60 F14000\"\n;G4 P500\n;SEND_PUMP_ARDUINO COMMAND=\"A1 E70 F6000\"\n;G4 P100\n\n\n; 51ul for 4 nozzles\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E20 F10000\"\n;G1 P1000\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E80 F14000\"\n;G4 P500\n;SEND_PUMP_ARDUINO COMMAND=\"A1 E90 F6000\"\n;G4 P100\n\n\n; 40ul for 4 nozzles\n; this generates around 20ul\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E20 F10000\"\n;G1 P1000\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E70 F14000\"\n;G4 P500\n;SEND_PUMP_ARDUINO COMMAND=\"A1 E80 F6000\"\n;G4 P100\n\n\n\n\n\n; 45ul for 4 nozzles\n; this generates around 20ul\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E20 F10000\"\n;G1 P1000\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E50 F14000\"\n;G4 P500\n;SEND_PUMP_ARDUINO COMMAND=\"A1 E60 F6000\"\n;G4 P100\n\n\n; this generates around 15ul\n;SEND_PUMP_ARDUINO COMMAND=\"D1 E50 F10000\"\n;G4 P500\n;SEND_PUMP_ARDUINO COMMAND=\"A1 E40 F6000\"\n;G4 P100\n\n\n;This generates around 20ul: SEND_PUMP_ARDUINO COMMAND=\"D1 E60 F10000\"\n;G4 P500\n;SEND_PUMP_ARDUINO COMMAND=\"A1 E50 F6000\"\n;G4 P100"
         }
       ],
       "version": "1.1.0",
-      "id": "e3e2e11b-c5d3-4e33-b372-18db75272486",
-      "name": "Imported Design (7 objects, 17 macros) (Imported)",
+      "id": "4b7503b6-c449-4f71-83bb-010e5a0d86d6",
+      "name": "Imported Design (7 objects, 20 macros) (Imported)",
       "description": "",
-      "createdAt": "2026-03-09T18:57:32.662Z",
-      "updatedAt": "2026-03-14T16:10:59.742Z"
+      "createdAt": "2026-03-28T02:42:02.731Z",
+      "updatedAt": "2026-03-28T02:42:02.734Z"
     }
   ],
   "publishedDesignId": "d3a8d4af-fe86-474f-95fa-91312118cef7"
