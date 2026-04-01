@@ -76,9 +76,6 @@ const DEFAULT_SETTINGS = {
 
   // Arduino trigger mode
   triggerMode: false,       // Use Arduino trigger instead of Klipper extruder
-  triggerVolume: 100,       // STORE E value (volume)
-  triggerRate: 2000,        // STORE F value (rate)
-  triggerDelay: 50,         // TD delay in ms
 };
 
 const STORAGE_KEY = 'shapeDesignerSettings';
@@ -563,10 +560,7 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
       }
       
       if (s.triggerMode) {
-        lines.push(`SEND_PUMP_ARDUINO COMMAND="STORE E${s.triggerVolume} F${s.triggerRate}"`);
-        lines.push(`SEND_PUMP_ARDUINO COMMAND="TD ${s.triggerDelay}"`);
         lines.push(`G1 Y${yEnd.toFixed(3)} F${s.feedrate} ; XY move`);
-        lines.push('TRIGGER_FIRE');
       } else {
         lines.push(`G1 Y${yEnd.toFixed(3)} E${currentE.toFixed(2)} F${s.feedrate}`);
       }
@@ -846,30 +840,13 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
                   checked={settings.triggerMode || false}
                   onChange={(e) => updateSetting('triggerMode', e.target.checked)}
                 />
-                <span>Arduino Trigger Mode</span>
+                <span>Trigger Mode</span>
               </label>
               <small style={{ color: '#888', fontSize: '10px', display: 'block', marginBottom: '12px' }}>
                 {settings.triggerMode
-                  ? 'Using STORE/TD/TRIGGER_FIRE commands (replaces Klipper extruder E moves)'
+                  ? 'XY move only — dispense commands handled externally (Dispense Sequence panel)'
                   : 'Using Klipper extruder G1 E moves'}
               </small>
-
-              {settings.triggerMode && (
-                <>
-                  <label>
-                    <span>STORE Volume (E)</span>
-                    <NumInput step="1" min="1" value={settings.triggerVolume} onChange={(v) => updateSetting('triggerVolume', v)} fallback={100} integer />
-                  </label>
-                  <label>
-                    <span>STORE Rate (F)</span>
-                    <NumInput step="100" min="100" value={settings.triggerRate} onChange={(v) => updateSetting('triggerRate', v)} fallback={2000} integer />
-                  </label>
-                  <label>
-                    <span>Trigger Delay ms (TD)</span>
-                    <NumInput step="10" min="0" value={settings.triggerDelay} onChange={(v) => updateSetting('triggerDelay', v)} fallback={50} integer />
-                  </label>
-                </>
-              )}
 
               {!settings.triggerMode && (<>
               <label>
@@ -1078,28 +1055,14 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
                 const spacing = settings.lineSpacing || 1;
                 const hopTime = settings.numLines > 1 ? (spacing * 60 / travelFeedrate) : 0;
 
-                let dispenseTime = 0;
-                let triggerDelayS = 0;
-                if (settings.triggerMode) {
-                  // Arduino: F is mm/min (same as Klipper), E is µL (=mm via rotation_distance)
-                  // time = E * 60 / F seconds
-                  dispenseTime = (settings.triggerVolume || 100) * 60 / (settings.triggerRate || 2000);
-                  triggerDelayS = (settings.triggerDelay || 0) / 1000;
-                }
-
-                const perLineTotal = travelTime + (settings.triggerMode ? (dispenseTime + triggerDelayS) : 0);
-                const totalAllLines = perLineTotal * (settings.numLines || 1) + hopTime * Math.max(0, (settings.numLines || 1) - 1);
+                const perLineTotal = travelTime + hopTime;
+                const totalAllLines = perLineTotal * (settings.numLines || 1) - hopTime;
 
                 return (
                   <>
                     <div style={{ color: '#2196F3' }}>
                       <strong>Travel:</strong> {settings.lineLength}mm @ {settings.feedrate}mm/min = <strong>{travelTime.toFixed(3)}s</strong>
                     </div>
-                    {settings.triggerMode && (
-                      <div style={{ color: '#4CAF50' }}>
-                        <strong>Dispense:</strong> E{settings.triggerVolume}µL @ F{settings.triggerRate}mm/min = <strong>{dispenseTime.toFixed(3)}s</strong> + TD {settings.triggerDelay}ms = <strong>{(dispenseTime + triggerDelayS).toFixed(3)}s</strong>
-                      </div>
-                    )}
                     {settings.numLines > 1 && (
                       <div style={{ color: '#FF9800' }}>
                         <strong>Hop:</strong> {spacing}mm @ {travelFeedrate}mm/min = <strong>{(hopTime * 1000).toFixed(1)}ms</strong>
@@ -1108,11 +1071,6 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
                     <div style={{ marginTop: '6px', padding: '6px 8px', background: 'rgba(102,126,234,0.1)', borderRadius: '4px', fontWeight: 'bold' }}>
                       Per line: {perLineTotal.toFixed(3)}s &nbsp;|&nbsp; Total ({settings.numLines} lines): {totalAllLines.toFixed(3)}s
                     </div>
-                    {!settings.triggerMode && (
-                      <div style={{ color: '#888', fontSize: '10px', marginTop: '4px' }}>
-                        Enable Arduino Trigger Mode to see dispense timing
-                      </div>
-                    )}
                   </>
                 );
               })()}
