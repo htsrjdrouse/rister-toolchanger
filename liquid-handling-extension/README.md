@@ -152,6 +152,28 @@ DISPENSE P20 PF10000 PD1000 E50 F14000 DD500 R60 RF6000 RD100
 
 All parameters are optional. Unspecified params keep their currently stored value on the Arduino.
 
+#### Multi-Event Dispensing (v2.9+)
+
+Two new parameters enable timed multi-drop dispensing during blade coating:
+
+| Parameter | Description | Default |
+|-----------|-------------|---------|
+| `D`       | Number of discrete dispense events | 1 |
+| `DT`      | Delay between events (ms) | 0 |
+
+**How it works:** Total volume `E` is divided equally across `D` events. `DD` dwell applies only after the last event. This enables precise volume-per-unit-area control during doctor blade passes.
+
+**Example:** `SDISPENSE MASK=1111 PD20 E30 F500 DD100 D3 DT2000`
+Dispenses 3 × 10µL events, 2 seconds apart.
+
+**Volume per unit area formula:**
+```
+drop_spacing (mm) = blade_speed (mm/s) × DT (s)
+vol_per_mm²      = (E/D) / (drop_spacing × stripe_width_mm)
+```
+
+**Tip:** Use D=1 DT=0 for original single-dispense behavior (fully backward compatible — D and DT are only appended to the command when D>1 or DT>0).
+
 **Calibration Presets (4-nozzle, SA 50):**
 
 | Preset | P | E | R | Total (4×) | Per nozzle |
@@ -242,6 +264,8 @@ All settings below are **automatically saved** to Chrome local storage and persi
 | Retract feedrate | 6000 | Retract speed | 100-15000 |
 | Retract delay | 100ms | Settle after retract | 0-10000 |
 | Sequence SA | 50 | Accel steps for sequence commands | 0-2000 |
+| D (events) | 1 | Number of discrete dispense events | 1-20 |
+| DT (ms) | 0 | Delay between dispense events | 0-30000 |
 
 ### Valve Settings
 

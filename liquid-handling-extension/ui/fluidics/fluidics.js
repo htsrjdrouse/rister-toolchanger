@@ -338,6 +338,38 @@ export class FluidicsControl {
           </div>
         </div>
 
+        <!-- Multi-Dispense (D/DT) -->
+        <div style="background: #ede7f6; padding: 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #7e57c2;">
+          <label style="font-weight: 700; display: block; margin-bottom: 6px; color: #5e35b1;">🔁 Multi-Dispense</label>
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <div style="flex: 1; min-width: 100px;">
+              <label style="font-size: 11px;" title="Number of discrete dispense events. Volume E is divided equally across D events.">D (events):</label>
+              <input type="number" id="seq-d" value="${this.storage.getFluidicsSettings().seq_d || 1}" min="1" max="20" step="1" style="width: 100%;" title="Number of dispense events (default: 1)">
+            </div>
+            <div style="flex: 1; min-width: 100px;">
+              <label style="font-size: 11px;" title="Delay between dispense events in milliseconds. DD dwell applies after the last event only.">DT (ms between):</label>
+              <input type="number" id="seq-dt" value="${this.storage.getFluidicsSettings().seq_dt || 0}" min="0" max="30000" step="100" style="width: 100%;" title="Inter-event delay ms (default: 0)">
+            </div>
+            <div style="flex: 1; min-width: 100px;">
+              <label style="font-size: 11px;">Vol per event:</label>
+              <span id="seq-vol-per-event" style="font-weight: 700; font-size: 13px; color: #5e35b1;">— µL</span>
+            </div>
+          </div>
+          <div id="seq-d-warning" style="font-size: 10px; color: #e65100; margin-top: 4px; display: none;"></div>
+        </div>
+
+        <!-- Pinch Valve (PO/PC) -->
+        <div style="background: #fce4ec; padding: 10px; border-radius: 6px; margin-bottom: 12px; border: 1px solid #e91e63;">
+          <label style="font-weight: 700; display: block; margin-bottom: 6px; color: #c2185b;">🔧 Pinch Valve in Sequence</label>
+          <div style="display: flex; gap: 12px; align-items: center; flex-wrap: wrap;">
+            <label style="font-size: 12px; cursor: pointer;"><input type="checkbox" id="seq-po-enable" ${this.storage.getFluidicsSettings().seq_poEnable ? 'checked' : ''}> PO (Pinch Open)</label>
+            <label style="font-size: 12px; cursor: pointer;"><input type="checkbox" id="seq-pc-enable" ${this.storage.getFluidicsSettings().seq_pcEnable ? 'checked' : ''}> PC (Pinch Close)</label>
+            <span style="border-left: 1px solid #ccc; padding-left: 10px; font-size: 12px;">PO placement:</span>
+            <label style="font-size: 12px; cursor: pointer;"><input type="radio" name="seq-po-placement" value="before-prime" ${(this.storage.getFluidicsSettings().seq_poPlacement || 'before-prime') === 'before-prime' ? 'checked' : ''}> Before Prime</label>
+            <label style="font-size: 12px; cursor: pointer;"><input type="radio" name="seq-po-placement" value="after-prime" ${this.storage.getFluidicsSettings().seq_poPlacement === 'after-prime' ? 'checked' : ''}> After Prime</label>
+          </div>
+        </div>
+
         <!-- Live Preview -->
         <div style="background: #1e1e1e; color: #00ff00; padding: 8px 10px; border-radius: 4px; font-family: monospace; font-size: 11px; margin-bottom: 12px; word-break: break-all;">
           <span style="color: #888;">Preview:</span> <span id="seq-preview"></span>
@@ -405,6 +437,38 @@ export class FluidicsControl {
         <div style="padding: 8px; background: #fff3e0; border-radius: 4px; font-size: 11px;">
           <strong>Angles:</strong> INPUT=0° (aspirate) | OUTPUT=90° (dispense) | BYPASS=35° (closed) | FLUSH=180° (PCV direct)
           <br><strong>Timing:</strong> 5V stabilize (${this.storage.getFluidicsSettings().stabilizeMs}ms) + Valve settle (${this.storage.getFluidicsSettings().valveSettleMs}ms) = ~${this.storage.getFluidicsSettings().stabilizeMs + this.storage.getFluidicsSettings().valveSettleMs}ms total
+        </div>
+      </div>
+
+      <!-- Pinch Valve Control -->
+      <div class="section">
+        <h3 class="section-title">🔧 Pinch Valve Control</h3>
+
+        <!-- Pinch Valve Mask -->
+        <div style="margin-bottom: 12px;">
+          <label style="font-weight: 600; margin-bottom: 6px; display: block;">Pinch Valve Mask</label>
+          <div style="display: flex; gap: 8px; align-items: center;">
+            <div style="display: flex; gap: 4px;">
+              ${[1,2,3,4].map(n => `
+                <button id="pinch-toggle-${n}" class="btn btn-gray" style="width: 44px; font-size: 12px; padding: 6px 0;" title="Pinch Valve ${n}">V${n}</button>
+              `).join('')}
+            </div>
+            <input type="text" id="pinch-mask" value="${this.storage.getFluidicsSettings().pinchMask || '1111'}" maxlength="4" style="width: 60px; text-align: center; font-family: monospace; font-size: 14px; font-weight: 700;">
+            <button id="pinch-all" class="btn btn-gray" style="font-size: 11px; padding: 6px 10px;">All</button>
+            <button id="pinch-none" class="btn btn-gray" style="font-size: 11px; padding: 6px 10px;">None</button>
+          </div>
+        </div>
+
+        <!-- VALVEOPEN / VALVECLOSE -->
+        <div style="display: flex; gap: 8px; margin-bottom: 10px;">
+          <button id="pinch-open" class="btn" style="flex: 1; background: #4CAF50; color: white; font-size: 13px;">🔓 VALVE OPEN</button>
+          <button id="pinch-close" class="btn btn-danger" style="flex: 1; font-size: 13px;">🔒 VALVE CLOSE</button>
+        </div>
+
+        <!-- VALVEPWR ON/OFF -->
+        <div style="display: flex; gap: 8px;">
+          <button id="pinch-pwr-on" class="btn" style="flex: 1; background: #FF9800; color: white; font-size: 13px;">⚡ VALVEPWR ON</button>
+          <button id="pinch-pwr-off" class="btn btn-gray" style="flex: 1; font-size: 13px;">🔌 VALVEPWR OFF</button>
         </div>
       </div>
 
@@ -749,6 +813,32 @@ export class FluidicsControl {
     // Initialize valve toggle button visuals
     this.syncTogglesFromMask();
 
+    // Pinch valve controls
+    container.querySelector('#pinch-open')?.addEventListener('click', () => {
+      const mask = document.getElementById('pinch-mask')?.value || '1111';
+      this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="VALVEOPEN MASK=${mask}"`);
+    });
+    container.querySelector('#pinch-close')?.addEventListener('click', () => {
+      const mask = document.getElementById('pinch-mask')?.value || '1111';
+      this.api.sendGcode(`SEND_PUMP_ARDUINO COMMAND="VALVECLOSE MASK=${mask}"`);
+    });
+    container.querySelector('#pinch-pwr-on')?.addEventListener('click', () => {
+      this.api.sendGcode('SEND_PUMP_ARDUINO COMMAND="VALVEPWR ON"');
+    });
+    container.querySelector('#pinch-pwr-off')?.addEventListener('click', () => {
+      this.api.sendGcode('SEND_PUMP_ARDUINO COMMAND="VALVEPWR OFF"');
+    });
+    container.querySelector('#pinch-all')?.addEventListener('click', () => this.setPinchMask('1111'));
+    container.querySelector('#pinch-none')?.addEventListener('click', () => this.setPinchMask('0000'));
+    [1,2,3,4].forEach(n => {
+      container.querySelector(`#pinch-toggle-${n}`)?.addEventListener('click', () => this.togglePinchBit(n));
+    });
+    container.querySelector('#pinch-mask')?.addEventListener('input', () => {
+      this.syncPinchTogglesFromMask();
+      this.updateSeqPreview();
+    });
+    this.syncPinchTogglesFromMask();
+
     // Pump controls
     container.querySelector('#wash-on')?.addEventListener('click', () => {
       this.api.sendGcode('WASH_ON');
@@ -808,7 +898,8 @@ export class FluidicsControl {
       'valve-mask': 'valveMask',
       'valve-delay-a': 'stabilizeMs',
       'valve-delay-b': 'valveSettleMs',
-      'seq-accel': 'seq_accelSteps'
+      'seq-accel': 'seq_accelSteps',
+      'pinch-mask': 'pinchMask'
     };
 
     // Add change listeners to all mapped fields
@@ -1239,6 +1330,37 @@ export class FluidicsControl {
     this.setValveMask(state ? '1111' : '0000');
   }
 
+  // Pinch valve mask helpers
+  getPinchMask() {
+    return document.getElementById('pinch-mask')?.value || '1111';
+  }
+
+  setPinchMask(mask) {
+    const el = document.getElementById('pinch-mask');
+    if (el) el.value = mask;
+    this.syncPinchTogglesFromMask();
+    this.saveSetting('pinchMask', mask);
+    this.updateSeqPreview();
+  }
+
+  togglePinchBit(n) {
+    const mask = this.getPinchMask().split('');
+    mask[n - 1] = mask[n - 1] === '1' ? '0' : '1';
+    this.setPinchMask(mask.join(''));
+  }
+
+  syncPinchTogglesFromMask() {
+    const mask = this.getPinchMask();
+    [1,2,3,4].forEach(n => {
+      const btn = document.getElementById(`pinch-toggle-${n}`);
+      if (btn) {
+        const on = mask[n - 1] === '1';
+        btn.style.background = on ? '#e91e63' : '#bdbdbd';
+        btn.style.color = 'white';
+      }
+    });
+  }
+
   setValves(mode) {
     const mask = this.getValveMask();
     if (mask === '0000') return;
@@ -1362,10 +1484,12 @@ export class FluidicsControl {
   initSequencePanel(container) {
     const ids = ['seq-prime-vol','seq-prime-f','seq-prime-delay',
                  'seq-disp-vol','seq-disp-f','seq-disp-delay',
-                 'seq-retract-vol','seq-retract-f','seq-retract-delay','seq-accel'];
+                 'seq-retract-vol','seq-retract-f','seq-retract-delay','seq-accel',
+                 'seq-d','seq-dt'];
     const storageKeys = ['seq_primeVol','seq_primeFeedrate','seq_primeDelayMs',
                          'seq_dispVol','seq_dispFeedrate','seq_dispDelayMs',
-                         'seq_retractVol','seq_retractFeedrate','seq_retractDelayMs','seq_accelSteps'];
+                         'seq_retractVol','seq_retractFeedrate','seq_retractDelayMs','seq_accelSteps',
+                         'seq_d','seq_dt'];
 
     // Live update preview + save + switch to Custom on any field edit
     ids.forEach((id, i) => {
@@ -1425,6 +1549,22 @@ export class FluidicsControl {
     container.querySelector('#seq-store-trigger')?.addEventListener('click', () => this.seqStoreTrigger());
     container.querySelector('#seq-clear')?.addEventListener('click', () => this.seqClear());
 
+    // PO/PC checkbox and placement listeners
+    container.querySelector('#seq-po-enable')?.addEventListener('change', (e) => {
+      this.saveSetting('seq_poEnable', e.target.checked);
+      this.updateSeqPreview();
+    });
+    container.querySelector('#seq-pc-enable')?.addEventListener('change', (e) => {
+      this.saveSetting('seq_pcEnable', e.target.checked);
+      this.updateSeqPreview();
+    });
+    container.querySelectorAll('input[name="seq-po-placement"]').forEach(radio => {
+      radio.addEventListener('change', (e) => {
+        this.saveSetting('seq_poPlacement', e.target.value);
+        this.updateSeqPreview();
+      });
+    });
+
     // Initial preview
     this.updateSeqPreview();
   }
@@ -1441,14 +1581,29 @@ export class FluidicsControl {
       retractFeedrate: parseFloat(document.getElementById('seq-retract-f')?.value) || 6000,
       retractDelayMs:  parseFloat(document.getElementById('seq-retract-delay')?.value) || 100,
       accelSteps:    parseFloat(document.getElementById('seq-accel')?.value) || 0,
+      dEvents:       parseInt(document.getElementById('seq-d')?.value) || 1,
+      dtDelay:       parseInt(document.getElementById('seq-dt')?.value) || 0,
+      poEnable:      document.getElementById('seq-po-enable')?.checked || false,
+      pcEnable:      document.getElementById('seq-pc-enable')?.checked || false,
+      poPlacement:   document.querySelector('input[name="seq-po-placement"]:checked')?.value || 'before-prime',
     };
   }
 
   buildDispenseCmd(prefix = 'DISPENSE') {
     const v = this.getSeqValues();
-    const parts = [];
+    const mask = document.getElementById('pinch-mask')?.value || '1111';
+    const parts = [`MASK=${mask}`];
+    // PO before prime
+    if (v.poEnable && v.poPlacement === 'before-prime') parts.push('PO');
     if (v.primeVol > 0) parts.push(`P${v.primeVol}`, `PF${v.primeFeedrate}`, `PD${v.primeDelayMs}`);
+    // PO after prime
+    if (v.poEnable && v.poPlacement === 'after-prime') parts.push('PO');
     parts.push(`E${v.dispVol}`, `F${v.dispFeedrate}`, `DD${v.dispDelayMs}`);
+    // Multi-dispense (only append when non-default for backward compat)
+    if (v.dEvents > 1) parts.push(`D${v.dEvents}`);
+    if (v.dtDelay > 0) parts.push(`DT${v.dtDelay}`);
+    // PC before retract
+    if (v.pcEnable) parts.push('PC');
     if (v.retractVol > 0) parts.push(`R${v.retractVol}`, `RF${v.retractFeedrate}`, `RD${v.retractDelayMs}`);
     return `${prefix} ${parts.join(' ')}`;
   }
@@ -1456,6 +1611,25 @@ export class FluidicsControl {
   updateSeqPreview() {
     const el = document.getElementById('seq-preview');
     if (el) el.textContent = this.buildDispenseCmd('DISPENSE');
+    this.updateVolPerEvent();
+  }
+
+  updateVolPerEvent() {
+    const eVal = parseFloat(document.getElementById('seq-disp-vol')?.value) || 0;
+    const dVal = parseInt(document.getElementById('seq-d')?.value) || 1;
+    const dtVal = parseInt(document.getElementById('seq-dt')?.value) || 0;
+    const span = document.getElementById('seq-vol-per-event');
+    const warn = document.getElementById('seq-d-warning');
+    if (span) {
+      span.textContent = (dVal > 0 && eVal > 0) ? `${(eVal / dVal).toFixed(1)} µL` : '— µL';
+    }
+    if (warn) {
+      const warnings = [];
+      if (dVal > 1 && dtVal === 0) warnings.push('⚠️ DT=0 with D>1 will fire all events with no delay between them');
+      if (dVal > 0 && eVal > 0 && (eVal / dVal) < 5) warnings.push('⚠️ Vol per event may be below reliable dispense threshold for 18G tip');
+      warn.textContent = warnings.join(' · ');
+      warn.style.display = warnings.length ? 'block' : 'none';
+    }
   }
 
   showSeqStatus(msg, ok = true) {

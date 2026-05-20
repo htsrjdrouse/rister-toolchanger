@@ -29,7 +29,13 @@ export class StorageManager {
         seq_retractFeedrate: 6000,
         seq_retractDelayMs: 100,
         seq_accelSteps: 50,
-        seq_lastPreset: 'Custom'
+        seq_d: 1,
+        seq_dt: 0,
+        seq_lastPreset: 'Custom',
+        seq_poEnable: false,
+        seq_pcEnable: false,
+        seq_poPlacement: 'before-prime',
+        pinchMask: '1111'
       },
       version: '1.5.1'
     };
@@ -65,7 +71,13 @@ export class StorageManager {
           seq_retractFeedrate: 6000,
           seq_retractDelayMs: 100,
           seq_accelSteps: 50,
-          seq_lastPreset: 'Custom'
+          seq_d: 1,
+          seq_dt: 0,
+          seq_lastPreset: 'Custom',
+          seq_poEnable: false,
+          seq_pcEnable: false,
+          seq_poPlacement: 'before-prime',
+          pinchMask: '1111'
         };
         await this.save();
         console.log('Initialized fluidicsSettings with defaults');
@@ -76,7 +88,9 @@ export class StorageManager {
         seq_primeVol: 20, seq_primeFeedrate: 10000, seq_primeDelayMs: 1000,
         seq_dispVol: 50, seq_dispFeedrate: 14000, seq_dispDelayMs: 500,
         seq_retractVol: 60, seq_retractFeedrate: 6000, seq_retractDelayMs: 100,
-        seq_accelSteps: 50, seq_lastPreset: 'Custom'
+        seq_accelSteps: 50, seq_d: 1, seq_dt: 0, seq_lastPreset: 'Custom',
+        seq_poEnable: false, seq_pcEnable: false, seq_poPlacement: 'before-prime',
+        pinchMask: '1111'
       };
       let seqMigrated = false;
       for (const [k, v] of Object.entries(seqDefaults)) {
@@ -419,7 +433,11 @@ export class StorageManager {
       seq_retractFeedrate: 6000,
       seq_retractDelayMs: 100,
       seq_accelSteps: 50,
-      seq_lastPreset: 'Custom'
+      seq_lastPreset: 'Custom',
+      seq_poEnable: false,
+      seq_pcEnable: false,
+      seq_poPlacement: 'before-prime',
+      pinchMask: '1111'
     };
     await this.save();
   }
