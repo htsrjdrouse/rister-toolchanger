@@ -1,7 +1,9 @@
 // PANELS & SKIRTS
 
 module panels_skirts() {
+    color("grey"){
     // Bottom panels
+
     import("../stls/bottom_left_panel.stl");
     import("../stls/bottom_right_panel.stl");
     import("../stls/top_left_panel.stl");
@@ -12,4 +14,5 @@ module panels_skirts() {
     import("../stls/front_side_skirt.stl");
     import("../stls/back_side_skirt.stl");
     import("../stls/right_skirt_powercord.stl");
+    }
 }

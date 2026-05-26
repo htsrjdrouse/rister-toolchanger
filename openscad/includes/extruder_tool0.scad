@@ -61,7 +61,7 @@ module extruder_tool0() {
     // Mounts and accessories
     import("../stls/ExtruderTool0/sherpa_micro_ebb_mount_ribbon.stl");
     import("../stls/ExtruderTool0/sherpa_micro_mount_positioned.stl");
-    import("../stls/ExtruderTool0/klicky_mount_mod_pcb_clone.stl");
+    #import("../stls/ExtruderTool0/klicky_mount_mod_pcb_clone.stl");
     import("../stls/ExtruderTool0/Nozzle_Blocker_Mount_R2_tube_block.stl");
     import("../stls/ExtruderTool0/Umbilical_Extrusion_Mount_ribboncable_filamentsensor.stl");
 }

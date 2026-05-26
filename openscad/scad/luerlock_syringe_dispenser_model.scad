@@ -4,9 +4,19 @@ include <pipette_process.scad>
 include <washstation.scad>
 
 //translate([0,3,-22])color("pink")translate([337-12.5,427,300-15+0.2+0.8])rotate([0,180,90])luer_lock_case_lid();
+//translate([-0.5-1,-0.7,0])rotate([0,180,180])pipette_holder_4tip_luerlock();
+//translate([0,0,0])luerlock_nozzle_bottom();
+
+//linearactuator_pipette_holder_4pipette_luerlock();
+
+//translate([-0.5-1,-0.7,0])rotate([0,180,180])pipette_holder_4tip_luerlock();
+
+//pipette_holder_4tip_luerlock_lid();
 
 //include <organized_openscad.scad>
-luerlock_nozzle_case();
+//#luer_lock_microwell();
+
+//luerlock_nozzle_case();
 //translate([400-70+3-210,426.5+3+124,330-3+50-124])rotate([0,0,-90])color("lime")luerlock_dispenser_assy_remover();
 //luer_lock_microwell();
 //luer_lock_alignment_key();
@@ -18,14 +28,14 @@ luerlock_nozzle_case();
 
 //luerlock_connector();
 //pipette_13g();
+//luerlock_tipcase_makesquare();
+//luerlock_pipette_tipcase_holder();
+//translate([0,0,0])luerlock_pipette_tipcase();
 
-
+//translate([324.5,427,300-14])rotate([0,180,90])luer_lock_case_lid();
 //translate([0,0,0])luerlock_nozzle_bottom();
-//luer_lock_case_lid();
 //luerlock_nozzle_case();
 
-//linearactuator_pipette_holder_4pipette_luerlock();
-//pipette_holder_4tip_luerlock_lid();
 //translate([-0.5-1,-0.7,0])rotate([0,180,180])pipette_holder_4tip_luerlock();
 
 //import("linearactuator_rack_stub.stl");
@@ -66,6 +76,27 @@ translate([-3.5,-7.2,60+50+46])rotate([3,-50,0])cylinder(d=3,h=82,$fn=100);
 }
 
 
+module pipette_18g(){
+translate([0,0,8]){
+cylinder(d=8,h=3,$fn=100);
+translate([0,0,-11])cylinder(d2=7,d1=6.1,h=11,$fn=100);
+translate([0,0,-11-18.5])cylinder(d2=5,d1=1.5,h=18.5,$fn=100);
+//translate([0,0,-29])cylinder(d2=5,d1=1,h=29,$fn=100);
+}
+}
+
+module pipette_10g(){
+translate([0,0,8]){
+cylinder(d=8,h=3,$fn=100);
+translate([0,0,-11])cylinder(d2=7,d1=6.1,h=11,$fn=100);
+translate([0,0,-11-18.5])cylinder(d2=5,d1=4,h=18.5,$fn=100);
+//translate([0,0,-29])cylinder(d2=5,d1=1,h=29,$fn=100);
+}
+}
+
+
+
+
 module pipette_25g(){
 translate([0,0,8]){
 cylinder(d=8,h=3,$fn=100);
@@ -98,12 +129,17 @@ translate([400-70+4.5,426.5,330-3])rotate([0,0,-90]){
 translate([0,0,-13]){
 translate([-0.5-1,-0.7,0])rotate([0,180,180])
 difference(){
+union(){
 translate([0+0.5,4.5,-3])rounded_box_minkowski(size = [10+4+5, 20+2+6.5+6+10+5+5, 13], radius = 2, center = true);
+translate([0+0.5-7,4.5,-3])rounded_box_minkowski(size = [10+4+5, 20+2+6.5+6+10+5+5, 13], radius = 2, center = true);
+}
 translate([0,4.5,0])rounded_box_minkowski(size = [10+4, 20+2+6.5+6+10+5, 10], radius = 2, center = true);
+translate([0-6.7,4.5,0])rounded_box_minkowski(size = [10+4, 20+2+6.5+6+10+5, 10], radius = 2, center = true);
 translate([0+1,4.5,0])rounded_box_minkowski(size = [10+4, 20+2+6.5+6+10+5, 10], radius = 2, center = true);
 for(i=[-2:2]){
 for(j=[-2:2]){
 translate([i*0.2,j*0.2,-0.25]){
+translate([0-6.7,4.5,0])rounded_box_minkowski(size = [10+4, 20+2+6.5+6+10+5, 10], radius = 2, center = true);
 translate([0,4.5,0])rounded_box_minkowski(size = [10+4, 20+2+6.5+6+10+5, 10], radius = 2, center = true);
 translate([0+1,4.5,0])rounded_box_minkowski(size = [10+4, 20+2+6.5+6+10+5, 10], radius = 2, center = true);
 }
@@ -118,7 +154,7 @@ translate([0,-5.8+11.5*i-4.9,-21.4-12])cylinder(d=2.5,h=l,$fn=100);
 translate([0,-2,17.8]){
 l = 7.2;
 for(i=[0:3]){
-translate([0,-5.8+11.5*i-4.9,-21.4-3.5-20])cylinder(d1=7.5,d2=7.5,h=63,$fn=30);
+translate([0-4,-5.8+11.5*i-4.9,-21.4-3.5-20])cylinder(d1=7.5,d2=7.5,h=63,$fn=30);
 }
 }
 }
@@ -160,20 +196,14 @@ module luerlock_pipette_assy(){
 translate([0,0,0]){
 translate([0,0,14]){
 
-/*
 translate([0,0,-36])color("pink")translate([337-12.5,427,300-15+0.2+0.8])rotate([0,180,90])luer_lock_case_lid();
 translate([0,0,-36])color("lime")luerlock_nozzle_case();
 translate([0,0,-36])luerlock_nozzle_bottom();
-*/
+
+
+}
+
 /*
-for(i=[0:3]){
-translate([324-10.6+i*10.2,427,280])rotate([0,-90,0])import("SyringeNeedleWithLuerYellow20Gauge002.stl");
-}
-*/
-
-
-}
-
 //tuberculin_assay
 translate([-5.5-0.7-1.3,0,0-4+6.5-24]){
 for(i=[0:3]){
@@ -181,7 +211,6 @@ for(i=[0:3]){
 translate([319+i*11.5,427,309-30])rotate([0,0,0])pipette_25g();
 }
 }
-/*
 */
 
 
@@ -366,22 +395,22 @@ translate([0-6.5,-5.7+(i*10.4),-17-5.5])rotate([0,90,0])cylinder(d=3.5,h=1.5,$fn
 */
 difference(){
 union(){
-translate([0-6,4.5,0])rounded_box_minkowski(size = [10+4, 20+2+6.5+6+15, 10], radius = 2, center = true);
-translate([0,4.5,0])rounded_box_minkowski(size = [10+4, 20+2+6.5+6+15, 10], radius = 2, center = true);
-translate([0+1,4.5,0])rounded_box_minkowski(size = [10+4, 20+2+6.5+6+15, 10], radius = 2, center = true);
+translate([0-6,4.5,3])rounded_box_minkowski(size = [10+4, 20+2+6.5+6+15, 13], radius = 2, center = true);
+translate([0,4.5,3])rounded_box_minkowski(size = [10+4, 20+2+6.5+6+15, 13], radius = 2, center = true);
+translate([0+1,4.5,3])rounded_box_minkowski(size = [10+4, 20+2+6.5+6+15, 13], radius = 2, center = true);
 }
 translate([0-4,-2,17.8]){
 l = 7.2;
 a=[11.2,11.2,11.2,11.2];
 for(i=[0:3]){
-translate([0,-5.8+11.5*i-4.9,-21.4-3.5])cylinder(d1=8,d2=8,h=13,$fn=30);
+#translate([0,-5.8+11.5*i-4.9,-21.4+6.5])cylinder(d1=6.6,d2=6.3,h=7,$fn=30);
 translate([0,-5.8+11.5*i-4.9,-21.4-3.5+2])cylinder(d=a[i],h=8,$fn=30);
 }
 }
 translate([14-6,0-2,17.8-18])rotate([0,90,0]){
 l = 6;
 for(i=[0:3]){
-translate([0,-5.8+11.5*i-4.9,-21.4])cylinder(d=1.8,h=l,$fn=100);
+translate([0,-5.8+11.5*i-4.9,-21.4])cylinder(d=1.7,h=l,$fn=100);
 }
 }
 }
@@ -459,13 +488,13 @@ translate([25-4,-30-4,-0.1])cylinder(r=6.2/2,h=3.5);
 module luerlock_tipcase_makesquare(){
 translate([0-0.5,0-2,-130]){
 difference(){
-translate([-9,-32,-14])cube([14,64+20,5]);
+translate([-9,-32-5,-14])cube([14,64+20+10,5]);
 translate([0,0,0]){
-translate([0,19,0]){
+translate([0,19+5,0]){
 translate([-2,23,-22])cylinder(d=5.2,h=42,$fn=100);
 translate([-2,23,-11])cylinder(d=10.5,h=20,$fn=100);
 }
-translate([0,-46,0]){
+translate([0,-46-5,0]){
 translate([-2,23,-22])cylinder(d=5.2,h=42,$fn=100);
 translate([-2,23,-11])cylinder(d=10.5,h=20,$fn=100);
 }
@@ -553,9 +582,17 @@ sub=9;
 asub= 6;
 
 translate([0,0,-13.5]){
-translate([-10.5+j/2+asub/2,-16.5+i/2+sub/2,5])rounded_cube([8+4+4+4-asub, 10+4+15+10+4+8.5-sub, 7.5-1+4+2+6.5], corner_radius);
-translate([-10.5+i/2+asub/2,-16.5+j/2+sub/2,5])rounded_cube([8+4+4+4-asub, 10+4+15+10+4+8.5-sub, 7.5-1+4+2+6.5], corner_radius);
-translate([-10.5+i/2+asub/2,-16.5+j/2+sub/2,-5-2])rounded_cube([8+4+4+4-asub, 10+4+15+10+4+8.5-sub, 7.5-1+4+2+6.5], corner_radius);
+translate([-10.5+j/2+asub/2,-16.5+i/2+sub/2-3,5])rounded_cube([8+4+4+4-asub, 10+4+15+10+4+8.5-sub+6, 7.5-1+4+2+6.5], corner_radius);
+translate([-10.5+i/2+asub/2,-16.5+j/2+sub/2-3,5])rounded_cube([8+4+4+4-asub, 10+4+15+10+4+8.5-sub+6, 7.5-1+4+2+6.5], corner_radius);
+translate([-10.5+i/2+asub/2,-16.5+j/2+sub/2-3,-5-2])rounded_cube([8+4+4+4-asub, 10+4+15+10+4+8.5-sub+6, 7.5-1+4+2+6.5], corner_radius);
+
+//for doctor blade
+translate([-10.5+j/2+asub/2,-16.5+i/2+sub/2-4,5])rounded_cube([6, 10+4+15+10+4+8.5-sub+8, 7.5-1+4+2+6.5], corner_radius);
+translate([-10.5+i/2+asub/2,-16.5+j/2+sub/2-4,5])rounded_cube([6, 10+4+15+10+4+8.5-sub+8, 7.5-1+4+2+6.5], corner_radius);
+translate([-10.5+i/2+asub/2,-16.5+j/2+sub/2-4,-5-2])rounded_cube([6, 10+4+15+10+4+8.5-sub+8, 7.5-1+4+2+6.5], corner_radius);
+
+
+
 }
 }
 
@@ -568,11 +605,11 @@ translate([-6.25+i/2,-5-2-7.5+j/2,-2-10])rounded_cube([8+4, 10+4+15, 7.5+10], co
 */
 }
 }
-translate([-2,23+19,-22])cylinder(d=5.2,h=42,$fn=100);
-translate([-2,23+19,-11])cylinder(d=10.5,h=50,$fn=100);
+#translate([-2,23+19+5,-22])cylinder(d=5.2,h=42,$fn=100);
+translate([-2,23+19+5,-11])cylinder(d=10.5,h=50,$fn=100);
 
-translate([0,-46,0]){
-translate([-2,23,-22])cylinder(d=5.2,h=42,$fn=100);
+translate([0,-46-5,0]){
+#translate([-2,23,-22])cylinder(d=5.2,h=42,$fn=100);
 translate([-2,23,-11])cylinder(d=10.5,h=50,$fn=100);
 }
 }
@@ -600,25 +637,31 @@ translate([0,0,15.3]){
 translate([0,0,-15-12.5+1+9]){
 translate([0,3.5+4+10-1.9,-2])rotate([0,90,0])cylinder(d=2.5,h=40,$fn=50);
 translate([0,-3.5-15-7+2,-2])rotate([0,-90,0])cylinder(d=2.5,h=40,$fn=50);
+
+//translate([0,3.5+4+10-1.9-11,0])rotate([0,90,0])cylinder(d=2.5,h=40,$fn=50);
+//translate([0,3.5+4+10-1.9-18,0])rotate([0,90,0])cylinder(d=2.5,h=40,$fn=50);
+
+
 }
 }
 }
 
 translate([-5.5,0,0-4+6.5]){
-
-
+/*
 translate([-2,0,-24]){
 translate([319,427,309])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d=9.2,h=6,$fn=50);
 translate([319+(11.5*1),427,309])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d=9.2,h=6,$fn=50);
 translate([319+(11.5*2),427,309])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d=9.2,h=6,$fn=50);
 translate([319+(11.5*3),427,309])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d=9.2,h=6,$fn=50);
 }
+*/
 
 translate([-2,0,0]){
-translate([319,427,309])rotate([0,180,0])tuberculin_syringe_015ml();
-translate([319+(11.5*1),427,309])rotate([0,180,0])tuberculin_syringe_015ml();
-translate([319+(11.5*2),427,309])rotate([0,180,0])tuberculin_syringe_015ml();
-translate([319+(11.5*3),427,309])rotate([0,180,0])tuberculin_syringe_015ml();
+//luerlock_male();
+translate([319,427,309-11.048])rotate([0,180,0])luerlock_male();
+translate([319+(11.5*1),427,309-11.048])rotate([0,180,0])luerlock_male();
+translate([319+(11.5*2),427,309-11.048])rotate([0,180,0])luerlock_male();
+translate([319+(11.5*3),427,309-11.048])rotate([0,180,0])luerlock_male();
 }
 }
 }
@@ -644,7 +687,7 @@ translate([319+30.6,427,309])rotate([0,180,0])tuberculin_syringe_015ml();
 */
 translate([0-2,0,0])for(i=[0:3]){
 //#translate([319+(11.5*i),427,309])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d2=7.2,d1=6.4,h=6.5,$fn=50);
-#translate([319+(11.5*i),427,309-20])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d2=8.25,d1=8.25,h=6.5+22,$fn=50);
+translate([319+(11.5*i),427,309-20])rotate([0,180,0])translate([0,0,0])rotate([0,180,0])color("pink")cylinder(d2=8.25,d1=8.25,h=6.5+22,$fn=50);
 //#translate([319+(11.5*i),427,309])rotate([0,180,0])tuberculin_syringe_015ml();
 }
 
@@ -695,10 +738,10 @@ translate([0+j,-i*11.5+0.8,-40+2-2.01-4.3-5])cylinder(d1=7.5,d2=7.5,h=15,$fn=50)
 module luer_lock_case_lid(){
 difference(){
 corner_radius = 1;  // Adjust this value to change roundness
-translate([-4-2-2-2,-5-2-15-6-2-6,-2-16-16-4-2-4])rounded_cube([8+4+4+4, 10+4+15+10+4+8.5+12, 7.5-1+4+2+6.5], corner_radius);
-translate([0,0,-15-12.5+2]){
-translate([0,3.5+4+10-1.5,-2])rotate([0,90,0])cylinder(d=2.5,h=40,$fn=50);
-translate([0,-3.5-15-7+1.5,-2])rotate([0,-90,0])cylinder(d=2.5,h=40,$fn=50);
+translate([-4-2-2-2,-5-2-15-6-2-6,-2-16-16-4-2-4+5])rounded_cube([8+4+4+4, 10+4+15+10+4+8.5+12, 7.5-1+4+2+6.5-5], corner_radius);
+#translate([0,0,-15-12.5+2]){
+translate([0-20,3.5+4+10-1.5,-2])rotate([0,90,0])cylinder(d=2.5,h=40,$fn=50);
+translate([0+20,-3.5-15-7+1.5,-2])rotate([0,-90,0])cylinder(d=2.5,h=40,$fn=50);
 }
 translate([0,0,-15])scale([1.02,1.02,1]){
 translate([-4-2-2,-5-15-7.5,-2-15-1-2+2.9])rounded_cube([8+4+4, 10+15+5+4+8.5+4.3, 17+5-5], corner_radius);
@@ -706,11 +749,11 @@ cylinder(d1=3,d2=2.5,h=5,$fn=50);
 translate([0,0,-5])cylinder(d=5,h=5,$fn=50);
 }
 translate([0,2-1.3,0])for(i=[-1:2]){
-translate([0,-i*11.5+0.8,-23-2.7])scale([1.05,1.05,1])rotate([0,180,0])p200_lts_holder();
-translate([0,-i*11.5+0.8,-23-2.7-13])cylinder(d=7.5,h=20,$fn=30);
+translate([0,-i*11.5+0.8,-23-2.7+1])scale([1.05,1.05,1])rotate([0,180,0])p200_lts_holder();
+#translate([0,-i*11.5+0.8,-23-2.7-13+1])cylinder(d=7.5,h=20,$fn=30);
 }
-translate([0,2-1.3,0])for(i=[-1:2]){
-translate([0,-i*11.5+0.8,-40+2-2.01-4.3])cylinder(d1=9.25,d2=4,h=8,$fn=50);
+translate([0,2-1.3,0+1])for(i=[-1:2]){
+#translate([0,-i*11.5+0.8,-40+2-2.01-4.3])cylinder(d1=9.25,d2=4,h=8,$fn=50);
 }
 }
 }
@@ -721,6 +764,8 @@ module luer_lock_microwell(){
 difference(){
 corner_radius = 1;  // Adjust this value to change roundness
 translate([-4-2-2-2,-5-2-15-6-2-1,-2-16-16-4-2-4])rounded_cube([8+4+4+4, 10+4+15+10+4+8.5+6, 7.5-1+4+2+6.5], corner_radius);
+/*
+*/
 translate([0,2,0])for(i=[-1:2]){
 //translate([0,-i*11.5+0.8,-23-2.7])scale([1.05,1.05,1])rotate([0,180,0])p200_lts_holder();
 translate([0,-i*11.5+0.8,-23-2.7-13])cylinder(d1=8.5,d2=2,h=10,$fn=30);
@@ -740,15 +785,26 @@ union(){
 // Main collar body
 translate([-4-2-2+0.3,-5-2-15-6+0.2+0.2,-2-15-4-12])rounded_cube([8+4+4-0.6, 10+4+15+18.5-0.4-0.4, 6.5+1+16-6], corner_radius);
 }
-translate([0,0,-15-12.5+1]){
-translate([0,3.5+4+10-1.5,-2])rotate([0,90,0])cylinder(d=1.7,h=40,$fn=50);
-translate([0,-3.5-15-7+1.5,-2])rotate([0,-90,0])cylinder(d=1.7,h=40,$fn=50);
+#translate([0,0,-15-12.5+1]){
+translate([0-20,3.5+4+10-1.5,-2])rotate([0,90,0])cylinder(d=1.7,h=40,$fn=50);
+translate([0+20,-3.5-15-7+1.5,-2])rotate([0,-90,0])cylinder(d=1.7,h=40,$fn=50);
 }
 translate([0,0,-15-12.5+1+9]){
 translate([0,3.5+4+10-1.5,-2])rotate([0,90,0])cylinder(d=1.7,h=40,$fn=50);
 translate([0,-3.5-15-7+1.5,-2])rotate([0,-90,0])cylinder(d=1.7,h=40,$fn=50);
 }
 }
+}
+
+
+module luerlock_male(){
+
+
+//translate([0,-5.8+11.5*i-4.9,-21.4-3.5+2])
+cylinder(d=11.2,h=8,$fn=30);
+cylinder(d=6.6,h=18,$fn=30);
+
+
 }
 
 

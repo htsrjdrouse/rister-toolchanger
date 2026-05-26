@@ -13,9 +13,9 @@ module coolwashassembly(){
 
 //translate([0,-70,35])rotate([0,90,0])tslot20(100);
 //translate([0,-70+102.5,35+9])rotate([0,90,0])tslot20(100);
-//translate([0,-3,0])washbowl_watervacinput();
+translate([0,-3,0])washbowl_watervacinput();
 //translate([50-50,-3,1])rotate([0,0,180])drypad();
-washbowl_1tip();
+//washbowl_1tip();
 //translate([0,-43,5])washbowl_9mm_shim();
 }
 
@@ -95,8 +95,10 @@ translate([25-4,40-4,6]){cylinder(r=2.8/2,h=22, $fn=300);}//translate([0,0,15])r
 translate([4,-30-4,6]){cylinder(r=2.8/2,h=22, $fn=300);}//translate([0,0,15])rotate([0,0,90])cylinder(r=7.2/2,h=10,$fn=6);}
 translate([25-4,-30-4,6]){cylinder(r=2.8/2,h=22, $fn=300);}//translate([0,0,15])rotate([0,0,90])cylinder(r=7.2/2,h=10,$fn=6);}
 
-translate([12.5,-17,0])cylinder(r=4.1/2,h=35, $fn=300);
-translate([12.5,21,0])cylinder(r=4.1/2,h=35, $fn=300);
+//translate([12.5,-17,0])cylinder(r=4.1/2,h=35, $fn=300);
+translate([12.5,-50,25])rotate([-90,0,0])#cylinder(r=3.9/2,h=35, $fn=300);
+//#translate([12.5,21,0])cylinder(r=4.1/2,h=35, $fn=300);
+#translate([12.5,55,25])rotate([90,0,0])cylinder(r=3.9/2,h=35, $fn=300);
 translate([-15.5,20,18])rotate([0,90,0])cylinder(r=4.1/2,h=30, $fn=300);
 
 /*

@@ -2,6 +2,8 @@
 // Bottles, pumps, wash station, and liquid handling
 
 module microfluidics_system() {
+
+    color("lightblue"){
     // Sensors
     import("../stls/Microfluidics/TaidacentNon-ContactLiquidSensor.stl");
     
@@ -24,9 +26,11 @@ module microfluidics_system() {
     import("../stls/Microfluidics/peristaltic_pump_2_tubing.stl");
     import("../stls/Microfluidics/peristaltic_waste_bottle_tubing.stl");
   
+    import("../stls/Microfluidics/wash_dry_pressure_plate_rj45_connector.stl");
+
+
     /* 
     // Wash/dry station
-    import("../stls/Microfluidics/wash_dry_pressure_plate_rj45_connector.stl");
     import("../stls/Microfluidics/washbowl_1tip001.stl");
     import("../stls/Microfluidics/washbowl_stilt001.stl");
     import("../stls/Microfluidics/washbowl_watervacinput_tpu001.stl");
@@ -36,4 +40,5 @@ module microfluidics_system() {
     // Electronics housing
     import("../stls/Microfluidics/keystone-box-1_box.stl");
     import("../stls/Microfluidics/keystone-box-1_lid.stl");
+ }
 }

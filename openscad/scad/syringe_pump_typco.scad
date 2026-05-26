@@ -1,22 +1,27 @@
 include <bom_multichannel_syringe.scad>
 
-//multichannel_syringe_assy();
-//multichannel_syringe_module_iverntech();
+//iverntech_slidermount_motormount();
 
-//tyco_syringe_1ml_stack_1piece_multichannel_clamp();
-//tyco_eight_multichannel_assay();
-//tyco_multichannel_syringe_module();
-//syringe_1ml_stack_1piece_multichannel();
+/*
+multichannel_syringe_assy();
+multichannel_syringe_module_iverntech();
 
-//translate([0,70,-0.1])syringe_1ml_stack();
+tyco_syringe_1ml_stack_1piece_multichannel_clamp();
+tyco_eight_multichannel_assay();
+tyco_multichannel_syringe_module();
 
+syringe_1ml_stack_1piece_multichannel();
+
+translate([0,70,-0.1])syringe_1ml_stack();
+
+iverntech_pump_slider_plate_connect_multichannel();
 
 //color("pink")translate([603,606,230])rotate([90,0,90])oneml_syringe_stepper_linear_m8nut_coupler();
 
 //syringe_1ml();
 //multichannel_syringe_assy();
-//nextgen_syringe1ml_multichannel_assy();
-
+nextgen_syringe1ml_multichannel_assy();
+*/
 //tuberculin_syringe_1ml();
 
 //tyco kendall monoject

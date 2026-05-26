@@ -58,14 +58,17 @@ module syringe_pump_system() {
     import("../stls/Syringepump_valve/valve_tubing_2.stl");
     import("../stls/Syringepump_valve/valve_tubing_3.stl");
     import("../stls/LiquidDispenserTool0/conduit.stl");
-    
+   
+
+    /* 
     // Wash station components
     import("../stls/Syringepump_valve/washbowl_1tip001.stl");
     import("../stls/Syringepump_valve/washbowl_stilt001.stl");
     import("../stls/Syringepump_valve/washbowl_watervacinput_tpu001.stl");
     import("../stls/Syringepump_valve/wash_dry_pressure_plate_rj45_connector.stl");
     import("../stls/Syringepump_valve/drypad001.stl");
-    
+    */
+ 
     // Peristaltic pumps
     import("../stls/Syringepump_valve/peristaltic_pump_1.stl");
     import("../stls/Syringepump_valve/peristaltic_pump_1_tubing.stl");

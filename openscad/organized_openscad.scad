@@ -46,11 +46,12 @@ USE_PARAMETRIC_EXTRUSIONS = false;
 // =============================================================================
 
 /*
+*/
+SHOW_EXTRUSIONS_HFSB5 = true;
+SHOW_EXTRUSIONS_HGSB5 = true;
 SHOW_X_AXIS = true;
 SHOW_Y_AXIS = true;
 SHOW_XY_JOINTS = true;
-SHOW_EXTRUSIONS_HFSB5 = true;
-SHOW_EXTRUSIONS_HGSB5 = true;
 SHOW_FRAME_CORNERS = true;
 SHOW_PANELS_SKIRTS = true;
 SHOW_MOTOR_MOUNT_A = true;
@@ -60,26 +61,26 @@ SHOW_Z_CARRIAGES = true;
 SHOW_ENDSTOPS = true;
 SHOW_BELT_TENSIONERS = true;
 SHOW_TOOLHEAD_CARRIAGE = true;
-SHOW_LIQUID_DISPENSER = true;
 SHOW_LUERLOCK_NOZZLE = true;
 SHOW_BED_ASSEMBLY = true;
 SHOW_TIP_CASE = true;
-*/
-SHOW_LUERLOCK_NOZZLE = true;
-//SHOW_TARGET_HOLDER = true;
-
-/*
-SHOW_PEEK_NOZZLE = true;
+SHOW_TARGET_HOLDER = true;
 SHOW_CAMERA_TOOL = true;
-SHOW_EXTRUDER_TOOL0 = true;
-SHOW_EXTRUDER_TOOL1 = true;
-SHOW_SYRINGE_PUMP = true;
 
-SHOW_WASHSTATION = true;
-SHOW_MICROFLUIDICS = true;
+SHOW_LIQUID_DISPENSER = true;
 SHOW_CABLING = true;
 SHOW_KLICKY_PROBE = true;
+SHOW_LIQUID_DISPENSER = true;
+SHOW_LUERLOCK_NOZZLE = true;
+SHOW_SYRINGE_PUMP = true;
+SHOW_MICROFLUIDICS = true;
+SHOW_WASHSTATION = true;
+/*
 */
+
+//SHOW_PEEK_NOZZLE = true;
+//SHOW_EXTRUDER_TOOL0 = true;
+//SHOW_EXTRUDER_TOOL1 = true;
 // =============================================================================
 // POSITION OFFSETS
 // =============================================================================
