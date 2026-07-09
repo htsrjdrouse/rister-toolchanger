@@ -8,17 +8,19 @@
 module toolhead_carriage() {
     // Carriage body components
     import("../stls/Carriage/carriage_body_bottom_trident_v2.stl");
-    import("../stls/Carriage/carriage_body_middle_trident_v2.stl");
+    color("lime")import("../stls/Carriage/carriage_body_middle_trident_v2.stl");
     import("../stls/Carriage/carriage_body_rear_trident_v2.stl");
     import("../stls/Carriage/carriage_body_top.stl");
     import("../stls/Carriage/CarriageBodyFront_editable_belt_holes.stl");
     
     // Cooling system
-    import("../stls/Carriage/5015AdapterRister_longer.stl");
-    import("../stls/Carriage/duct_trident_v2_nozzle_10mm_longer.stl");
-    import("../stls/Carriage/radial_cooling_5015.stl");
+    //import("../stls/Carriage/5015AdapterRister_longer.stl");
+    //import("../stls/Carriage/duct_trident_v2_nozzle_10mm_longer.stl");
+    //import("../stls/Carriage/radial_cooling_5015.stl");
     
     // Toolchanger components
-    import("../stls/Carriage/locking_plate_lineux_one.stl");
+    color("pink")import("../stls/Carriage/locking_plate_lineux_one.stl");
     import("../stls/Carriage/slider.stl");
+
+
 }

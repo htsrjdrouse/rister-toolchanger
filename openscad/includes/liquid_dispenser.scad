@@ -5,32 +5,49 @@
 //include <../scad/luerlock_syringe_dispenser_model_18mm.scad>
 //include <includes/x_axis.scad>
 
+/*
+    translate([0,31,5]) {
+        #translate([0,0,5])color("darkgrey")import("../stls/LiquidDispenserTool0/linearactuator_pipette_holder_4pipette_luerlock_18mm.stl");
+    }
+*/
+
 module liquid_dispenser_tool0() {
     translate([0,31,5]) {
 	//translate([0,-5,0])librevalve_assy();
-
 	translate([0,1,-5])import("../stls/LiquidDispenserTool0/LibreValve_liquidhandling_pinchvalve_4set.stl");
 	translate([0,1,-5])import("../stls/LiquidDispenserTool0/LibreValve_knob_teeth_4.stl");
-	translate([0,1,-5])import("../stls/LiquidDispenserTool0/MG90S_4.stl");
+	color("black")translate([0,1,-5])import("../stls/LiquidDispenserTool0/MG90S_4.stl");
 
-	color("lightblue")import("../stls/LiquidDispenserTool0/pipette_assembly.stl");
 
         // Dock and backplate
-        translate([0,-30,0])import("../stls/LiquidDispenserTool0/dock_body_linearactuator_10mmlonger_3.stl");
+        translate([0,-30,0])import("../stls/LiquidDispenserTool0/dock_body_linearactuator_10mmlonger_3_shorter.stl");
         import("../stls/LiquidDispenserTool0/lineux_backplate_for_linearactuator_modified.stl");
         color("darkgrey")import("../stls/LiquidDispenserTool0/lineux_backplate_for_linearactuator_modified001.stl");
 
         // Holder components
         color("darkgrey")import("../stls/LiquidDispenserTool0/holder_half_bottom.stl");
         color("darkgrey")import("../stls/LiquidDispenserTool0/holder_half_top.stl");
+
         // Pipette system
-        translate([0,0,5])color("darkgrey")import("../stls/LiquidDispenserTool0/linearactuator_pipette_holder_4pipette_luerlock_18mm.stl");
-        translate([0,0,5])color("darkgrey")import("../stls/LiquidDispenserTool0/pipette_holder_4tip_luerlock_lid_18mm.stl");
+        translate([0,0,0]){
+        //translate([0,0,5])color("darkgrey")import("../stls/LiquidDispenserTool0/linearactuator_pipette_holder_4pipette_luerlock_18mm.stl");
+        //translate([0,0,5])color("darkgrey")import("../stls/LiquidDispenserTool0/pipette_holder_4tip_luerlock_lid_18mm.stl");
+        translate([0,0,5])color("plum")import("../stls/LiquidDispenserTool0/pipette_holder_4tip_luerlock_lid_18mm_slotdie.stl");
+        translate([0,0,5])color("lavender")import("../stls/LiquidDispenserTool0/linearactuator_rack_adjuster.stl");
+        translate([0,0,5])color("mediumaquamarine")import("../stls/LiquidDispenserTool0/linearactuator_pipette_holder_4pipette_luerlock_18mm_slotdie.stl");
+        translate([0,0,5])color("lightpink")import("../stls/LiquidDispenserTool0/compression_washers.stl");
+        translate([0,0,5])color("silver")import("../stls/LiquidDispenserTool0/m3_screw_rackadjusters.stl");
+	/*
+	*/
+	}
+        color("lightblue")import("../stls/LiquidDispenserTool0/pipette_assembly.stl");
+        color("white")import("../stls/LiquidDispenserTool0/luerlock_connector_slotdie.stl");
+        color("lime")import("../stls/LiquidDispenserTool0/pipette_10g_slotdie.stl");
 
         // Linear actuator components
 
         color("black")import("../stls/LiquidDispenserTool0/servo_linearactuator.stl");
-        color("darkgrey")import("../stls/LiquidDispenserTool0/pinion.stl");
+        color("lightsteelblue")import("../stls/LiquidDispenserTool0/pinion.stl");
         
         // Sled and cap
         color("darkgrey")import("../stls/LiquidDispenserTool0/sled_bottom_no_limit_switch_protrusion.stl");
@@ -40,7 +57,7 @@ module liquid_dispenser_tool0() {
         
         // Tubing and umbilical
         //translate([0,-30,-5]) import("../stls/LiquidDispenserTool0/tubing_to_pipettes_valve_side_umbilical.stl");
-        color("white")import("../stls/LiquidDispenserTool0/umbilical_cord.stl");
+        translate([0,0,-15])color("white")import("../stls/LiquidDispenserTool0/umbilical_cord.stl");
 	/*
         translate([406.4,685.4,480])cube([9,2,255]);
         translate([406.4,685.4,480+255])rotate([90,0,0])cube([9,2,321.5]);
@@ -53,7 +70,7 @@ module liquid_dispenser_tool0() {
         // Tip removal and loading
         translate([-47+270,-31,0]) {
             //import("../stls/PipetteRemoval/piezo_dispenser_assy_remover.stl");
-            translate([47,32,-4+18])import("../stls/PipetteRemoval/luerlock_dispenser_assy_remover.stl");
+            #translate([47,32,-4+17.6])import("../stls/PipetteRemoval/luerlock_dispenser_assy_remover.stl");
             import("../stls/PipetteRemoval/singlechannel_tipremoval_base.stl");
         }
         
@@ -62,6 +79,7 @@ module liquid_dispenser_tool0() {
             import("../stls/LiquidDispenserTool0/led_diffuser_back.stl");
             import("../stls/LiquidDispenserTool0/led_diffuser.stl");
         }
+
 
     }
 }

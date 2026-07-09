@@ -739,6 +739,38 @@ translate([-13.0+2.2,5.98,4.7])color("pink")rotate([0,90,0])cylinder(d=14,h=20,$
 //bayonet_cut_tool();
 
 
+
+module bayonet_pipette_tipcase_clamp_50mmstandoff(){
+translate([140,210-30,230])difference(){
+union(){
+//translate([-17-8,5,4])cube([5+4+110,16,5]);
+translate([-17-8,-5-9,-42-20])cube([5,35,51+20]);
+}
+translate([0,-10,0]){
+translate([0,3,-10+11])rotate([0,-90,0])cylinder(r=5.7/2,h=50,$fn=300);
+translate([0,8+15,-10+11])rotate([0,-90,0])cylinder(r=5.7/2,h=50,$fn=300);
+hull(){
+translate([0,3,-10])rotate([0,-90,0])cylinder(r=5.7/2,h=50,$fn=300);
+translate([0,3,-55])rotate([0,-90,0])cylinder(r=5.7/2,h=50,$fn=300);
+}
+translate([0,15,0])hull(){
+translate([0,8,-10])rotate([0,-90,0])cylinder(r=5.7/2,h=50,$fn=300);
+translate([0,8,-55])rotate([0,-90,0])cylinder(r=5.7/2,h=50,$fn=300);
+}
+}
+//translate([-12+6,15,0])cylinder(r=4.2/2,h=30,$fn=300);
+//translate([-12+95-5,15,0])cylinder(r=4.2/2,h=30,$fn=300);
+}
+}
+
+
+
+
+
+
+
+
+
 module bayonet_pipette_tipcase_clamp(){
 translate([140,210-30,230])difference(){
 union(){

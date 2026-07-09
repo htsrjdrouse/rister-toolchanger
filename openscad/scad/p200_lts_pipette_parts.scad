@@ -4,8 +4,11 @@
 
 //bayonet_pipette_tipcase_assy();
 //translate([-1.5,10,-120+5-10])peek_nozzle_part1and2_4channel_p200LTS();
+//peek_nozzle_part1and2_4channel_p200LTS_stub();
 
-bayonet_pipette_tipcase_holder_LTS();
+p200_lts_holder();
+
+//bayonet_pipette_tipcase_holder_LTS();
 
 module bayonet_pipette_tipcase_holder_LTS(){
 difference(){
@@ -145,7 +148,7 @@ $fn=50;
 
 module p200_lts_holder(){
 color("pink")cylinder(d2=7.1,d1=6.1,h=13,$fn=30);
-#color("lime")translate([0,0,-9.])cylinder(d2=5,d1=4.8,h=9,$fn=30);
+color("lime")translate([0,0,-9.])cylinder(d2=5,d1=4.8,h=9,$fn=30);
 color("lightblue")translate([0,0,-9.-6.0])cylinder(d2=4.5,d1=4,h=6,$fn=30);
 color("peru")translate([0,0,-9.-6.0-10])cylinder(d2=3.85,d1=2.85,h=10,$fn=30);
 color("")translate([0,0,-9.-6.0-10-10])cylinder(d2=2.6,d1=1,h=10,$fn=30);

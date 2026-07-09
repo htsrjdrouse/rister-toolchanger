@@ -64,6 +64,7 @@ translate([(i*18)+302.8,430.5,-17-8-4+315])rotate([0,180,0]){
 //luerlock_pipette_tipcase_holder_18mm();
 //luerlock_tipcase_makesquare_18mm();
 
+/*
 translate([84,-14,-40]){
 translate([348.5,396+50-3.5,374-120+30])rotate([0,0,90]){translate([-15,0,0])luerlock_pipette_tipcase_holder_18mm();}
 
@@ -75,15 +76,17 @@ translate([-15-35,8+19+16,-9])rotate([0,90,0])tslot20(100);
 translate([-15-35,8-46-16,-9])rotate([0,90,0])tslot20(100);
 }
 }
-/*
-*/
 
 }
+*/
+
+//translate([327.5,430,260-4])rotate([0,180,90])luer_lock_microwell();
 
 /*
+translate([0,0,-0.5+10]){
+translate([400-70+3-10+70,426.5+3+124,330-3+50-124+19])rotate([0,0,-90])color("lime")luerlock_dispenser_assy_remover();
+}
 */
-//translate([400-70+3-210,426.5+3+124,330-3+50-124])rotate([0,0,-90])color("lime")luerlock_dispenser_assy_remover();
-
 
 /*
 translate([215,-120,80]){
@@ -427,14 +430,11 @@ translate([0,-5.8+18*i-4.9,-21.4-3.5])cylinder(d1=8,d2=8,h=13,$fn=30);
 }
 */
 }
-
 translate([400-70+4.5,426.5,330-3])rotate([0,0,-90]){
 translate([0,0,-13]){
 translate([-0.5-1,-0.7,0])rotate([0,180,180])pipette_holder_4tip_luerlock();
 }
 }
-
-
 }
 
 
@@ -618,13 +618,15 @@ union(){
 translate([-7+5-3,0,-.75])rounded_box_minkowski(size = [17+20, 20+2+6.5+30+15+16+8, 4], radius = 0.5, center = true);
 translate([-18,0,-.75])rounded_box_minkowski(size = [10, 20+2+6.5+22, 4], radius = 0.5, center = true);
 translate([-23,0,-.75])rounded_box_minkowski(size = [10, 20+2+6.5+22, 4], radius = 0.5, center = true);
-translate([-23+3.5,0,-.75-7.5-5-9])rounded_box_minkowski(size = [15, 20+2+6.5+22+12, 4+25+18], radius = 0.5, center = true);
+translate([-23+3.5,0,-.75-7.5-5-9-5])rounded_box_minkowski(size = [15, 20+2+6.5+22+12, 4+25+18+10], radius = 0.5, center = true);
 }
+#translate([-2+5,0+33,-.75])rotate([30,0,0])rounded_box_minkowski(size = [19+5, 20+2+6.5+12+10+16+10, 7], radius = 2, center = true);
+#translate([-2+5,0-33,-.75])rotate([-30,0,0])rounded_box_minkowski(size = [19+5, 20+2+6.5+12+10+16+10, 7], radius = 2, center = true);
 translate([-2+5,0,-.75])rounded_box_minkowski(size = [19+5, 20+2+6.5+12+10+16+10, 7], radius = 2, center = true);
-translate([-18.8,17.5,-.75-5-45])cylinder(d=6,h=85,$fn=100);
-translate([-18.8,-17.5,-.75-5-45])cylinder(d=6,h=85,$fn=100);
-#translate([-18.8,17.5,-.75-5-22+4-18])cylinder(d=11,h=85,$fn=100);
-#translate([-18.8,-17.5,-.75-5-22+4-18])cylinder(d=11,h=85,$fn=100);
+#translate([-18.8,17.5,-.75-5-45-20])cylinder(d=6,h=185,$fn=100);
+#translate([-18.8,-17.5,-.75-5-45-20])cylinder(d=6,h=185,$fn=100);
+#translate([-18.8,17.5,-.75-5-22+4-18-10])cylinder(d=11,h=85,$fn=100);
+#translate([-18.8,-17.5,-.75-5-22+4-18-10])cylinder(d=11,h=85,$fn=100);
 
 }
 }
@@ -677,28 +679,21 @@ for(i=[-1:1]){
 for(j=[-1:1]){
 //translate([337-12.5,427,300-15+0.2+0.8-20+14])rotate([0,180,90])
 //translate([-4-2-2-2,-5-2-15-6-2,-2-16-16-4-2-4])
-
 translate([2,0,0]){
 translate([-10.5+j/2,-16.5+i/2,5])rounded_cube([8+4+4+4, 10+4+15+10+4+8.5, 7.5-1+4+2+6.5], corner_radius);
 translate([-10.5+i/2,-16.5+j/2,5])rounded_cube([8+4+4+4, 10+4+15+10+4+8.5, 7.5-1+4+2+6.5], corner_radius);
-
 sub=9;
 asub= 6;
-
 translate([0,0,-13.5]){
 translate([-10.5+j/2+asub/2,-16.5+i/2+sub/2-3,5])rounded_cube([8+4+4+4-asub, 10+4+15+10+4+8.5-sub+6, 7.5-1+4+2+6.5], corner_radius);
 translate([-10.5+i/2+asub/2,-16.5+j/2+sub/2-3,5])rounded_cube([8+4+4+4-asub, 10+4+15+10+4+8.5-sub+6, 7.5-1+4+2+6.5], corner_radius);
 translate([-10.5+i/2+asub/2,-16.5+j/2+sub/2-3,-5-2])rounded_cube([8+4+4+4-asub, 10+4+15+10+4+8.5-sub+6, 7.5-1+4+2+6.5], corner_radius);
-
 //for doctor blade
 translate([-10.5+j/2+asub/2,-16.5+i/2+sub/2-4,5])rounded_cube([6, 10+4+15+10+4+8.5-sub+8, 7.5-1+4+2+6.5], corner_radius);
 translate([-10.5+i/2+asub/2,-16.5+j/2+sub/2-4,5])rounded_cube([6, 10+4+15+10+4+8.5-sub+8, 7.5-1+4+2+6.5], corner_radius);
 translate([-10.5+i/2+asub/2,-16.5+j/2+sub/2-4,-5-2])rounded_cube([6, 10+4+15+10+4+8.5-sub+8, 7.5-1+4+2+6.5], corner_radius);
-
 }
 }
-
-
 /*
 translate([-6.25+j/2,-5-2-7.5+2.7+i/2,-2-13])rounded_cube([12, 10+4+10, 7.5+10], corner_radius);
 translate([-6.25+i/2,-5-2-7.5+2.7+j/2,-2-13])rounded_cube([12, 10+4+10, 7.5+10], corner_radius);
@@ -709,7 +704,6 @@ translate([-6.25+i/2,-5-2-7.5+j/2,-2-10])rounded_cube([8+4, 10+4+15, 7.5+10], co
 }
 #translate([-2,23+19+5,-22])cylinder(d=5.2,h=42,$fn=100);
 translate([-2,23+19+5,-11])cylinder(d=10.5,h=50,$fn=100);
-
 translate([0,-46-5,0]){
 #translate([-2,23,-22])cylinder(d=5.2,h=42,$fn=100);
 translate([-2,23,-11])cylinder(d=10.5,h=50,$fn=100);
@@ -726,10 +720,8 @@ union(){
 color("peru"){
 translate([-17+10-1.5,13.5+25,-14])cube([10+3,13+16,10]);
 translate([-17+5,13.5-3+23,-14])cube([23,10-0.5+3+12,10]);
-
 translate([-17+5-2,13-36-4-4,-14])cube([5+18+4-0,10+36+20+8+8,33]);
 //translate([-17+3+20,13-36,-14])cube([5,10+36+20,6]);
-
 translate([-17+5,13-36-15,-14])cube([23,10+3,10]);
 translate([-17+10-1.5,13-36-8-15,-14])cube([10+3,18+10,10]);
 }
@@ -740,28 +732,21 @@ for(i=[-1:1]){
 for(j=[-1:1]){
 //translate([337-12.5,427,300-15+0.2+0.8-20+14])rotate([0,180,90])
 //translate([-4-2-2-2,-5-2-15-6-2,-2-16-16-4-2-4])
-
 translate([2,0,0]){
 translate([-10.5+j/2,-16.5+i/2-7.5,5])rounded_cube([8+4+4+4, 10+4+15+10+4+8.5+17, 7.5-1+4+2+6.5], corner_radius);
 translate([-10.5+i/2,-16.5+j/2-7.5,5])rounded_cube([8+4+4+4, 10+4+15+10+4+8.5+17, 7.5-1+4+2+6.5], corner_radius);
-
 sub=9;
 asub= 6;
-
 translate([0,0,-13.5]){
 #translate([-10.5+j/2+asub/2,-16.5+i/2+sub/2-3-9+1.5,5-16])rounded_cube([8+4+4+4-asub, 10+4+15+10+4+8.5-sub+6+10+10-3, 7.5-1+4+3.1+16], corner_radius);
 translate([-10.5+i/2+asub/2,-16.5+j/2+sub/2-3-9+1.5,5-16])rounded_cube([8+4+4+4-asub, 10+4+15+10+4+8.5-sub+6+10-3, 7.5-1+4+3.1+16], corner_radius);
 translate([-10.5+i/2+asub/2,-16.5+j/2+sub/2-3-9+4+1.5,5-16])rounded_cube([8+4+4+4-asub, 10+4+15+10+4+8.5-sub+6+10-3, 7.5-1+4+3.1+16], corner_radius);
-
 //for doctor blade
 translate([-10.5+j/2+asub/2,-16.5+i/2+sub/2-4-11.5,5])rounded_cube([6, 10+4+15+10+4+8.5-sub+8+24, 7.5-1+4+2+16.5], corner_radius);
 translate([-10.5+i/2+asub/2,-16.5+j/2+sub/2-4-11.5,5])rounded_cube([6, 10+4+15+10+4+8.5-sub+8+24, 7.5-1+4+2+6.5], corner_radius);
 translate([-10.5+i/2+asub/2,-16.5+j/2+sub/2-4-11.5,-5-2])rounded_cube([6, 10+4+15+10+4+8.5-sub+8+24, 7.5-1+4+2+6.5], corner_radius);
-
 }
 }
-
-
 /*
 translate([-6.25+j/2,-5-2-7.5+2.7+i/2,-2-13])rounded_cube([12, 10+4+10, 7.5+10], corner_radius);
 translate([-6.25+i/2,-5-2-7.5+2.7+j/2,-2-13])rounded_cube([12, 10+4+10, 7.5+10], corner_radius);
@@ -932,19 +917,25 @@ translate([0,2-1.3,0+1])for(i=[-1:2]){
 }
 
 
-
 module luer_lock_microwell(){
+
+sp=18;
 difference(){
 corner_radius = 1;  // Adjust this value to change roundness
-translate([-4-2-2-2,-5-2-15-6-2-1,-2-16-16-4-2-4])rounded_cube([8+4+4+4, 10+4+15+10+4+8.5+6, 7.5-1+4+2+6.5], corner_radius);
+translate([-4-2-2-2-4,-5-2-15-6-2-1-7,-2-16-16-4-2-4-10])rounded_cube([8+4+4+4+8, 10+4+15+10+4+8.5+6+14, 7.5-1+4+2+6.5+10], corner_radius);
 /*
 */
+
+hull(){
+translate([0,4,-10]){
 translate([0,2,0])for(i=[-1:2]){
 //translate([0,-i*11.5+0.8,-23-2.7])scale([1.05,1.05,1])rotate([0,180,0])p200_lts_holder();
-translate([0,-i*11.5+0.8,-23-2.7-13])cylinder(d1=8.5,d2=2,h=10,$fn=30);
+#translate([0,-i*sp+0.8,-23-2.7-13])cylinder(d1=8.5,d2=2,h=10+10,$fn=30);
 }
 translate([0,2,0])for(i=[-1:2]){
-translate([0,-i*11.5+0.8,-40+2-2.01-4.3])cylinder(d1=11.25,d2=4,h=8,$fn=50);
+translate([0,-i*sp+0.8,-40+2-2.01-4.3])cylinder(d1=11.25,d2=4,h=8+10,$fn=50);
+}
+}
 }
 }
 }
