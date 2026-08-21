@@ -183,7 +183,9 @@ export class KlipperAPI {
     return null;
   }
 
-  // Send G-code command
+  // Send G-code command.
+  // Routes through the background service worker to avoid CORS/preflight issues
+  // that cause "Failed to fetch" on long-running macros from chrome-extension:// origin.
   async sendGcode(command) {
     // Log command immediately (before sending)
     this.logCommand(command);
@@ -197,36 +199,41 @@ export class KlipperAPI {
     }
 
     try {
-      const response = await fetch(`${this.activeEndpoint}/printer/gcode/script`, {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          script: command
-        })
+      // Send through background service worker (not subject to CORS)
+      const result = await new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(
+          {
+            type: 'sendGcode',
+            endpoint: this.activeEndpoint,
+            gcode: command
+          },
+          (response) => {
+            if (chrome.runtime.lastError) {
+              reject(new Error(chrome.runtime.lastError.message));
+              return;
+            }
+            if (response && response.success) {
+              resolve(response.data);
+            } else {
+              reject(new Error(response ? response.error : 'No response from background'));
+            }
+          }
+        );
       });
 
-      if (!response.ok) {
-        const errorText = await response.text();
-        console.error('Klipper API error:', response.statusText, errorText);
-        throw new Error(`Klipper API error: ${response.statusText}`);
-      }
-
-      const data = await response.json();
-      console.log('✓ G-code sent successfully:', command);
-      if (data.result) {
-        console.log('  Response:', data.result);
-      }
-      return data;
+      console.log('✓ G-code sent successfully:', command.substring(0, 80));
+      return result;
     } catch (error) {
-      console.error('✗ Failed to send G-code:', command);
-      console.error('  Error:', error);
+      console.error('✗ Failed to send G-code:', error.message);
       throw error;
     }
   }
 
-  // Send multiple G-code commands
+  // Send multiple G-code commands as a single payload.
+  // Uses the exact same sendGcode path that works for individual commands.
+  // Moonraker won't respond until all commands finish executing,
+  // so for long-running macros this will eventually timeout.
+  // But the commands WILL execute on the printer regardless.
   async sendGcodeMulti(commands) {
     const script = Array.isArray(commands) ? commands.join('\n') : commands;
     return await this.sendGcode(script);

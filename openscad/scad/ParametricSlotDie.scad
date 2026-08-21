@@ -85,14 +85,20 @@ difference(){
         //Tapered    
                 hull(){
                     translate([0,0,0]) rotate([90,0,0]) cylinder(tankwidth,innerrad,innerrad,true);
-                    translate([l/14,0,0]) cube([slit,tankwidth,slit],true); 
+                    translate([l/14,0,0]) #cube([slit,tankwidth,slit],true); 
                        }
     
                 //translate([-l/20-internalshift+syringel,0,0]) rotate([0,90,0]) cylinder(l/20+internalshift-syringel,syringe2,syringe2,false);
                 translate([-l/20-internalshift+syringel,0,0]) rotate([0,90,0]) cylinder(h=l/20+internalshift-syringel,d=syringe2,false);
 		echo(l/20+internalshift-syringel);
 		echo(syringe2);
-                translate([l/4,0,0]) cube([l/2,tankwidth,slit],true); 
+		translate([0,0,0]){
+		hull(){
+                translate([l/4-12.5-5+4,0,-0.035]) cube([l/2-25,tankwidth,slit*2],true); 
+                translate([l/4-2.5-10+1,0,0]) cube([l/2-19.5-2,tankwidth,slit],true); 
+		}
+                #translate([l/4-4,0,0]) cube([l/2-19.5,tankwidth,slit],true); 
+		}
                }
 
 // Neck

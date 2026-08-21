@@ -37,7 +37,7 @@ module syringe_pump_system() {
     import("../stls/Syringepump_valve/stopcock_3.stl");
     
     // Valve mounting and connections
-    import("../stls/Syringepump_valve/smallsyringe_valvesupportmodule_plate_4valve.stl");
+    #import("../stls/Syringepump_valve/smallsyringe_valvesupportmodule_plate_4valve.stl");
     import("../stls/Syringepump_valve/valvemountplate_screwattach_smallersyringe_0.stl");
     import("../stls/Syringepump_valve/valvemountplate_screwattach_smallersyringe_1.stl");
     import("../stls/Syringepump_valve/valvemountplate_screwattach_smallersyringe_2.stl");

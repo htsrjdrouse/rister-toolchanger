@@ -4,9 +4,13 @@ include <pipette_process.scad>
 include <washstation.scad>
 
 
-//translate([0,3,-22])color("pink")translate([337-12.5,427,300-15+0.2+0.8])rotate([0,180,90])luer_lock_case_lid();
-//translate([-0.5-1,-0.7,0])rotate([0,180,180])pipette_holder_4tip_luerlock();
-//translate([0,0,0])luerlock_nozzle_bottom();
+//linearactuator_pipette_holder_4pipette_luerlock_18mm();
+
+
+
+translate([0,3,-22])color("pink")translate([337-12.5,427,300-15+0.2+0.8])rotate([0,180,90])luer_lock_case_lid();
+translate([-0.5-1,-0.7,0])rotate([0,180,180])pipette_holder_4tip_luerlock();
+translate([0,0,0])luerlock_nozzle_bottom();
 
 //linearactuator_pipette_holder_4pipette_luerlock();
 
@@ -21,7 +25,7 @@ pipette_assembly();
 
 //linearactuator_pipette_holder_4pipette_luerlock
 
-//translate([-0.5-1,-0.7,0])rotate([0,180,180])pipette_holder_4tip_luerlock();
+translate([-0.5-1,-0.7,0])rotate([0,180,180])pipette_holder_4tip_luerlock();
 
 //include <organized_openscad.scad>
 //#luer_lock_microwell();
