@@ -1,5 +1,6 @@
 import serial
 import logging
+import time
 
 class ArduinoSerial:
     def __init__(self, config):
@@ -11,7 +12,7 @@ class ArduinoSerial:
         self.gcode = self.printer.lookup_object('gcode')
 
         # Register command based on name:
-        # [arduino_serial]            → SEND_ARDUINO
+        # [arduino_serial]              → SEND_ARDUINO
         # [arduino_serial pump_arduino] → SEND_PUMP_ARDUINO
         if self.name == 'arduino_serial':
             cmd_name = 'SEND_ARDUINO'
@@ -27,7 +28,10 @@ class ArduinoSerial:
         # Connect to serial port
         try:
             self.serial = serial.Serial(self.serial_port, self.baud_rate, timeout=1)
-            logging.info("ArduinoSerial [{}]: connected to {}".format(self.name, self.serial_port))
+            time.sleep(2)                      # wait for Arduino to boot
+            self.serial.reset_input_buffer()   # flush boot strings
+            logging.info("ArduinoSerial [{}]: connected to {}".format(
+                self.name, self.serial_port))
         except Exception as e:
             logging.error("ArduinoSerial [{}]: failed to connect to {}: {}".format(
                 self.name, self.serial_port, str(e)))
@@ -39,8 +43,25 @@ class ArduinoSerial:
             return
         try:
             self.serial.write("{}\n".format(command).encode())
-            response = self.serial.readline().decode().strip()
-            gcmd.respond_info("Arduino [{}] response: {}".format(self.name, response))
+
+            # Wait for Arduino to generate full response then read all lines
+            # Short commands (ok, P114) need ~50ms
+            # Long commands (HELP) need more time for all println calls
+            time.sleep(0.15)
+
+            lines = []
+            while self.serial.in_waiting:
+                line = self.serial.readline().decode().strip()
+                if line:
+                    lines.append(line)
+
+            if lines:
+                # Output each line as a separate Klipper response
+                for line in lines:
+                    gcmd.respond_info("Arduino [{}]: {}".format(self.name, line))
+            else:
+                gcmd.respond_info("Arduino [{}]: (no response)".format(self.name))
+
         except Exception as e:
             gcmd.respond_info("ArduinoSerial [{}] error: {}".format(self.name, str(e)))
 

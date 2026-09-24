@@ -12,6 +12,8 @@ translate([0,3,-22])color("pink")translate([337-12.5,427,300-15+0.2+0.8])rotate(
 translate([-0.5-1,-0.7,0])rotate([0,180,180])pipette_holder_4tip_luerlock();
 translate([0,0,0])luerlock_nozzle_bottom();
 
+pipette_assembly();
+
 //linearactuator_pipette_holder_4pipette_luerlock();
 
 //pipette_assembly();

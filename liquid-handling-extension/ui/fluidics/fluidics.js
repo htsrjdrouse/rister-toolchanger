@@ -1266,7 +1266,7 @@ export class FluidicsControl {
   async updateServoPosition() {
     try {
       // Read from save_variables (variables.cfg) for tracked servo position
-      const endpoint = this.api.activeEndpoint || 'http://192.168.1.89:7125';
+      const endpoint = this.api.activeEndpoint || 'http://192.168.1.100:7125';
       const response = await fetch(`${endpoint}/printer/objects/query?save_variables`);
       const data = await response.json();
 

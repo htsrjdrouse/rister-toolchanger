@@ -51,3 +51,6 @@ npm-debug.log*
 
 # Large binary files that shouldn't be tracked (adjust if needed)
 # *.stl   # commented out - user wants STLs in openscad/stls
+
+# Patent-related material (excluded from public repo)
+patentability/

@@ -20,8 +20,8 @@ module liquid_dispenser_tool0() {
 
 
         // Dock and backplate
-        translate([0,-30,0])import("../stls/LiquidDispenserTool0/dock_body_linearactuator_10mmlonger_3_shorter.stl");
-        import("../stls/LiquidDispenserTool0/lineux_backplate_for_linearactuator_modified.stl");
+        //translate([0,-30,0])import("../stls/LiquidDispenserTool0/dock_body_linearactuator_10mmlonger_3_shorter.stl");
+        #import("../stls/LiquidDispenserTool0/lineux_backplate_for_linearactuator_modified.stl");
         color("darkgrey")import("../stls/LiquidDispenserTool0/lineux_backplate_for_linearactuator_modified001.stl");
 
         // Holder components
@@ -40,7 +40,7 @@ module liquid_dispenser_tool0() {
 	/*
 	*/
 	}
-        color("lightblue")import("../stls/LiquidDispenserTool0/pipette_assembly.stl");
+        //color("lightblue")import("../stls/LiquidDispenserTool0/pipette_assembly.stl");
         color("white")import("../stls/LiquidDispenserTool0/luerlock_connector_slotdie.stl");
         color("lime")import("../stls/LiquidDispenserTool0/pipette_10g_slotdie.stl");
 
@@ -57,7 +57,8 @@ module liquid_dispenser_tool0() {
         
         // Tubing and umbilical
         //translate([0,-30,-5]) import("../stls/LiquidDispenserTool0/tubing_to_pipettes_valve_side_umbilical.stl");
-        translate([0,0,-15])color("white")import("../stls/LiquidDispenserTool0/umbilical_cord.stl");
+        //translate([0,0,-15])color("white")import("../stls/LiquidDispenserTool0/umbilical_cord.stl");
+        //translate([0,-32.5,0])color("white")import("../stls/LiquidDispenserTool0/umbilical_extrusion_1.stl");
 	/*
         translate([406.4,685.4,480])cube([9,2,255]);
         translate([406.4,685.4,480+255])rotate([90,0,0])cube([9,2,321.5]);
@@ -65,7 +66,6 @@ module liquid_dispenser_tool0() {
         translate([406.4-90,685.4-322,470+115])rotate([0,40,0])cube([9,2,143]);
         translate([406.4-90,685.4-322,470])rotate([0,0,0])cube([9,2,115]);
 	*/
-        translate([0,-32.5,0])color("white")import("../stls/LiquidDispenserTool0/umbilical_extrusion_1.stl");
        
         // Tip removal and loading
         translate([-47+270,-31,0]) {
@@ -79,7 +79,6 @@ module liquid_dispenser_tool0() {
             import("../stls/LiquidDispenserTool0/led_diffuser_back.stl");
             import("../stls/LiquidDispenserTool0/led_diffuser.stl");
         }
-
 
     }
 }

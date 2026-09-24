@@ -2,7 +2,7 @@
 export class KlipperAPI {
   constructor() {
     this.endpoints = [
-      'http://192.168.1.89:7125',
+      'http://192.168.1.100:7125',
       'http://mainsailos.local:7125',
       'http://localhost:7125'
     ];

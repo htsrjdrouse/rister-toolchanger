@@ -6,9 +6,10 @@ include <scad/tslot.inc.scad>
 // COMPONENT INCLUDES
 // =============================================================================
 
-/*
+
 include <includes/y_axis.scad>
 include <includes/xy_joints.scad>
+
 include <includes/extrusions_hfsb5.scad>
 include <includes/extrusions_hgsb5.scad>
 include <includes/frame_corners.scad>
@@ -18,20 +19,21 @@ include <includes/motor_mount_b.scad>
 include <includes/z_axis.scad>
 include <includes/belt_tensioners.scad>
 include <includes/target_holder.scad>
+/*
 */
 
-//include <includes/bed_assembly.scad>
-//include <includes/x_axis.scad>
-//include <includes/toolhead_carriage.scad>
+include <includes/bed_assembly.scad>
+include <includes/x_axis.scad>
+include <includes/toolhead_carriage.scad>
 //include <includes/liquid_dispenser.scad>
-include <includes/tip_case.scad>
+//include <includes/tip_case.scad>
 //include <includes/luerlock_nozzle_4channel.scad>
 //include <includes/syringe_pump.scad>
-/*
+
 include <includes/camera_tool.scad>
 include <includes/extruder_tool0.scad>
 include <includes/extruder_tool1.scad>
-
+/*
 include <includes/washstation.scad>
 include <includes/microfluidics.scad>
 include <includes/cabling.scad>

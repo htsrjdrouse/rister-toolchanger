@@ -495,11 +495,13 @@ function ShapeDesigner({ design, onSave, isPublisher }) {
       lines.push('');
     }
     
-    // Move to start
-    lines.push(`G1 X${s.startX.toFixed(3)} Y${s.startY.toFixed(3)} F${s.travelFeedrate} ; move to start XY`);
-    lines.push(`G1 Z${s.startZ} F1000 ; move to start Z`);
-    lines.push(`G1 Z${s.zHeight} F500 ; lower to dispense height`);
-    lines.push('');
+    // Move to start (skip in trigger mode — user handles positioning in Before Printing)
+    if (!s.triggerMode) {
+      lines.push(`G1 X${s.startX.toFixed(3)} Y${s.startY.toFixed(3)} F${s.travelFeedrate} ; move to start XY`);
+      lines.push(`G1 Z${s.startZ} F1000 ; move to start Z`);
+      lines.push(`G1 Z${s.zHeight} F500 ; lower to dispense height`);
+      lines.push('');
+    }
     
     // Before line set (multi-line only)
     const multiLine = s.numLines > 1;
