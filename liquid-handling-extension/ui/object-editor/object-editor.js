@@ -26,6 +26,76 @@ export class ObjectEditor {
     });
   }
 
+  // --- Target Array + Blocks-of-spots model helpers ---------------------
+  //
+  // Every object is treated as a Target Array: a rows x columns grid of
+  // targets (e.g. slides) at an origin-to-origin pitch, with the object
+  // origin (posx, posy) at the lower-left (min-X, min-Y) corner of target
+  // (0,0). One target is X by Y. A legacy object with no target_* fields is
+  // a 1x1 target group, so its footprint and behaviour are unchanged.
+  getTargetLayout(obj) {
+    return {
+      rows: Math.max(1, parseInt(obj.target_rows) || 1),
+      cols: Math.max(1, parseInt(obj.target_cols) || 1),
+      pitchX: obj.target_pitchx != null && obj.target_pitchx !== ''
+        ? parseFloat(obj.target_pitchx) : (parseFloat(obj.X) || 0),
+      pitchY: obj.target_pitchy != null && obj.target_pitchy !== ''
+        ? parseFloat(obj.target_pitchy) : (parseFloat(obj.Y) || 0)
+    };
+  }
+
+  // Blocks of spots repeated identically on every target. Offsets are in the
+  // target's local frame, measured from its min-X/min-Y corner. Legacy
+  // objects with no blocks[] are migrated on read into a single block built
+  // from the flat Array Configuration fields (margin/array*/shape), so the
+  // rendered spots are identical to before.
+  getBlocks(obj) {
+    // An explicit blocks array is authoritative, including an empty array
+    // (a bare target such as the bed, which has no spots).
+    if (Array.isArray(obj.blocks)) {
+      return obj.blocks.map(b => this.normalizeBlock(b));
+    }
+    // Legacy object (no blocks field). Only migrate to a block if the flat
+    // array fields describe a real spot pattern; otherwise it is a bare
+    // target and gets zero blocks.
+    const rows = Math.max(1, parseInt(obj.arrayrow) || 1);
+    const cols = Math.max(1, parseInt(obj.arraycolumn) || 1);
+    const sizeX = parseFloat(obj.shapex) || 0;
+    const sizeY = parseFloat(obj.shapey) || 0;
+    const hasPattern = rows > 1 || cols > 1 || (sizeX > 0 && sizeY > 0);
+    if (!hasPattern) {
+      return [];
+    }
+    return [this.normalizeBlock({
+      name: 'block1',
+      offsetx: obj.marginx,
+      offsety: obj.marginy,
+      rows: obj.arrayrow,
+      cols: obj.arraycolumn,
+      spacingx: obj.arraycolumnsp,
+      spacingy: obj.arrayrowsp,
+      spot_shape: obj.arrayshape,
+      spot_sizex: obj.shapex,
+      spot_sizey: obj.shapey
+    })];
+  }
+
+  normalizeBlock(b) {
+    b = b || {};
+    return {
+      name: b.name || 'block',
+      offsetx: b.offsetx != null && b.offsetx !== '' ? parseFloat(b.offsetx) : 0,
+      offsety: b.offsety != null && b.offsety !== '' ? parseFloat(b.offsety) : 0,
+      rows: Math.max(1, parseInt(b.rows) || 1),
+      cols: Math.max(1, parseInt(b.cols) || 1),
+      spacingx: b.spacingx != null && b.spacingx !== '' ? parseFloat(b.spacingx) : 0,
+      spacingy: b.spacingy != null && b.spacingy !== '' ? parseFloat(b.spacingy) : 0,
+      spot_shape: b.spot_shape === 'square' ? 'square' : 'ellipse',
+      spot_sizex: b.spot_sizex != null && b.spot_sizex !== '' ? parseFloat(b.spot_sizex) : 0,
+      spot_sizey: b.spot_sizey != null && b.spot_sizey !== '' ? parseFloat(b.spot_sizey) : 0
+    };
+  }
+
   render() {
     const container = document.getElementById('object-editor-content');
     container.innerHTML = `
@@ -97,16 +167,21 @@ export class ObjectEditor {
       return '<div style="padding: 20px; text-align: center; color: #999;">No objects created yet</div>';
     }
 
-    return this.objects.map((obj, index) => `
+    return this.objects.map((obj, index) => {
+      const t = this.getTargetLayout(obj);
+      const blocks = this.getBlocks(obj);
+      const spotTotal = blocks.reduce((n, b) => n + b.rows * b.cols, 0);
+      return `
       <div class="list-item ${index === this.selectedIndex ? 'selected' : ''}" data-index="${index}">
         <div class="list-item-title">
           ${obj.status === 'on' ? '✅' : '❌'} ${obj.name}
         </div>
         <div class="list-item-details">
-          Pos: (${obj.posx}, ${obj.posy}) | Size: ${obj.X}×${obj.Y} | Arrays: ${obj.arrayrow}×${obj.arraycolumn}
+          Pos: (${obj.posx}, ${obj.posy}) | Size: ${obj.X}×${obj.Y} | Targets: ${t.rows}×${t.cols} @ ${t.pitchX}×${t.pitchY} | Blocks: ${blocks.length} (${spotTotal} spots)
         </div>
       </div>
-    `).join('');
+    `;
+    }).join('');
   }
 
   renderObjectForm() {
@@ -125,6 +200,35 @@ export class ObjectEditor {
         <div>
           <label>Catalog:</label>
           <input type="text" id="obj-catalog" value="${obj.catalog || ''}">
+        </div>
+      </div>
+
+      <div style="margin-bottom: 15px;">
+        <label>Object Type:</label>
+        <input type="text" id="obj-type" value="targetarray" readonly
+               style="background: #f9f9f9; width: 140px;">
+        <span style="font-size: 12px; color: #999; margin-left: 8px;">Target Array (targets × blocks of spots)</span>
+      </div>
+
+      <h4 style="margin: 20px 0 10px 0; color: #667eea;">Target Array Layout</h4>
+      <div class="form-row cols-2">
+        <div>
+          <label>Target Rows:</label>
+          <input type="number" id="obj-target-rows" value="${obj.target_rows != null ? obj.target_rows : 1}" min="1" step="1">
+        </div>
+        <div>
+          <label>Target Columns:</label>
+          <input type="number" id="obj-target-cols" value="${obj.target_cols != null ? obj.target_cols : 1}" min="1" step="1">
+        </div>
+      </div>
+      <div class="form-row cols-2">
+        <div>
+          <label>Target Pitch X (mm):</label>
+          <input type="number" id="obj-target-pitchx" value="${obj.target_pitchx != null ? obj.target_pitchx : (obj.X || 0)}" step="0.1">
+        </div>
+        <div>
+          <label>Target Pitch Y (mm):</label>
+          <input type="number" id="obj-target-pitchy" value="${obj.target_pitchy != null ? obj.target_pitchy : (obj.Y || 0)}" step="0.1">
         </div>
       </div>
 
@@ -165,72 +269,25 @@ export class ObjectEditor {
         <input type="number" id="obj-Z" value="${obj.Z}" step="0.1">
       </div>
 
-      <h4 style="margin: 20px 0 10px 0; color: #667eea;">Array Configuration</h4>
-
-      <div class="form-row cols-2">
-        <div>
-          <label>Array Rows:</label>
-          <input type="number" id="obj-arrayrow" value="${obj.arrayrow}" min="1">
-        </div>
-        <div>
-          <label>Array Columns:</label>
-          <input type="number" id="obj-arraycolumn" value="${obj.arraycolumn}" min="1">
-        </div>
+      <h4 style="margin: 20px 0 10px 0; color: #667eea;">Blocks of Spots</h4>
+      <div style="font-size: 12px; color: #999; margin-bottom: 10px;">
+        Each block is a rows × columns grid of spots, repeated on every target.
+        Offsets are from the target's lower-left corner.
       </div>
-
-      <div class="form-row cols-2">
-        <div>
-          <label>Row Spacing (mm):</label>
-          <input type="number" id="obj-arrayrowsp" value="${obj.arrayrowsp}" step="0.1">
-        </div>
-        <div>
-          <label>Column Spacing (mm):</label>
-          <input type="number" id="obj-arraycolumnsp" value="${obj.arraycolumnsp}" step="0.1">
-        </div>
+      <div id="blocks-container">
+        ${(() => {
+          const bl = this.getBlocks(obj);
+          if (bl.length === 0) {
+            return '<div style="padding: 10px; text-align: center; color: #999; font-style: italic;">No blocks — this is a bare target (e.g. the bed). Add a block to place spots.</div>';
+          }
+          return bl.map((b, i) => this.renderBlockEditor(b, i)).join('');
+        })()}
       </div>
-
-      <div class="form-row cols-4">
-        <div>
-          <label>Margin X:</label>
-          <input type="number" id="obj-marginx" value="${obj.marginx}" step="0.1">
-        </div>
-        <div>
-          <label>Margin Y:</label>
-          <input type="number" id="obj-marginy" value="${obj.marginy}" step="0.1">
-        </div>
-        <div>
-          <label>Shim X:</label>
-          <input type="number" id="obj-shimx" value="${obj.shimx}" step="0.1">
-        </div>
-        <div>
-          <label>Shim Y:</label>
-          <input type="number" id="obj-shimy" value="${obj.shimy}" step="0.1">
-        </div>
-      </div>
+      <button id="add-block" class="btn btn-secondary" style="margin-bottom: 15px;">➕ Add Block</button>
 
       <div style="margin-bottom: 15px;">
-        <label>Array Shape:</label>
-        <label style="display: inline; margin-right: 15px;">
-          <input type="radio" name="array-shape" value="ellipse" ${obj.arrayshape === 'ellipse' ? 'checked' : ''}> Ellipse (Round)
-        </label>
-        <label style="display: inline;">
-          <input type="radio" name="array-shape" value="square" ${obj.arrayshape === 'square' ? 'checked' : ''}> Square
-        </label>
-      </div>
-
-      <div class="form-row cols-3">
-        <div>
-          <label>Array Size X (mm):</label>
-          <input type="number" id="obj-shapex" value="${obj.shapex}" step="0.01">
-        </div>
-        <div>
-          <label>Array Size Y (mm):</label>
-          <input type="number" id="obj-shapey" value="${obj.shapey}" step="0.01">
-        </div>
-        <div>
-          <label>Z Travel (mm):</label>
-          <input type="number" id="obj-ztrav" value="${obj.ztrav}" step="0.1">
-        </div>
+        <label>Z Travel (mm):</label>
+        <input type="number" id="obj-ztrav" value="${obj.ztrav}" step="0.1">
       </div>
 
       <div style="margin-bottom: 15px;">
@@ -246,6 +303,66 @@ export class ObjectEditor {
       <div class="btn-group">
         <button id="save-object" class="btn">💾 Save Changes</button>
         <button id="cancel-edit" class="btn btn-gray">❌ Cancel</button>
+      </div>
+    `;
+  }
+
+  renderBlockEditor(b, i) {
+    return `
+      <div class="block-editor" data-block-index="${i}" style="border: 1px solid #ddd; border-radius: 6px; padding: 10px; margin-bottom: 10px;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px;">
+          <strong style="color: #667eea;">Block ${i + 1}</strong>
+          <button class="btn btn-danger remove-block" data-block-index="${i}" style="padding: 2px 10px; font-size: 12px;">🗑️ Remove</button>
+        </div>
+        <div class="form-row cols-2">
+          <div>
+            <label>Block Offset X (mm):</label>
+            <input type="number" class="block-offsetx" data-block-index="${i}" value="${b.offsetx}" step="0.1">
+          </div>
+          <div>
+            <label>Block Offset Y (mm):</label>
+            <input type="number" class="block-offsety" data-block-index="${i}" value="${b.offsety}" step="0.1">
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div>
+            <label>Spot Rows:</label>
+            <input type="number" class="block-rows" data-block-index="${i}" value="${b.rows}" min="1" step="1">
+          </div>
+          <div>
+            <label>Spot Columns:</label>
+            <input type="number" class="block-cols" data-block-index="${i}" value="${b.cols}" min="1" step="1">
+          </div>
+        </div>
+        <div class="form-row cols-2">
+          <div>
+            <label>Spot Spacing X (mm):</label>
+            <input type="number" class="block-spacingx" data-block-index="${i}" value="${b.spacingx}" step="0.1">
+          </div>
+          <div>
+            <label>Spot Spacing Y (mm):</label>
+            <input type="number" class="block-spacingy" data-block-index="${i}" value="${b.spacingy}" step="0.1">
+          </div>
+        </div>
+        <div style="margin-bottom: 10px;">
+          <label>Spot Shape:</label>
+          <label style="display: inline; margin-right: 15px;">
+            <input type="radio" name="block-shape-${i}" class="block-shape" data-block-index="${i}" value="ellipse" ${b.spot_shape === 'ellipse' ? 'checked' : ''}> Ellipse (Round)
+          </label>
+          <label style="display: inline;">
+            <input type="radio" name="block-shape-${i}" class="block-shape" data-block-index="${i}" value="square" ${b.spot_shape === 'square' ? 'checked' : ''}> Square
+          </label>
+        </div>
+        <div class="form-row cols-2">
+          <div>
+            <label>Spot Size X (mm):</label>
+            <input type="number" class="block-sizex" data-block-index="${i}" value="${b.spot_sizex}" step="0.01">
+          </div>
+          <div>
+            <label>Spot Size Y (mm):</label>
+            <input type="number" class="block-sizey" data-block-index="${i}" value="${b.spot_sizey}" step="0.01">
+          </div>
+        </div>
       </div>
     `;
   }
@@ -311,24 +428,112 @@ export class ObjectEditor {
     const container = document.getElementById('object-editor-content');
     const fields = [
       'obj-name', 'obj-catalog', 'obj-X', 'obj-Y', 'obj-Z',
-      'obj-posx', 'obj-posy', 'obj-arrayrow', 'obj-arraycolumn',
-      'obj-arrayrowsp', 'obj-arraycolumnsp', 'obj-marginx', 'obj-marginy',
-      'obj-shimx', 'obj-shimy', 'obj-shapex', 'obj-shapey', 'obj-ztrav'
+      'obj-posx', 'obj-posy', 'obj-ztrav',
+      'obj-target-rows', 'obj-target-cols', 'obj-target-pitchx', 'obj-target-pitchy'
     ];
     
     fields.forEach(fieldId => {
       const element = container.querySelector(`#${fieldId}`);
       element?.addEventListener('change', () => this.autoSaveObject());
     });
+
+    // Per-block field changes
+    container.querySelectorAll(
+      '.block-offsetx, .block-offsety, .block-rows, .block-cols, ' +
+      '.block-spacingx, .block-spacingy, .block-sizex, .block-sizey, .block-shape'
+    ).forEach(el => {
+      el.addEventListener('change', () => this.autoSaveObject());
+    });
+
+    // Add / remove block buttons
+    container.querySelector('#add-block')?.addEventListener('click', () => this.addBlock());
+    container.querySelectorAll('.remove-block').forEach(btn => {
+      btn.addEventListener('click', () => {
+        this.removeBlock(parseInt(btn.dataset.blockIndex));
+      });
+    });
     
     // Radio buttons
     container.querySelectorAll('input[name="obj-status"]').forEach(radio => {
       radio.addEventListener('change', () => this.autoSaveObject());
     });
-    
-    container.querySelectorAll('input[name="array-shape"]').forEach(radio => {
-      radio.addEventListener('change', () => this.autoSaveObject());
+  }
+
+  // Read the current form into a normalized blocks[] array
+  readBlocksFromForm() {
+    const container = document.getElementById('object-editor-content');
+    const editors = container.querySelectorAll('.block-editor');
+    const blocks = [];
+    editors.forEach((ed, i) => {
+      const q = (sel) => ed.querySelector(sel);
+      blocks.push({
+        name: `block${i + 1}`,
+        offsetx: q('.block-offsetx')?.value ?? '0',
+        offsety: q('.block-offsety')?.value ?? '0',
+        rows: q('.block-rows')?.value ?? '1',
+        cols: q('.block-cols')?.value ?? '1',
+        spacingx: q('.block-spacingx')?.value ?? '0',
+        spacingy: q('.block-spacingy')?.value ?? '0',
+        spot_shape: ed.querySelector('.block-shape:checked')?.value ?? 'ellipse',
+        spot_sizex: q('.block-sizex')?.value ?? '0',
+        spot_sizey: q('.block-sizey')?.value ?? '0'
+      });
     });
+    return blocks;
+  }
+
+  // Keep the legacy flat Array Configuration fields in sync with block[0] so
+  // existing consumers (drypad grid sync, getArrayCoordinates) keep working.
+  syncLegacyFieldsFromBlock0(obj) {
+    const b0 = (obj.blocks && obj.blocks[0]) || null;
+    if (!b0) {
+      // No blocks: collapse the legacy array fields to a bare 1x1 with no
+      // spot size, so drypad sync / coordinate generation see no pattern and
+      // getBlocks does not re-migrate a phantom block.
+      obj.arrayrow = "1";
+      obj.arraycolumn = "1";
+      obj.shapex = "0";
+      obj.shapey = "0";
+      return;
+    }
+    obj.marginx = b0.offsetx;
+    obj.marginy = b0.offsety;
+    obj.arrayrow = b0.rows;
+    obj.arraycolumn = b0.cols;
+    obj.arraycolumnsp = b0.spacingx;
+    obj.arrayrowsp = b0.spacingy;
+    obj.arrayshape = b0.spot_shape;
+    obj.shapex = b0.spot_sizex;
+    obj.shapey = b0.spot_sizey;
+  }
+
+  addBlock() {
+    if (this.selectedIndex === -1) return;
+    const obj = this.objects[this.selectedIndex];
+    // Start from whatever the form currently shows. When there are zero
+    // block editors this yields an empty array, which is correct.
+    obj.blocks = this.readBlocksFromForm();
+    obj.blocks.push({
+      name: `block${obj.blocks.length + 1}`,
+      offsetx: "0", offsety: "0", rows: "1", cols: "1",
+      spacingx: "9", spacingy: "9",
+      spot_shape: "ellipse", spot_sizex: "7.05", spot_sizey: "7.05"
+    });
+    this.syncLegacyFieldsFromBlock0(obj);
+    this.storage.setObjects(this.objects);
+    this.render();
+    this.attachEventListeners();
+  }
+
+  removeBlock(index) {
+    if (this.selectedIndex === -1) return;
+    const obj = this.objects[this.selectedIndex];
+    obj.blocks = this.readBlocksFromForm();
+    obj.blocks.splice(index, 1);
+    this.syncLegacyFieldsFromBlock0(obj);
+    this.storage.setObjects(this.objects);
+    this.render();
+    this.attachEventListeners();
   }
   
   async autoSaveObject() {
@@ -345,19 +550,27 @@ export class ObjectEditor {
     obj.Z = container.querySelector('#obj-Z')?.value || obj.Z;
     obj.posx = container.querySelector('#obj-posx')?.value || obj.posx;
     obj.posy = container.querySelector('#obj-posy')?.value || obj.posy;
-    obj.arrayrow = container.querySelector('#obj-arrayrow')?.value || obj.arrayrow;
-    obj.arraycolumn = container.querySelector('#obj-arraycolumn')?.value || obj.arraycolumn;
-    obj.arrayrowsp = container.querySelector('#obj-arrayrowsp')?.value || obj.arrayrowsp;
-    obj.arraycolumnsp = container.querySelector('#obj-arraycolumnsp')?.value || obj.arraycolumnsp;
-    obj.marginx = container.querySelector('#obj-marginx')?.value || obj.marginx;
-    obj.marginy = container.querySelector('#obj-marginy')?.value || obj.marginy;
-    obj.shimx = container.querySelector('#obj-shimx')?.value || obj.shimx;
-    obj.shimy = container.querySelector('#obj-shimy')?.value || obj.shimy;
-    obj.shapex = container.querySelector('#obj-shapex')?.value || obj.shapex;
-    obj.shapey = container.querySelector('#obj-shapey')?.value || obj.shapey;
     obj.ztrav = container.querySelector('#obj-ztrav')?.value || obj.ztrav;
-    obj.arrayshape = container.querySelector('input[name="array-shape"]:checked')?.value || obj.arrayshape;
-    
+
+    // Object type is always targetarray in this model
+    obj.objtype = 'targetarray';
+
+    // Target Array Layout
+    const tRows = container.querySelector('#obj-target-rows');
+    if (tRows && tRows.value !== '') obj.target_rows = tRows.value;
+    const tCols = container.querySelector('#obj-target-cols');
+    if (tCols && tCols.value !== '') obj.target_cols = tCols.value;
+    const tPx = container.querySelector('#obj-target-pitchx');
+    if (tPx && tPx.value !== '') obj.target_pitchx = tPx.value;
+    const tPy = container.querySelector('#obj-target-pitchy');
+    if (tPy && tPy.value !== '') obj.target_pitchy = tPy.value;
+
+    // Blocks of spots
+    if (container.querySelector('#blocks-container')) {
+      obj.blocks = this.readBlocksFromForm();
+      this.syncLegacyFieldsFromBlock0(obj);
+    }
+
     const colorPicker = container.querySelector('#obj-color-picker');
     if (colorPicker) {
       const rgb = this.hexToRgb(colorPicker.value);
@@ -393,7 +606,26 @@ export class ObjectEditor {
       shapey: "7.05",
       arrayshape: "ellipse",
       color: "99,87,101",
-      ztrav: "0"
+      ztrav: "0",
+      objtype: "targetarray",
+      target_rows: "1",
+      target_cols: "1",
+      target_pitchx: "75",
+      target_pitchy: "20",
+      blocks: [
+        {
+          name: "block1",
+          offsetx: "2",
+          offsety: "10",
+          rows: "1",
+          cols: "8",
+          spacingx: "9",
+          spacingy: "9",
+          spot_shape: "ellipse",
+          spot_sizex: "7.05",
+          spot_sizey: "7.05"
+        }
+      ]
     };
 
     this.objects.push(newObj);
@@ -415,6 +647,10 @@ export class ObjectEditor {
     cloned.name = original.name + '_copy';
     cloned.posx = (parseFloat(original.posx) + 20).toString();
     cloned.posy = (parseFloat(original.posy) + 20).toString();
+    // Deep-copy the blocks array so the clone does not share block objects
+    if (Array.isArray(original.blocks)) {
+      cloned.blocks = original.blocks.map(b => ({ ...b }));
+    }
 
     this.objects.push(cloned);
     this.selectedIndex = this.objects.length - 1;
@@ -462,19 +698,67 @@ export class ObjectEditor {
     obj.Z = container.querySelector('#obj-Z').value;
     obj.posx = container.querySelector('#obj-posx').value;
     obj.posy = container.querySelector('#obj-posy').value;
-    obj.arrayrow = container.querySelector('#obj-arrayrow').value;
-    obj.arraycolumn = container.querySelector('#obj-arraycolumn').value;
-    obj.arrayrowsp = container.querySelector('#obj-arrayrowsp').value;
-    obj.arraycolumnsp = container.querySelector('#obj-arraycolumnsp').value;
-    obj.marginx = container.querySelector('#obj-marginx').value;
-    obj.marginy = container.querySelector('#obj-marginy').value;
-    obj.shimx = container.querySelector('#obj-shimx').value;
-    obj.shimy = container.querySelector('#obj-shimy').value;
-    obj.shapex = container.querySelector('#obj-shapex').value;
-    obj.shapey = container.querySelector('#obj-shapey').value;
     obj.ztrav = container.querySelector('#obj-ztrav').value;
-    obj.arrayshape = container.querySelector('input[name="array-shape"]:checked').value;
     obj.color = container.querySelector('#obj-color').value;
+
+    // Object type is always targetarray in this model
+    obj.objtype = 'targetarray';
+
+    // Target Array Layout
+    const tRows = container.querySelector('#obj-target-rows');
+    if (tRows && tRows.value !== '') obj.target_rows = tRows.value;
+    const tCols = container.querySelector('#obj-target-cols');
+    if (tCols && tCols.value !== '') obj.target_cols = tCols.value;
+    const tPx = container.querySelector('#obj-target-pitchx');
+    if (tPx && tPx.value !== '') obj.target_pitchx = tPx.value;
+    const tPy = container.querySelector('#obj-target-pitchy');
+    if (tPy && tPy.value !== '') obj.target_pitchy = tPy.value;
+
+    // Blocks of spots
+    if (container.querySelector('#blocks-container')) {
+      obj.blocks = this.readBlocksFromForm();
+      this.syncLegacyFieldsFromBlock0(obj);
+    }
+
+    // ---- Validate target + block geometry before saving ----
+    {
+      const X = parseFloat(obj.X) || 0;
+      const Y = parseFloat(obj.Y) || 0;
+      const posx = parseFloat(obj.posx) || 0;
+      const posy = parseFloat(obj.posy) || 0;
+      const t = this.getTargetLayout(obj);
+
+      // Target overlap (pitch == size is allowed = butted targets)
+      if ((t.cols > 1 && t.pitchX < X) || (t.rows > 1 && t.pitchY < Y)) {
+        alert('Target pitch is smaller than target size, targets would overlap.');
+        return;
+      }
+
+      // Each block's spot grid must stay within one target's footprint
+      const blocks = this.getBlocks(obj);
+      for (let bi = 0; bi < blocks.length; bi++) {
+        const b = blocks[bi];
+        const bxMin = b.offsetx - b.spot_sizex / 2;
+        const byMin = b.offsety - b.spot_sizey / 2;
+        const bxMax = b.offsetx + (b.cols - 1) * b.spacingx + b.spot_sizex / 2;
+        const byMax = b.offsety + (b.rows - 1) * b.spacingy + b.spot_sizey / 2;
+        if (bxMin < 0 || byMin < 0 || bxMax > X || byMax > Y) {
+          alert(`Block ${bi + 1} extends outside the target footprint.`);
+          return;
+        }
+      }
+
+      // Union bounding box must stay inside the printer area
+      const xMin = posx;
+      const xMax = posx + (t.cols - 1) * t.pitchX + X;
+      const yMin = posy;
+      const yMax = posy + (t.rows - 1) * t.pitchY + Y;
+      if (xMin < 0 || yMin < 0 ||
+          xMax > this.printerArea.width || yMax > this.printerArea.height) {
+        alert('Target array extends outside the printer area.');
+        return;
+      }
+    }
 
     await this.storage.setObjects(this.objects);
     
@@ -548,13 +832,7 @@ export class ObjectEditor {
       const zHeight = parseFloat(obj.Z) || 0;
       const zTrav = parseFloat(obj.ztrav) || 0;
       const enabled = obj.status === 'on' ? 'true' : 'false';
-      
-      // Calculate bounding box
-      const xMin = posx;
-      const xMax = posx + width;
-      const yMin = posy;
-      const yMax = posy + height;
-      
+
       // Z clearance: use ztrav if set, otherwise default based on object type
       let zClearance = zTrav > 0 ? zTrav : 10;
       if (name.includes('dispenser') || name.includes('box') || name.includes('rack')) {
@@ -562,17 +840,41 @@ export class ObjectEditor {
       } else if (name.includes('bed')) {
         zClearance = zTrav > 0 ? zTrav : 5;
       }
-      
-      // Send SAVE_VARIABLE commands for collision avoidance
-      await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=obj_${name}_enabled VALUE="'${enabled}'"`);
-      await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=obj_${name}_x_min VALUE=${xMin.toFixed(1)}`);
-      await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=obj_${name}_x_max VALUE=${xMax.toFixed(1)}`);
-      await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=obj_${name}_y_min VALUE=${yMin.toFixed(1)}`);
-      await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=obj_${name}_y_max VALUE=${yMax.toFixed(1)}`);
-      await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=obj_${name}_z_height VALUE=${zHeight.toFixed(1)}`);
-      await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=obj_${name}_z_clearance VALUE=${zClearance.toFixed(1)}`);
-      
-      console.log(`Synced collision object: ${name} (${xMin}-${xMax}, ${yMin}-${yMax}, Z=${zHeight})`);
+
+      // Emit the full set of collision variables under a given key suffix.
+      const emitBox = async (suffix, xMin, xMax, yMin, yMax) => {
+        await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=obj_${name}${suffix}_enabled VALUE="'${enabled}'"`);
+        await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=obj_${name}${suffix}_x_min VALUE=${xMin.toFixed(1)}`);
+        await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=obj_${name}${suffix}_x_max VALUE=${xMax.toFixed(1)}`);
+        await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=obj_${name}${suffix}_y_min VALUE=${yMin.toFixed(1)}`);
+        await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=obj_${name}${suffix}_y_max VALUE=${yMax.toFixed(1)}`);
+        await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=obj_${name}${suffix}_z_height VALUE=${zHeight.toFixed(1)}`);
+        await this.api.sendGcode(`SAVE_VARIABLE VARIABLE=obj_${name}${suffix}_z_clearance VALUE=${zClearance.toFixed(1)}`);
+      };
+
+      const t = this.getTargetLayout(obj);
+
+      if (t.rows === 1 && t.cols === 1) {
+        // Single target: keep the exact original variable names.
+        await emitBox('', posx, posx + width, posy, posy + height);
+        console.log(`Synced collision object: ${name} (${posx}-${posx + width}, ${posy}-${posy + height}, Z=${zHeight})`);
+      } else {
+        // Multi-target: one box per target (1-based row/col), plus the union
+        // bounding box under the original names for backward compatibility.
+        for (let tr = 0; tr < t.rows; tr++) {
+          for (let tc = 0; tc < t.cols; tc++) {
+            const tx0 = posx + tc * t.pitchX;
+            const ty0 = posy + tr * t.pitchY;
+            await emitBox(`_t${tr + 1}_${tc + 1}`, tx0, tx0 + width, ty0, ty0 + height);
+          }
+        }
+        const uXMin = posx;
+        const uXMax = posx + (t.cols - 1) * t.pitchX + width;
+        const uYMin = posy;
+        const uYMax = posy + (t.rows - 1) * t.pitchY + height;
+        await emitBox('', uXMin, uXMax, uYMin, uYMax);
+        console.log(`Synced collision target array: ${name} ${t.rows}x${t.cols}, union (${uXMin}-${uXMax}, ${uYMin}-${uYMax})`);
+      }
     }
     
     // Trigger Klipper to reload collision objects into memory
@@ -667,26 +969,62 @@ export class ObjectEditor {
         coordsDisplay.textContent = `X: ${printerX.toFixed(1)}mm, Y: ${printerY.toFixed(1)}mm`;
       }
       
-      // Check if mouse is over any object
+      // Check if mouse is over any object (target array)
       let hoveredObject = null;
-      for (let i = this.objects.length - 1; i >= 0; i--) {
+      let hoveredLabel = null;
+      for (let i = this.objects.length - 1; i >= 0 && !hoveredObject; i--) {
         const obj = this.objects[i];
         if (obj.status === 'off') continue;
-        
-        const x = (this.printerArea.width - parseFloat(obj.posx) - parseFloat(obj.X)) * scale;
-        const y = parseFloat(obj.posy) * scale;
-        const width = parseFloat(obj.X) * scale;
-        const height = parseFloat(obj.Y) * scale;
-        
-        if (mouseX >= x && mouseX <= x + width && mouseY >= y && mouseY <= y + height) {
-          hoveredObject = obj;
-          break;
+
+        const sizeX = parseFloat(obj.X);
+        const sizeY = parseFloat(obj.Y);
+        const posx = parseFloat(obj.posx);
+        const posy = parseFloat(obj.posy);
+        const t = this.getTargetLayout(obj);
+        const blocks = this.getBlocks(obj);
+        const width = sizeX * scale;
+        const height = sizeY * scale;
+
+        for (let tr = 0; tr < t.rows && !hoveredObject; tr++) {
+          for (let tc = 0; tc < t.cols && !hoveredObject; tc++) {
+            const tx0 = posx + tc * t.pitchX;
+            const ty0 = posy + tr * t.pitchY;
+            const x = (this.printerArea.width - tx0 - sizeX) * scale;
+            const y = ty0 * scale;
+            if (mouseX < x || mouseX > x + width || mouseY < y || mouseY > y + height) {
+              continue;
+            }
+
+            // Inside this target. Default label is the target cell.
+            hoveredObject = obj;
+            hoveredLabel = `${obj.name} [${tr + 1},${tc + 1}]`;
+
+            // Refine to a spot if the cursor is over one
+            for (let bi = 0; bi < blocks.length && hoveredLabel === `${obj.name} [${tr + 1},${tc + 1}]`; bi++) {
+              const block = blocks[bi];
+              const halfX = (block.spot_sizex * scale) / 2;
+              const halfY = (block.spot_sizey * scale) / 2;
+              for (let sr = 0; sr < block.rows; sr++) {
+                for (let sc = 0; sc < block.cols; sc++) {
+                  const spotX = tx0 + block.offsetx + sc * block.spacingx;
+                  const spotY = ty0 + block.offsety + sr * block.spacingy;
+                  const cx = (this.printerArea.width - spotX) * scale;
+                  const cy = spotY * scale;
+                  if (mouseX >= cx - halfX && mouseX <= cx + halfX &&
+                      mouseY >= cy - halfY && mouseY <= cy + halfY) {
+                    hoveredLabel = `${obj.name} [${tr + 1},${tc + 1}] block${bi + 1} [${sr + 1},${sc + 1}]`;
+                    sr = block.rows; break;
+                  }
+                }
+              }
+            }
+          }
         }
       }
       
       if (hoveredObject) {
         // Show tooltip
-        tooltip.textContent = hoveredObject.name;
+        tooltip.textContent = hoveredLabel;
         tooltip.style.display = 'block';
         tooltip.style.left = (e.clientX + 15) + 'px';
         tooltip.style.top = (e.clientY - 30) + 'px';
@@ -765,35 +1103,48 @@ export class ObjectEditor {
     this.objects.forEach((obj, index) => {
       if (obj.status === 'off') return;
 
-      const x = (this.printerArea.width - parseFloat(obj.posx) - parseFloat(obj.X)) * scale;
-      const y = parseFloat(obj.posy) * scale;
-      const width = parseFloat(obj.X) * scale;
-      const height = parseFloat(obj.Y) * scale;
-
+      const sizeX = parseFloat(obj.X);
+      const sizeY = parseFloat(obj.Y);
       const [r, g, b] = obj.color.split(',').map(c => parseInt(c.trim()));
+      const isSelected = index === this.selectedIndex;
 
-      ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.7)`;
-      ctx.strokeStyle = index === this.selectedIndex ? '#ffff00' : '#000';
-      ctx.lineWidth = index === this.selectedIndex ? 3 : 1;
+      const posx = parseFloat(obj.posx);
+      const posy = parseFloat(obj.posy);
+      const t = this.getTargetLayout(obj);
+      const blocks = this.getBlocks(obj);
+      const width = sizeX * scale;
+      const height = sizeY * scale;
 
-      ctx.fillRect(x, y, width, height);
-      ctx.strokeRect(x, y, width, height);
+      for (let tr = 0; tr < t.rows; tr++) {
+        for (let tc = 0; tc < t.cols; tc++) {
+          const tx0 = posx + tc * t.pitchX;   // target lower-left, bed X
+          const ty0 = posy + tr * t.pitchY;   // target lower-left, bed Y
+          const displayX = (this.printerArea.width - tx0 - sizeX) * scale;
+          const displayY = ty0 * scale;
 
-      // No labels - tooltips show names on hover
+          ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.7)`;
+          ctx.strokeStyle = isSelected ? '#ffff00' : '#000';
+          ctx.lineWidth = isSelected ? 3 : 1;
 
-      // Draw arrays
-      this.drawArrays(ctx, obj, x, y, scale);
+          ctx.fillRect(displayX, displayY, width, height);
+          ctx.strokeRect(displayX, displayY, width, height);
+
+          // Draw every block's spots within this target
+          blocks.forEach(block => {
+            this.drawArrays(ctx, block, scale, tx0, ty0);
+          });
+        }
+      }
     });
   }
 
-  drawArrays(ctx, obj, objX, objY, scale) {
-    const rows = parseInt(obj.arrayrow);
-    const cols = parseInt(obj.arraycolumn);
-    const arraySizeX = parseFloat(obj.shapex) * scale;
-    const arraySizeY = parseFloat(obj.shapey) * scale;
-    
-    const baseX = parseFloat(obj.posx);
-    const baseY = parseFloat(obj.posy);
+  // Draw one block's grid of spots within a target whose lower-left (min-X,
+  // min-Y) corner is at bed coords (targetX0, targetY0). block is normalized.
+  drawArrays(ctx, block, scale, targetX0, targetY0) {
+    const rows = block.rows;
+    const cols = block.cols;
+    const spotSizeX = block.spot_sizex * scale;
+    const spotSizeY = block.spot_sizey * scale;
 
     ctx.fillStyle = 'rgba(255, 255, 255, 0.8)';
     ctx.strokeStyle = '#000';
@@ -801,21 +1152,22 @@ export class ObjectEditor {
 
     for (let row = 0; row < rows; row++) {
       for (let col = 0; col < cols; col++) {
-        const arrayX = baseX + parseFloat(obj.marginx) + col * parseFloat(obj.arraycolumnsp);
-        const arrayY = baseY + parseFloat(obj.marginy) + row * parseFloat(obj.arrayrowsp);
+        // Spot centre in bed coords: target origin + block offset + grid step
+        const spotX = targetX0 + block.offsetx + col * block.spacingx;
+        const spotY = targetY0 + block.offsety + row * block.spacingy;
 
-        const displayX = (this.printerArea.width - arrayX) * scale - arraySizeX / 2;
-        const displayY = arrayY * scale - arraySizeY / 2;
+        const displayX = (this.printerArea.width - spotX) * scale - spotSizeX / 2;
+        const displayY = spotY * scale - spotSizeY / 2;
 
-        if (obj.arrayshape === 'ellipse') {
+        if (block.spot_shape === 'ellipse') {
           ctx.beginPath();
-          ctx.ellipse(displayX + arraySizeX / 2, displayY + arraySizeY / 2, 
-                      arraySizeX / 2, arraySizeY / 2, 0, 0, 2 * Math.PI);
+          ctx.ellipse(displayX + spotSizeX / 2, displayY + spotSizeY / 2,
+                      spotSizeX / 2, spotSizeY / 2, 0, 0, 2 * Math.PI);
           ctx.fill();
           ctx.stroke();
         } else {
-          ctx.fillRect(displayX, displayY, arraySizeX, arraySizeY);
-          ctx.strokeRect(displayX, displayY, arraySizeX, arraySizeY);
+          ctx.fillRect(displayX, displayY, spotSizeX, spotSizeY);
+          ctx.strokeRect(displayX, displayY, spotSizeX, spotSizeY);
         }
       }
     }

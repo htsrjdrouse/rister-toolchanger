@@ -8,6 +8,7 @@ A professional browser extension for controlling Klipper-based liquid handling a
 - Visual printer bed representation
 - Create and manage lab objects (well plates, racks, etc.)
 - Array positioning with automatic coordinate calculation
+- **NEW: Target Array + Blocks of Spots** — two nested grids: a rows×columns array of targets (e.g. slides) at origin-to-origin pitch (matches slot-die DEV_DX), and one or more blocks of spots repeated on every target, with per-target collision export
 - **NEW: Position Z (bed height) instead of object Z height**
 - Configurable printer area dimensions
 - Export/import object configurations
@@ -360,6 +361,15 @@ MIT License - Free to use and modify for your liquid handling automation needs.
 For issues or feature requests, please refer to the source repository.
 
 ## Version History
+
+### v1.8.0 (2026-09-24)
+- **NEW: Two-layer Target Array model in Object Editor** — every object is a rows×columns array of *targets* (e.g. slides) at an origin-to-origin pitch (Target Rows/Columns, Target Pitch X/Y), matching `DEV_DX` in `slotdieslide.cfg`
+- **NEW: Blocks of Spots** — each target carries zero or more *blocks*, and each block is a rows×columns grid of spots (offset from the target's lower-left corner, with spot spacing, shape, and size). The same blocks repeat on every target, enabling complex per-slide dispensing patterns. A target may have **no blocks at all** (a bare target such as the bed)
+- Add/remove blocks dynamically; the first block stays synced with the legacy Array Configuration fields so drypad grid sync and coordinate generation keep working
+- Hover tooltips show `name [target r,c]` and refine to `name [target r,c] blockN [spot r,c]` over a spot; object list shows `Targets: RxC @ pitch | Blocks: N (spots)`
+- Collision sync writes a per-target bounding box `obj_{name}_t{r}_{c}_*` for multi-target arrays, plus the union box under the original `obj_{name}_*` names; a 1×1 target keeps the exact original variable names
+- Save validation blocks overlapping target pitch, blocks that spill outside a target, and arrays that leave the printer area
+- Backward compatible: existing objects load as a 1×1 target with a single migrated block; configs and export/import round-trip unchanged
 
 ### v1.6.0 (2026-03-28)
 - **NEW: Dispense Sequence panel** — Full prime→dispense→retract cycle in a single command (Arduino v2.6)
