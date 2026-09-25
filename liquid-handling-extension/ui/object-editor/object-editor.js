@@ -958,10 +958,11 @@ export class ObjectEditor {
       
       const scale = Math.min(canvas.width / this.printerArea.width, canvas.height / this.printerArea.height);
       
-      // Calculate real printer coordinates from canvas position
-      // X coordinate is inverted (left to right on canvas = high to low X)
-      const printerX = this.printerArea.width - (mouseX / scale);
-      const printerY = mouseY / scale;
+      // Calculate real printer coordinates from canvas position.
+      // Bed origin (0,0) is bottom-left: X grows right (un-mirrored),
+      // Y grows up (canvas Y is flipped).
+      const printerX = mouseX / scale;
+      const printerY = this.printerArea.height - (mouseY / scale);
       
       // Update coordinate display in header
       const coordsDisplay = document.getElementById('mouse-coords');
@@ -989,8 +990,8 @@ export class ObjectEditor {
           for (let tc = 0; tc < t.cols && !hoveredObject; tc++) {
             const tx0 = posx + tc * t.pitchX;
             const ty0 = posy + tr * t.pitchY;
-            const x = (this.printerArea.width - tx0 - sizeX) * scale;
-            const y = ty0 * scale;
+            const x = tx0 * scale;
+            const y = (this.printerArea.height - (ty0 + sizeY)) * scale;
             if (mouseX < x || mouseX > x + width || mouseY < y || mouseY > y + height) {
               continue;
             }
@@ -1008,8 +1009,8 @@ export class ObjectEditor {
                 for (let sc = 0; sc < block.cols; sc++) {
                   const spotX = tx0 + block.offsetx + sc * block.spacingx;
                   const spotY = ty0 + block.offsety + sr * block.spacingy;
-                  const cx = (this.printerArea.width - spotX) * scale;
-                  const cy = spotY * scale;
+                  const cx = spotX * scale;
+                  const cy = (this.printerArea.height - spotY) * scale;
                   if (mouseX >= cx - halfX && mouseX <= cx + halfX &&
                       mouseY >= cy - halfY && mouseY <= cy + halfY) {
                     hoveredLabel = `${obj.name} [${tr + 1},${tc + 1}] block${bi + 1} [${sr + 1},${sc + 1}]`;
@@ -1119,8 +1120,11 @@ export class ObjectEditor {
         for (let tc = 0; tc < t.cols; tc++) {
           const tx0 = posx + tc * t.pitchX;   // target lower-left, bed X
           const ty0 = posy + tr * t.pitchY;   // target lower-left, bed Y
-          const displayX = (this.printerArea.width - tx0 - sizeX) * scale;
-          const displayY = ty0 * scale;
+          // Bed origin (0,0) is bottom-left: X grows right (un-mirrored),
+          // Y grows up (canvas Y is flipped). The rect's top canvas edge is
+          // the target's upper bed edge (ty0 + sizeY).
+          const displayX = tx0 * scale;
+          const displayY = (this.printerArea.height - (ty0 + sizeY)) * scale;
 
           ctx.fillStyle = `rgba(${r}, ${g}, ${b}, 0.7)`;
           ctx.strokeStyle = isSelected ? '#ffff00' : '#000';
@@ -1156,8 +1160,9 @@ export class ObjectEditor {
         const spotX = targetX0 + block.offsetx + col * block.spacingx;
         const spotY = targetY0 + block.offsety + row * block.spacingy;
 
-        const displayX = (this.printerArea.width - spotX) * scale - spotSizeX / 2;
-        const displayY = spotY * scale - spotSizeY / 2;
+        // Bed origin bottom-left: X un-mirrored, Y flipped.
+        const displayX = spotX * scale - spotSizeX / 2;
+        const displayY = (this.printerArea.height - spotY) * scale - spotSizeY / 2;
 
         if (block.spot_shape === 'ellipse') {
           ctx.beginPath();
